@@ -22,11 +22,10 @@ Integrate Descope authentication into applications with support for passwordless
 - Python (backend session validation)
 
 **Features:**
-- 🎯 **Framework detection** - Automatically routes to appropriate integration guide
-- 🔒 **Security guardrails** - Prevents common authentication mistakes
-- 📋 **Exhaustive Flow IDs** - Complete list to prevent AI hallucination
-- ✅ **Skills.sh compliant** - Follows official specification
-- 📦 **Copy-paste ready** - All code examples use correct SDK imports
+- **Framework detection** - Automatically routes to appropriate integration guide
+- **Security guardrails** - Prevents common authentication mistakes
+- **Skills.sh compliant** - Follows official specification
+- **Copy-paste ready** - All code examples use correct SDK imports
 
 **Authentication methods covered:**
 - OTP (Email/SMS) - Quick verification codes
@@ -90,7 +89,7 @@ Each skill contains:
 
 ## Getting Started with Descope
 
-1. **Create a free account** at [app.descope.com](https://app.descope.com)
+1. **Create a free account** on our [Sign Up page](https://www.descope.com/sign-up)
 2. **Get your Project ID** from [Settings → Project](https://app.descope.com/settings/project)
 3. **Install the skill** with `npx skills add descope/skills`
 4. **Ask your AI agent** to integrate Descope authentication
