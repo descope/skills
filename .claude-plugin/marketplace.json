@@ -1,0 +1,36 @@
+{
+  "name": "descope-skills",
+  "owner": {
+    "name": "Descope",
+    "email": "support@descope.com",
+    "url": "https://github.com/descope"
+  },
+  "plugins": [
+    {
+      "name": "descope-auth",
+      "source": "./descope-auth",
+      "description": "Skill to integrate Descope authentication into your application",
+      "repository": "https://github.com/descope/skills.git",
+      "author": {
+        "name": "Descope",
+        "email": "support@descope.com",
+        "url": "https://github.com/descope"
+      },
+      "keywords": ["descope", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey"],
+      "category": "authentication"
+    },
+    {
+      "name": "descope-terraform",
+      "source": "./descope-terraform",
+      "description": "Skill to set up Terraform for managing Descope projects",
+      "repository": "https://github.com/descope/skills.git",
+      "author": {
+        "name": "Descope",
+        "email": "support@descope.com",
+        "url": "https://github.com/descope"
+      },
+      "keywords": ["descope", "terraform", "ci-cd", "deployment"],
+      "category": "authentication"
+    }
+  ]
+}
