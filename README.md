@@ -4,7 +4,8 @@ A collection of AI agent skills for integrating Descope authentication into your
 
 ## Available Skills
 
-### descope-auth
+<details>
+<summary><b>descope-auth</b> — Integrate Descope authentication into applications</summary>
 
 Integrate Descope authentication into applications with support for passwordless auth, OAuth, SSO, and MFA. Uses a smart router pattern to detect your framework and provide targeted integration guidance.
 
@@ -36,7 +37,10 @@ Integrate Descope authentication into applications with support for passwordless
 - TOTP - Authenticator app MFA
 - Passwords - Traditional auth (fallback)
 
-### descope-terraform
+</details>
+
+<details>
+<summary><b>descope-terraform</b> — Manage Descope projects as infrastructure-as-code</summary>
 
 Manage Descope projects as infrastructure-as-code using the official [Terraform provider](https://registry.terraform.io/providers/descope/descope/latest/docs). Generates valid HCL configurations for authentication methods, RBAC, connectors, and project settings.
 
@@ -64,15 +68,21 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 - Descope Pro or Enterprise license
 - Management Key from [Company Settings](https://app.descope.com/company)
 
+</details>
+
 ## Installation
 
-### Using skills CLI
+<details>
+<summary><b>Using skills CLI</b></summary>
 
 ```bash
 npx skills add descope/skills
 ```
 
-### Using Claude Code
+</details>
+
+<details open>
+<summary><b>Using Claude Code</b></summary>
 
 Add the marketplace and install the plugin:
 
@@ -81,11 +91,14 @@ Add the marketplace and install the plugin:
 /plugin install descope-skills
 ```
 
+</details>
+
 ## Usage
 
 Skills are automatically loaded by compatible AI agents once installed. Simply describe what you need:
 
-**descope-auth examples:**
+<details>
+<summary><b>descope-auth examples</b></summary>
 
 ```
 Add Descope authentication to my Next.js app
@@ -103,7 +116,10 @@ Set up backend session validation for my Node.js API
 Add OAuth login (Google and GitHub) using Descope
 ```
 
-**descope-terraform examples:**
+</details>
+
+<details>
+<summary><b>descope-terraform examples</b></summary>
 
 ```
 Set up Terraform to manage my Descope project
@@ -117,6 +133,8 @@ Create a Descope project with password auth and RBAC using Terraform
 Add an HTTP connector and S3 audit logging to my Descope Terraform config
 ```
 
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -129,7 +147,8 @@ Works with any agent supporting the Agent Skills format:
 - [Windsurf](https://windsurf.com)
 - And [36+ more agents](https://github.com/vercel-labs/skills#supported-agents)
 
-## Skill Structure
+<details>
+<summary><b>Skill Structure</b></summary>
 
 ```
 skills/
@@ -146,6 +165,8 @@ skills/
         ├── other-resources.md - descope_management_key and descope_descoper schemas
         └── connectors.md - All 60+ supported connector types
 ```
+
+</details>
 
 ## Getting Started with Descope
 
