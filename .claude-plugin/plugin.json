@@ -1,0 +1,13 @@
+{
+  "name": "descope-skills",
+  "description": "Skills for integrating Descope authentication and managing projects with Terraform",
+  "version": "1.0.0",
+  "author": {
+    "name": "Descope",
+    "email": "support@descope.com"
+  },
+  "homepage": "https://docs.descope.com",
+  "repository": "https://github.com/descope/skills",
+  "license": "MIT",
+  "keywords": ["descope", "authentication", "terraform", "oauth", "sso", "passkey", "mfa"]
+}

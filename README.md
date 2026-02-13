@@ -74,12 +74,11 @@ npx skills add descope/skills
 
 ### Using Claude Code
 
-Add the marketplace, then install the skills you want:
+Add the marketplace and install the plugin:
 
 ```
 /plugin marketplace add descope/skills
-/plugin install descope-auth@descope-skills
-/plugin install descope-terraform@descope-skills
+/plugin install descope-skills
 ```
 
 ## Usage
@@ -132,19 +131,21 @@ Works with any agent supporting the Agent Skills format:
 
 ## Skill Structure
 
-**descope-auth:**
-- `SKILL.md` - Main instructions with framework detection
-- `references/` - Framework-specific integration guides
-  - `nextjs.md` - Next.js App Router patterns
-  - `react.md` - React SPA patterns
-  - `backend.md` - Node.js/Python validation
-
-**descope-terraform:**
-- `SKILL.md` - Provider setup, common configurations, and guardrails
-- `references/` - Detailed schema and resource documentation
-  - `project-resource.md` - Full `descope_project` schema
-  - `other-resources.md` - `descope_management_key` and `descope_descoper` schemas
-  - `connectors.md` - All 60+ supported connector types
+```
+skills/
+├── descope-auth/
+│   ├── SKILL.md - Main instructions with framework detection
+│   └── references/
+│       ├── nextjs.md - Next.js App Router patterns
+│       ├── react.md - React SPA patterns
+│       └── backend.md - Node.js/Python validation
+└── descope-terraform/
+    ├── SKILL.md - Provider setup, common configurations, and guardrails
+    └── references/
+        ├── project-resource.md - Full descope_project schema
+        ├── other-resources.md - descope_management_key and descope_descoper schemas
+        └── connectors.md - All 60+ supported connector types
+```
 
 ## Getting Started with Descope
 
