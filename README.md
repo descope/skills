@@ -36,19 +36,57 @@ Integrate Descope authentication into applications with support for passwordless
 - TOTP - Authenticator app MFA
 - Passwords - Traditional auth (fallback)
 
+### descope-terraform
+
+Manage Descope projects as infrastructure-as-code using the official [Terraform provider](https://registry.terraform.io/providers/descope/descope/latest/docs). Generates valid HCL configurations for authentication methods, RBAC, connectors, and project settings.
+
+**Use when:**
+- "Set up Terraform for my Descope project"
+- "Manage Descope authentication config as code"
+- "Create roles and permissions with Terraform"
+- "Add connectors to my Descope Terraform config"
+- "Deploy Descope project settings across environments"
+
+**Resources managed:**
+- `descope_project` - Full project configuration (auth methods, RBAC, connectors, flows, settings)
+- `descope_management_key` - Management keys with RBAC scoping
+- `descope_descoper` - Console user accounts with role assignments
+
+**Covers:**
+- Provider setup and management key configuration
+- Authentication methods (OTP, Magic Link, Passkeys, OAuth, SSO, Password, TOTP)
+- Authorization (roles and permissions)
+- 60+ connector types (email, SMS, HTTP, observability, fraud detection, CRM, etc.)
+- Project settings, applications (OIDC/SAML), flows, JWT templates, and custom attributes
+
+**Requirements:**
+- Terraform CLI installed
+- Descope Pro or Enterprise license
+- Management Key from [Company Settings](https://app.descope.com/company)
+
 ## Installation
 
-Install all Descope skills:
+### Using skills CLI
 
 ```bash
 npx skills add descope/skills
+```
+
+### Using Claude Code
+
+Add the marketplace, then install the skills you want:
+
+```
+/plugin marketplace add descope/skills
+/plugin install descope-auth@descope-skills
+/plugin install descope-terraform@descope-skills
 ```
 
 ## Usage
 
 Skills are automatically loaded by compatible AI agents once installed. Simply describe what you need:
 
-**Examples:**
+**descope-auth examples:**
 
 ```
 Add Descope authentication to my Next.js app
@@ -66,6 +104,20 @@ Set up backend session validation for my Node.js API
 Add OAuth login (Google and GitHub) using Descope
 ```
 
+**descope-terraform examples:**
+
+```
+Set up Terraform to manage my Descope project
+```
+
+```
+Create a Descope project with password auth and RBAC using Terraform
+```
+
+```
+Add an HTTP connector and S3 audit logging to my Descope Terraform config
+```
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -80,19 +132,26 @@ Works with any agent supporting the Agent Skills format:
 
 ## Skill Structure
 
-Each skill contains:
+**descope-auth:**
 - `SKILL.md` - Main instructions with framework detection
 - `references/` - Framework-specific integration guides
   - `nextjs.md` - Next.js App Router patterns
   - `react.md` - React SPA patterns
   - `backend.md` - Node.js/Python validation
 
+**descope-terraform:**
+- `SKILL.md` - Provider setup, common configurations, and guardrails
+- `references/` - Detailed schema and resource documentation
+  - `project-resource.md` - Full `descope_project` schema
+  - `other-resources.md` - `descope_management_key` and `descope_descoper` schemas
+  - `connectors.md` - All 60+ supported connector types
+
 ## Getting Started with Descope
 
 1. **Create a free account** on our [Sign Up page](https://www.descope.com/sign-up)
 2. **Get your Project ID** from [Settings → Project](https://app.descope.com/settings/project)
-3. **Install the skill** with `npx skills add descope/skills`
-4. **Ask your AI agent** to integrate Descope authentication
+3. **Install the skills** via `npx skills add descope/skills` or the `/plugin` command in Claude Code
+4. **Ask your AI agent** to integrate Descope authentication or set up Terraform
 
 ## Documentation
 
@@ -100,6 +159,8 @@ Each skill contains:
 - [Descope Flows Guide](https://docs.descope.com/flows)
 - [Authentication Methods](https://docs.descope.com/auth-methods)
 - [API Reference](https://docs.descope.com/api)
+- [Terraform Provider](https://registry.terraform.io/providers/descope/descope/latest/docs)
+- [Managing Environments with Terraform](https://docs.descope.com/managing-environments/terraform)
 
 ## Contributing
 

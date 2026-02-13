@@ -1,13 +1,5 @@
 {
   "name": "descope-terraform",
-  "source": "./descope-terraform",
-  "description": "Skill to set up Terraform for managing Descope projects",
-  "repository": "https://github.com/descope/skills.git",
-  "author": {
-    "name": "Descope",
-    "email": "support@descope.com",
-    "url": "https://github.com/descope"
-  },
-  "keywords": ["descope", "terraform", "ci-cd", "deployment"],
-  "category": "authentication"
+  "displayName": "Descope Terraform Skill",
+  "description": "Skill to set up Terraform for managing Descope projects"
 }
