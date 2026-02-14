@@ -65,7 +65,7 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 **Requirements:**
 - Terraform CLI installed
-- Descope Pro or Enterprise license
+- Paid Descope License (Pro +)
 - Management Key from [Company Settings](https://app.descope.com/company)
 
 </details>

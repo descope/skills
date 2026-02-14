@@ -10,7 +10,7 @@ Manage Descope authentication projects as infrastructure-as-code using the offic
 ## Prerequisites
 
 - Terraform CLI installed
-- Descope Pro or Enterprise license
+- Paid Descope License (Pro +)
 - Management Key from Company Settings (https://app.descope.com/company)
 - Management Key must be scoped for all projects if creating new projects
 
