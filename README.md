@@ -4,7 +4,8 @@ A collection of AI agent skills for integrating Descope authentication into your
 
 ## Available Skills
 
-### descope-auth
+<details>
+<summary><b>descope-auth</b> — Integrate Descope authentication into applications</summary>
 
 Integrate Descope authentication into applications with support for passwordless auth, OAuth, SSO, and MFA. Uses a smart router pattern to detect your framework and provide targeted integration guidance.
 
@@ -36,19 +37,68 @@ Integrate Descope authentication into applications with support for passwordless
 - TOTP - Authenticator app MFA
 - Passwords - Traditional auth (fallback)
 
+</details>
+
+<details>
+<summary><b>descope-terraform</b> — Manage Descope projects as infrastructure-as-code</summary>
+
+Manage Descope projects as infrastructure-as-code using the official [Terraform provider](https://registry.terraform.io/providers/descope/descope/latest/docs). Generates valid HCL configurations for authentication methods, RBAC, connectors, and project settings.
+
+**Use when:**
+- "Set up Terraform for my Descope project"
+- "Manage Descope authentication config as code"
+- "Create roles and permissions with Terraform"
+- "Add connectors to my Descope Terraform config"
+- "Deploy Descope project settings across environments"
+
+**Resources managed:**
+- `descope_project` - Full project configuration (auth methods, RBAC, connectors, flows, settings)
+- `descope_management_key` - Management keys with RBAC scoping
+- `descope_descoper` - Console user accounts with role assignments
+
+**Covers:**
+- Provider setup and management key configuration
+- Authentication methods (OTP, Magic Link, Passkeys, OAuth, SSO, Password, TOTP)
+- Authorization (roles and permissions)
+- 60+ connector types (email, SMS, HTTP, observability, fraud detection, CRM, etc.)
+- Project settings, applications (OIDC/SAML), flows, JWT templates, and custom attributes
+
+**Requirements:**
+- Terraform CLI installed
+- Paid Descope License (Pro +)
+- Management Key from [Company Settings](https://app.descope.com/company)
+
+</details>
+
 ## Installation
 
-Install all Descope skills:
+<details>
+<summary><b>Using skills CLI</b></summary>
 
 ```bash
 npx skills add descope/skills
 ```
 
+</details>
+
+<details open>
+<summary><b>Using Claude Code</b></summary>
+
+Add the marketplace and install the plugin:
+
+```
+/plugin marketplace add descope/skills
+/plugin install descope-skills
+```
+
+</details>
+
 ## Usage
 
 Skills are automatically loaded by compatible AI agents once installed. Simply describe what you need:
 
-**Examples:**
+<details>
+<summary><b>descope-auth examples</b></summary>
 
 ```
 Add Descope authentication to my Next.js app
@@ -66,6 +116,25 @@ Set up backend session validation for my Node.js API
 Add OAuth login (Google and GitHub) using Descope
 ```
 
+</details>
+
+<details>
+<summary><b>descope-terraform examples</b></summary>
+
+```
+Set up Terraform to manage my Descope project
+```
+
+```
+Create a Descope project with password auth and RBAC using Terraform
+```
+
+```
+Add an HTTP connector and S3 audit logging to my Descope Terraform config
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -78,21 +147,33 @@ Works with any agent supporting the Agent Skills format:
 - [Windsurf](https://windsurf.com)
 - And [36+ more agents](https://github.com/vercel-labs/skills#supported-agents)
 
-## Skill Structure
+<details>
+<summary><b>Skill Structure</b></summary>
 
-Each skill contains:
-- `SKILL.md` - Main instructions with framework detection
-- `references/` - Framework-specific integration guides
-  - `nextjs.md` - Next.js App Router patterns
-  - `react.md` - React SPA patterns
-  - `backend.md` - Node.js/Python validation
+```
+skills/
+├── descope-auth/
+│   ├── SKILL.md - Main instructions with framework detection
+│   └── references/
+│       ├── nextjs.md - Next.js App Router patterns
+│       ├── react.md - React SPA patterns
+│       └── backend.md - Node.js/Python validation
+└── descope-terraform/
+    ├── SKILL.md - Provider setup, common configurations, and guardrails
+    └── references/
+        ├── project-resource.md - Full descope_project schema
+        ├── other-resources.md - descope_management_key and descope_descoper schemas
+        └── connectors.md - All 60+ supported connector types
+```
+
+</details>
 
 ## Getting Started with Descope
 
 1. **Create a free account** on our [Sign Up page](https://www.descope.com/sign-up)
 2. **Get your Project ID** from [Settings → Project](https://app.descope.com/settings/project)
-3. **Install the skill** with `npx skills add descope/skills`
-4. **Ask your AI agent** to integrate Descope authentication
+3. **Install the skills** via `npx skills add descope/skills` or the `/plugin` command in Claude Code
+4. **Ask your AI agent** to integrate Descope authentication or set up Terraform
 
 ## Documentation
 
@@ -100,6 +181,8 @@ Each skill contains:
 - [Descope Flows Guide](https://docs.descope.com/flows)
 - [Authentication Methods](https://docs.descope.com/auth-methods)
 - [API Reference](https://docs.descope.com/api)
+- [Terraform Provider](https://registry.terraform.io/providers/descope/descope/latest/docs)
+- [Managing Environments with Terraform](https://docs.descope.com/managing-environments/terraform)
 
 ## Contributing
 
