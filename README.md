@@ -70,6 +70,38 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<details>
+<summary><b>descope-flows</b> — Create, modify, and validate Descope authentication flows</summary>
+
+Create, modify, and validate Descope authentication flows with a validation-first approach. Ensures flow JSON is structurally and logically correct before deployment — critical when AI agents generate or modify flows.
+
+**Use when:**
+- "Create a new authentication flow"
+- "Modify the sign-up-or-in flow"
+- "Validate my flow JSON"
+- "Export and import flows between projects"
+- "Fix a broken Descope flow"
+
+**Key principle: Never trust, always validate.** Flow JSON has complex internal structure that weak models can easily break. This skill enforces:
+
+- **Export-first workflow** — Always start from an exported flow, never generate from scratch
+- **Local validation script** — Checks JSON syntax, structure, screen references, connector references
+- **Staging-first deployment** — Always import to a staging project before production
+- **Terraform plan** — Use `terraform plan` as non-destructive validation for IaC workflows
+
+**Covers:**
+- Flow Management API (list, export, import, delete)
+- Flow JSON structure (flow object, screens, nodes, edges)
+- Validation rules (structural, reference integrity, logical)
+- Environment promotion (dev → staging → production)
+- Node.js and Python SDK usage
+
+**Requirements:**
+- Descope Project ID and Management Key
+- Separate staging project recommended for validation
+
+</details>
+
 ## Installation
 
 <details>
@@ -135,6 +167,27 @@ Add an HTTP connector and S3 audit logging to my Descope Terraform config
 
 </details>
 
+<details>
+<summary><b>descope-flows examples</b></summary>
+
+```
+Export and validate the sign-up-or-in flow
+```
+
+```
+Modify the sign-in flow to add a passkey option
+```
+
+```
+Validate my flow JSON file before deploying
+```
+
+```
+Promote my flow from staging to production
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -158,12 +211,18 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
-└── descope-terraform/
-    ├── SKILL.md - Provider setup, common configurations, and guardrails
+├── descope-terraform/
+│   ├── SKILL.md - Provider setup, common configurations, and guardrails
+│   └── references/
+│       ├── project-resource.md - Full descope_project schema
+│       ├── other-resources.md - descope_management_key and descope_descoper schemas
+│       └── connectors.md - All 60+ supported connector types
+└── descope-flows/
+    ├── SKILL.md - Flow validation workflow and guardrails
     └── references/
-        ├── project-resource.md - Full descope_project schema
-        ├── other-resources.md - descope_management_key and descope_descoper schemas
-        └── connectors.md - All 60+ supported connector types
+        ├── validate-flow.sh - Local flow JSON validation script
+        ├── flow-api.md - Flow Management API reference
+        └── flow-structure.md - Flow JSON structure and validation rules
 ```
 
 </details>
