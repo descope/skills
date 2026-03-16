@@ -8,7 +8,7 @@
     {
       "name": "descope-skills",
       "source": "./",
-      "description": "Skills for integrating Descope authentication and managing projects with Terraform",
+      "description": "Skills for integrating Descope authentication, managing projects with Terraform, and migrating from Auth0 or AWS Cognito",
       "repository": "https://github.com/descope/skills.git",
       "author": {
         "name": "Descope",
