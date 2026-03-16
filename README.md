@@ -70,6 +70,54 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<details>
+<summary><b>descope-migrate-auth0</b> — Migrate from Auth0 to Descope</summary>
+
+Migrate users, roles, permissions, and tenants from Auth0 to Descope. Supports full cutover or hybrid (Auth0 remains active with Descope as federated IdP).
+
+**Use when:**
+- "Migrate my Auth0 tenant to Descope"
+- "Move users and roles from Auth0 to Descope"
+- "Set up hybrid Auth0 + Descope authentication"
+- "Export Auth0 users and import into Descope"
+
+**Covers:**
+- **Full Migration** - Complete transition (API-based or JSON export for 1000+ users)
+- **Hybrid Migration** - Auth0 stays active; Descope as federated identity provider
+- Roles and permissions mapping to Descope RBAC
+- Tenant/organization mapping
+- `freshlyMigrated` and post-migration flow guidance
+
+**References:**
+- `references/full-migration.md` - Bulk export/import
+- `references/hybrid-migration.md` - Auth0 + Descope coexistence
+
+</details>
+
+<details>
+<summary><b>descope-migrate-cognito</b> — Migrate from AWS Cognito to Descope</summary>
+
+Migrate users, groups, and configuration from AWS Cognito User Pools to Descope. Supports full bulk import (without passwords—Cognito does not export hashes) or just-in-time (JIT) migration.
+
+**Use when:**
+- "Migrate my Cognito user pool to Descope"
+- "Set up JIT migration from Cognito to Descope"
+- "Map Cognito groups to Descope roles"
+- "Move users from AWS Cognito to Descope"
+
+**Covers:**
+- **Full Migration** - Export users/groups via migration tool or boto3; import into Descope (passwordless or forced reset)
+- **JIT Migration** - Users provision on first sign-in (USER_PASSWORD_AUTH via Generic HTTP Connector, or Cognito as OIDC provider)
+- Attribute and group-to-role mapping
+- Session validation during Cognito + Descope coexistence
+- AWS service integration (API Gateway, AppSync)
+
+**References:**
+- `references/full-migration.md` - Bulk export/import
+- `references/jit-migration.md` - Just-in-time provisioning (Cognito must stay active until users migrate)
+
+</details>
+
 ## Installation
 
 <details>
@@ -135,6 +183,40 @@ Add an HTTP connector and S3 audit logging to my Descope Terraform config
 
 </details>
 
+<details>
+<summary><b>descope-migrate-auth0 examples</b></summary>
+
+```
+Help me migrate users from Auth0 to Descope
+```
+
+```
+Set up full migration from Auth0 with roles and tenants
+```
+
+```
+Configure hybrid Auth0 + Descope so Auth0 stays active
+```
+
+</details>
+
+<details>
+<summary><b>descope-migrate-cognito examples</b></summary>
+
+```
+Migrate my AWS Cognito user pool to Descope
+```
+
+```
+Set up JIT migration from Cognito using USER_PASSWORD_AUTH
+```
+
+```
+Map Cognito groups to Descope roles and import users
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -158,12 +240,22 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
-└── descope-terraform/
-    ├── SKILL.md - Provider setup, common configurations, and guardrails
+├── descope-terraform/
+│   ├── SKILL.md - Provider setup, common configurations, and guardrails
+│   └── references/
+│       ├── project-resource.md - Full descope_project schema
+│       ├── other-resources.md - descope_management_key and descope_descoper schemas
+│       └── connectors.md - All 60+ supported connector types
+├── descope-migrate-auth0/
+│   ├── SKILL.md - Auth0-to-Descope migration (full and hybrid)
+│   └── references/
+│       ├── full-migration.md - Bulk export/import
+│       └── hybrid-migration.md - Auth0 + Descope coexistence
+└── descope-migrate-cognito/
+    ├── SKILL.md - Cognito-to-Descope migration (full and JIT)
     └── references/
-        ├── project-resource.md - Full descope_project schema
-        ├── other-resources.md - descope_management_key and descope_descoper schemas
-        └── connectors.md - All 60+ supported connector types
+        ├── full-migration.md - Bulk export/import
+        └── jit-migration.md - Just-in-time provisioning
 ```
 
 </details>
@@ -173,7 +265,7 @@ skills/
 1. **Create a free account** on our [Sign Up page](https://www.descope.com/sign-up)
 2. **Get your Project ID** from [Settings → Project](https://app.descope.com/settings/project)
 3. **Install the skills** via `npx skills add descope/skills` or the `/plugin` command in Claude Code
-4. **Ask your AI agent** to integrate Descope authentication or set up Terraform
+4. **Ask your AI agent** to integrate Descope authentication, set up Terraform, or migrate from Auth0/Cognito
 
 ## Documentation
 
