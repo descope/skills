@@ -8,13 +8,13 @@
     {
       "name": "descope-skills",
       "source": "./",
-      "description": "Skills for integrating Descope authentication and managing projects with Terraform",
+      "description": "Skills for integrating Descope authentication, managing projects with Terraform, and migrating from Auth0 or AWS Cognito",
       "repository": "https://github.com/descope/skills.git",
       "author": {
         "name": "Descope",
         "email": "support@descope.com"
       },
-      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey", "ci-cd", "deployment"],
+      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey", "auth0", "cognito", "ci-cd", "deployment"],
       "category": "authentication"
     }
   ]
