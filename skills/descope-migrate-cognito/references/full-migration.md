@@ -207,7 +207,8 @@ def validate_token(token):
 def validate_cognito_token(token):
     jwks_url = f'https://cognito-idp.{COGNITO_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json'
     jwks = requests.get(jwks_url).json()
-    # Use python-jose or PyJWT with JWKS for full validation
+    # Validate token (simplified - use a library like python-jose in production)
+    # ... validation logic ...
     return True
 
 def validate_descope_token(token):
