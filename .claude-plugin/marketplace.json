@@ -14,7 +14,7 @@
         "name": "Descope",
         "email": "support@descope.com"
       },
-      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey", "ci-cd", "deployment"],
+      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey", "auth0", "cognito", "ci-cd", "deployment"],
       "category": "authentication"
     }
   ]
