@@ -706,6 +706,26 @@ serves the login page, and protects routes correctly" is done.
 Work through the phases below in order. Stop and surface any failure immediately rather
 than continuing past a broken state.
 
+### Phase 0: Final stale-import sweep (BLOCKING)
+
+Before installing or starting anything, grep the entire project for remaining Auth0 references:
+
+```bash
+# Adjust patterns to match the Auth0 packages used in this project
+grep -r "@auth0\|auth0\|express-openid-connect\|nextjs-auth0" \
+  --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" --include="*.go" \
+  --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist \
+  .
+```
+
+If this returns any results, **stop and fix them before proceeding**. Every hit is a guaranteed crash once the Auth0 package is removed. Common files missed in the rewrite:
+- Layout files (`layout.tsx`, `_app.tsx`) that still wrap with Auth0 Provider
+- API route files that import `withApiAuthRequired`
+- Utility/helper files not on the main auth path
+- Test files that import Auth0 fixtures or mock the Auth0 SDK
+
+Do not proceed to Phase 1 until this grep returns zero results.
+
 ### Phase 1: Install, compile, and start
 
 ```bash
@@ -739,13 +759,13 @@ dotnet build
 zero errors.** A passing compile is the minimum bar — it catches stale imports, wrong
 return-type destructuring, and async cascade gaps that code review misses.
 
-Compilation errors at this stage typically mean:
-- An Auth0 import was removed from the package but is still referenced in code
-- A type that was wrapped around an Auth0 shape no longer exists
-- An async cascade wasn't fully propagated (TypeScript: `Promise<X>` where `X` was expected)
+**If compilation fails, diagnose by error message:**
+- `Cannot find module '@auth0/...'` → stale import missed by Phase 0 grep; expand the search pattern and re-run Phase 0
+- `Property 'X' does not exist on type 'AuthenticationInfo'` → wrapper type was built against the Auth0 shape; re-derive from the actual Descope SDK return type
+- `'await' expression is not allowed in synchronous contexts` → async cascade gap; trace the caller chain and add `async`/`await` up the tree
+- `Object is possibly 'undefined'` on session fields → `session()` returns `undefined` when unauthenticated; add a null check or early return guard
 
-Fix all compile errors before starting the server. A server that starts despite type errors
-(e.g., `ts-node` with loose settings) can hide bugs that will surface in production.
+**Do not proceed to Phase 2 if compilation fails.** Type errors are deterministic runtime crashes — fix all of them before starting the server.
 
 ```bash
 # Start the development server
@@ -753,9 +773,13 @@ npm run dev   # or: python main.py / go run . / flask run / etc.
 ```
 
 Watch startup output for:
-- Missing env var errors (most common first-run failure — means `.env` wasn't populated)
-- Module not found / import errors (means an Auth0 package is still referenced somewhere)
+- Missing env var errors (most common first-run failure — means `.env` wasn't populated with `DESCOPE_PROJECT_ID`)
+- `Cannot find module` at runtime → a dynamic `require()` or non-TS import was missed by the grep
 - Port conflicts or config errors
+
+**If the server starts but immediately exits:** check for `Missing env var` in logs and populate `.env`.
+
+**If the server starts but crashes on first request:** this is almost always an unresolved `Promise` — a function was made `async` but a caller was not updated with `await`. Add a `console.log` at the suspected call site and check whether it logs `Promise { <pending> }` instead of a value.
 
 If the server fails to start, fix it before proceeding. Do not move to Phase 2.
 
@@ -777,6 +801,16 @@ Fix failing tests before proceeding. If there are no existing tests, note this a
 
 With the server running, verify the core auth paths using `curl` or the browser automation
 tools available to you. At minimum, check:
+
+**Root path renders (app is alive):**
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:<port>/
+# Expect: 200 or 302 — any 5xx means a runtime crash in a root/layout component
+```
+
+If this returns 5xx, check server logs immediately. A 500 on the root path almost always
+means a runtime import error or an async crash in a layout or middleware that wraps all routes.
+Fix before continuing.
 
 **Unauthenticated access (should redirect or 401):**
 ```bash
@@ -841,6 +875,16 @@ After running the phases above, produce a brief test summary:
 If something can't be tested automatically (e.g., completing a full login flow requires
 a real browser and test credentials), say so explicitly and tell the user exactly what
 to do and what to look for. Do not silently skip it.
+
+**Do not proceed to Step 6 until ALL of the following are true:**
+- [ ] Phase 0 grep returns zero Auth0 references
+- [ ] Phase 1 compilation passes with zero errors
+- [ ] Phase 1 server starts and stays running
+- [ ] Phase 3 root path returns 2xx or 3xx (not 5xx)
+- [ ] Phase 3 protected routes return 302 or 401 (not 500)
+
+A migration that produces a crashing app is not complete. Fix all blockers inline before
+writing the summary.
 
 ---
 
