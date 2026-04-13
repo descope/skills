@@ -40,6 +40,32 @@ Integrate Descope authentication into applications with support for passwordless
 </details>
 
 <details>
+<summary><b>auth0-to-descope</b> — Migrate from Auth0 to Descope</summary>
+
+Step-by-step migration guidance from Auth0 to Descope, covering scope assessment, migration path selection, framework-specific code changes, and verification. Handles Auth0 SDK replacements across multiple languages and frameworks.
+
+**Use when:**
+- "How do I migrate from Auth0 to Descope?"
+- "Replace Auth0 with Descope in my app"
+- "We're moving off Auth0"
+- "My app uses nextjs-auth0 / express-openid-connect / auth0-fastapi and I want to switch"
+- "How does Descope handle Auth0 Actions / Organizations / FGA?"
+
+**Frameworks supported:**
+- Next.js (`nextjs-auth0` → `@descope/nextjs-sdk`)
+- Node.js / Express (`express-openid-connect` → `@descope/node-sdk`)
+- Python / FastAPI (`auth0-fastapi` → Descope Python SDK)
+- Any framework with a Descope SDK
+
+**Features:**
+- **Pre-generation protocol** - Verifies SDK exports, wrapper types, and package versions before writing code
+- **Feature mapping** - Auth0 Actions → Descope Connectors/Webhooks, Organizations → Tenants, FGA → RBAC/ReBAC
+- **Descope Docs MCP integration** - Uses live docs for accurate SDK lookups when available
+- **Cascading change detection** - Finds all call sites affected by async conversions and import removals
+
+</details>
+
+<details>
 <summary><b>descope-terraform</b> — Manage Descope projects as infrastructure-as-code</summary>
 
 Manage Descope projects as infrastructure-as-code using the official [Terraform provider](https://registry.terraform.io/providers/descope/descope/latest/docs). Generates valid HCL configurations for authentication methods, RBAC, connectors, and project settings.
@@ -119,6 +145,27 @@ Add OAuth login (Google and GitHub) using Descope
 </details>
 
 <details>
+<summary><b>auth0-to-descope examples</b></summary>
+
+```
+Migrate my Next.js app from nextjs-auth0 to Descope
+```
+
+```
+How do I replace Auth0 Actions with Descope?
+```
+
+```
+Help me migrate our Auth0 Organizations setup to Descope
+```
+
+```
+Our Express API uses express-openid-connect — how do we switch to Descope?
+```
+
+</details>
+
+<details>
 <summary><b>descope-terraform examples</b></summary>
 
 ```
@@ -158,12 +205,16 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
-└── descope-terraform/
-    ├── SKILL.md - Provider setup, common configurations, and guardrails
+├── descope-terraform/
+│   ├── SKILL.md - Provider setup, common configurations, and guardrails
+│   └── references/
+│       ├── project-resource.md - Full descope_project schema
+│       ├── other-resources.md - descope_management_key and descope_descoper schemas
+│       └── connectors.md - All 60+ supported connector types
+└── auth0-to-descope/
+    ├── SKILL.md - Migration protocol, feature mapping, and framework-specific guidance
     └── references/
-        ├── project-resource.md - Full descope_project schema
-        ├── other-resources.md - descope_management_key and descope_descoper schemas
-        └── connectors.md - All 60+ supported connector types
+        └── implementation-nuances.md - Verified migration patterns and Auth0→Descope mappings
 ```
 
 </details>
