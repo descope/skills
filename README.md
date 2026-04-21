@@ -40,6 +40,40 @@ Integrate Descope authentication into applications with support for passwordless
 </details>
 
 <details>
+<summary><b>auth-review</b> — Static security review for authentication and authorization vulnerabilities</summary>
+
+Framework- and vendor-agnostic static review that enumerates every route/endpoint in a codebase, builds an authorization matrix, applies a vulnerability catalog (OWASP Web + API Top 10 identity categories), and writes a triage report ready to slice into GitHub issues or PRs.
+
+**Use when:**
+- "/auth-review"
+- "Audit authentication in my app"
+- "Find authorization bugs / IDOR / BOLA"
+- "Review access control"
+- "Identity security review before release"
+
+**Covers:**
+- Broken authentication (missing auth, weak password handling, SQLi-in-login, enumeration)
+- JWT / token flaws (`alg:none`, algorithm confusion, unverified decode, missing claim validation)
+- Session management (cookie flags, fixation, logout invalidation, predictable IDs)
+- Broken access control (IDOR / BOLA, BFLA, tenant crossing, client-trusted input)
+- Privilege escalation & mass assignment
+- OAuth / OIDC / SAML (state/PKCE, open redirect, ID-token validation, SAML XSW)
+- Password reset & account recovery (predictable/non-expiring tokens, host poisoning, MFA bypass)
+- MFA bypass and step-up gaps
+- Rate limiting & enumeration on auth surfaces
+- CSRF, CORS, identity-adjacent SSRF
+
+**Output:**
+- Triage report in `./auth-review/report-YYYY-MM-DD.md`
+- Endpoint inventory and authorization matrix
+- Findings with severity (High/Medium/Low), CWE, `file:line`, evidence, remediation
+- Pre-formatted issue bodies ready to paste into GitHub
+
+**Scope:** static and read-only. Does not run the target application, make network probes, modify code, or file issues directly.
+
+</details>
+
+<details>
 <summary><b>descope-terraform</b> — Manage Descope projects as infrastructure-as-code</summary>
 
 Manage Descope projects as infrastructure-as-code using the official [Terraform provider](https://registry.terraform.io/providers/descope/descope/latest/docs). Generates valid HCL configurations for authentication methods, RBAC, connectors, and project settings.
@@ -135,6 +169,27 @@ Add an HTTP connector and S3 audit logging to my Descope Terraform config
 
 </details>
 
+<details>
+<summary><b>auth-review examples</b></summary>
+
+```
+/auth-review
+```
+
+```
+Audit my app for authentication and authorization vulnerabilities
+```
+
+```
+Find IDOR and broken access control bugs in this repo
+```
+
+```
+Run an identity security review before I ship
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -158,12 +213,19 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
-└── descope-terraform/
-    ├── SKILL.md - Provider setup, common configurations, and guardrails
+├── descope-terraform/
+│   ├── SKILL.md - Provider setup, common configurations, and guardrails
+│   └── references/
+│       ├── project-resource.md - Full descope_project schema
+│       ├── other-resources.md - descope_management_key and descope_descoper schemas
+│       └── connectors.md - All 60+ supported connector types
+└── auth-review/
+    ├── SKILL.md - Four-phase workflow, severity scale, guardrails
     └── references/
-        ├── project-resource.md - Full descope_project schema
-        ├── other-resources.md - descope_management_key and descope_descoper schemas
-        └── connectors.md - All 60+ supported connector types
+        ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
+        ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
+        ├── authz-matrix.md - Matrix schema and expected-principal inference rules
+        └── report-template.md - Exact report structure and issue-ready finding format
 ```
 
 </details>
