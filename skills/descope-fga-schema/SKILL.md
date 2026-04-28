@@ -18,7 +18,7 @@ Help the user design and apply Descope FGA schemas. The workflow is: understand 
 
 **If the tools are found:** call `GetFGASchema` immediately as a connectivity probe before doing any other work. If this call returns an authorization error, output only the message below and end your turn:
 
-> The Descope MCP is installed but not authorized. Authorize it and re-run `/descope-fga-schema`.
+> The Descope MCP is installed but not authorized. Authorize it, restart Claude Code, and re-run `/descope-fga-schema`.
 
 All FGA operations go through MCP tool calls — never make raw HTTP requests yourself.
 
@@ -156,7 +156,7 @@ When editing an existing schema, first read the current schema with `GetFGASchem
 - If the user asks to add something already present, tell them exactly what exists and stop — don't silently overwrite.
 - Removing a **relation type** is permanent data loss: all stored relations of that type are deleted from the database. Always confirm this with the user and make sure they understand the impact before proceeding.
 - Removing a **permission** deletes no data, but any downstream permissions or checks that depended on it will silently stop working. Confirm with user.
-- Adding relations or permissions is generally safe. One exception: adding a new subject to a **subtraction** (`-`) clause narrows who gets blocked, which could unintentionally grant access to users who were previously excluded. Flag this.
+- Adding relations or permissions is generally safe. One exception: modifying or deleting a relation that appears in a **subtraction** (`-`) clause is risky — if existing tuples of that relation type are lost as part of the schema change, users who were being blocked will silently gain access. Flag this when proposing any change to such a relation.
 
 ## Validation and Apply Workflow
 
@@ -264,7 +264,6 @@ constraint Sanction:GeoCountry("KP","IR","SY","RU")
 type User
 
 type Resource
-  relation allowed: User with FiveEyes
-  relation blocked: User with Sanction
-  permission can_access: allowed - blocked
+  relation allowed: User with FiveEyes & !Sanction
+  permission can_access: allowed
 ```
