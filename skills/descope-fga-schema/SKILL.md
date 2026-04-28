@@ -1,5 +1,5 @@
 ---
-name: fga-dsl
+name: descope-fga-schema
 description: Author, edit, or apply a Descope FGA schema using the ReBAC/ABAC DSL. Use this skill whenever the user asks to create a new FGA schema, modify an existing one, add types/relations/permissions/conditions, review an authorization model, or apply schema changes to a Descope project. Trigger even if the user says things like "set up authorization", "define roles and permissions", "add team-based access", "make this endpoint check FGA", or "update my authz model" — these almost always mean an FGA schema change.
 ---
 
@@ -13,12 +13,12 @@ Help the user design and apply Descope FGA schemas. The workflow is: understand 
 
 **If the tools are not found:** output only the message below, then end your turn. Do not generate a schema, do not say "here's what I'll apply once connected", do not do any design work, do not continue:
 
-> The Descope Management MCP is required. If not yet installed, install and authorize it, then restart Claude Code and re-run `/fga-dsl`.
-> If already installed, it may need authorization. Authorize the Descope MCP, then restart Claude Code and re-run `/fga-dsl`.
+> The Descope Management MCP is required. If not yet installed, install and authorize it, then restart Claude Code and re-run `/descope-fga-schema`.
+> If already installed, it may need authorization. Authorize the Descope MCP, then restart Claude Code and re-run `/descope-fga-schema`.
 
 **If the tools are found:** call `GetFGASchema` immediately as a connectivity probe before doing any other work. If this call returns an authorization error, output only the message below and end your turn:
 
-> The Descope MCP is installed but not authorized. Authorize it and re-run `/fga-dsl`.
+> The Descope MCP is installed but not authorized. Authorize it and re-run `/descope-fga-schema`.
 
 All FGA operations go through MCP tool calls — never make raw HTTP requests yourself.
 
