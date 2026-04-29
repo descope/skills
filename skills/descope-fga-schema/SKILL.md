@@ -100,7 +100,7 @@ permission can_delete: creator
 
 ### Don't write custom CEL when a built-in constraint covers it
 
-A custom `condition` that checks a numeric range is just reinventing `NumRange` (or `NumAtLeast`/`NumAtMost`). Built-in constraints are validated at schema-save time and have no CEL cost. Use them.
+A custom `condition` that checks a numeric range is just reinventing `NumRange` (or `NumAtLeast`/`NumAtMost`). Built-in constraints are more concise, less error-prone, and form a common vocabulary that makes schemas easier for both humans and agents to read and reason about. Use them.
 
 **Wrong:**
 ```
