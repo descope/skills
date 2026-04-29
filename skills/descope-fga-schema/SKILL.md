@@ -136,12 +136,15 @@ Use built-in constraints before reaching for custom CEL.
 | `IntList` | `int int, allowed_ints list` | `IntList(1,2,3)` |
 | `LabelList` | `label string, allowed_labels list` | `LabelList("foo","bar")` |
 
-**Unique param names:** Each constraint exposes its runtime params by name in check requests. If two constraints of the same kind appear in a schema, their param names collide — use named aliases to give them distinct names:
+**Multiple constraints of the same kind:** You cannot declare the same constraint kind more than once without a named alias — the alias is required to distinguish them. Named aliases share the same runtime param names as the original kind (the alias only changes the constraint's identifier, not its params). This is fine when both constraints operate on the same parameter. If you need two constraints that operate on genuinely different parameters, use a custom CEL condition with a unique param name instead:
 ```
+// Two GeoCountry constraints sharing the same country_code param — alias required, shared param is intentional
 constraint FiveEyes:GeoCountry("US","GB","CA","AU","NZ")
 constraint Sanction:GeoCountry("KP","IR","SY","RU")
+
+// Need a second IP check with a different param name? Use a custom condition
+condition OfficeNetwork(office_ip ipaddress, office_range string) { office_ip.in_cidr(office_range) }
 ```
-The alias form (`Name:Kind`) also applies when two zero-arg constraints of the same kind would produce identical param names.
 
 **Custom CEL** — only when no built-in covers the logic, or when alias-based param separation isn't enough:
 ```
