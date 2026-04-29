@@ -116,7 +116,7 @@ constraint BusinessHours:NumRange(32400, 61200)
 
 ## Relations vs Permissions
 
-A **relation** adds an edge to the pure relations graph. A **permission** is a derived rule that reuses existing relations — it adds edges only in the ReBAC graph without introducing new pure-graph edges. Fewer pure-graph edges means less to iterate during checks and a higher chance of cache hits, so permissions are both more concise and tend to perform better as the system scales. Prefer satisfying a requirement with a permission whenever possible. Only introduce a new relation when a direct stored link is truly needed.
+A **relation** adds an edge to the pure relations graph. A **permission** is a derived rule that reuses existing relations — it adds edges only in the ReBAC graph without introducing new pure-graph edges. Fewer pure-graph edges means less to iterate during checks and a higher chance of cache hits across all checks in the schema, so permissions are more concise and keeping the pure graph lean tends to improve overall check performance as the system scales. Prefer satisfying a requirement with a permission whenever possible. Only introduce a new relation when a direct stored link is truly needed.
 
 ## Built-in Constraints
 
