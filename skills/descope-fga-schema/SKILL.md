@@ -118,6 +118,22 @@ constraint BusinessHours:NumRange(32400, 61200)
 
 A **relation** adds an edge to the pure relations graph. A **permission** is a derived rule that reuses existing relations — it adds edges only in the ReBAC graph without introducing new pure-graph edges. Fewer pure-graph edges means less to iterate during checks and a higher chance of cache hits across all checks in the schema, so permissions are more concise and keeping the pure graph lean tends to improve overall check performance as the system scales. Prefer satisfying a requirement with a permission whenever possible. Only introduce a new relation when a direct stored link is truly needed.
 
+When a permission is a strict superset of another, express it by referencing the narrower permission rather than repeating its expansion. This keeps schemas concise and makes the access hierarchy self-documenting — a reader immediately sees that `can_write` implies `can_admin`.
+
+**Avoid (repeats relations across permissions):**
+```
+permission can_admin: owner
+permission can_write: owner | editor
+permission can_read: owner | editor | viewer
+```
+
+**Prefer (each permission builds on the previous):**
+```
+permission can_admin: owner
+permission can_write: can_admin | editor
+permission can_read: can_write | viewer
+```
+
 ## Built-in Constraints
 
 Use built-in constraints before reaching for custom CEL.
