@@ -1,6 +1,61 @@
 # Descope Migration: Implementation Notes
 
+## Contents
+
+**General Insights — Architecture & Flow**
+- [Auth0 owns the flow; Descope validates tokens](#auth0-owns-the-flow-descope-validates-tokens)
+- [OIDC compatibility path](#oidc-compatibility-path-alternative-to-full-migration)
+- [No drop-in middleware for Express or Flask](#no-drop-in-middleware-for-express-or-flask)
+- [Fewer network round-trips at login](#fewer-network-round-trips-at-login)
+- [Auth0 vs Descope flow comparison](#auth0-vs-descope-flow-comparison)
+
+**General Insights — Feature Mapping: Auth0 → Descope**
+- [Social login / connection mapping + SSO URLs](#social-login--connection-mapping)
+- [RBAC: Auth0 → Descope](#rbac-auth0--descope)
+- [Multi-tenancy: Auth0 Organizations → Descope Tenants](#multi-tenancy-auth0-organizations--descope-tenants)
+- [Invitation model](#invitation-model-auth0-invitations--descope-userinvite)
+- [MFA enrollment and factor management](#mfa-enrollment-and-factor-management)
+- [SCIM: HTTP API only, not in SDK](#scim-http-api-only-not-in-sdk)
+- [Session refresh after profile changes + sdk.refresh()](#session-refresh-after-profile-changes)
+- [Management API mapping](#management-api-mapping)
+- [FGA: Auth0 FGA (OpenFGA) → Descope ReBAC](#fga-auth0-fga-openfga--descope-rebac)
+- [Token Vault / Connected Accounts → Descope Outbound Apps](#token-vault--connected-accounts--descope-outbound-apps)
+- [CIBA / Rich Authorization Requests (no equivalent)](#ciba--rich-authorization-requests-no-descope-equivalent)
+- [@auth0/ai SDK (no equivalent)](#auth0ai-sdk-no-descope-equivalent)
+- [User migration: Auth0 export → Descope import](#user-migration-auth0-export--descope-import)
+- [M2M: Auth0 client credentials → Descope Access Keys](#m2m-authentication-auth0-client-credentials--descope-access-keys)
+- [Email templates](#email-templates-auth0--descope-messaging-templates)
+- [Webhooks / Log Streams → Descope Audit Webhook](#webhooks--event-streams-auth0-log-streams--descope-audit-webhook)
+- [Custom domains](#custom-domains)
+- [Attack protection](#attack-protection-auth0-attack-protection--descope-flow-based-security)
+- [Testing checklist](#testing-checklist-applies-to-all-samples)
+
+**General Insights — Common Gotchas**
+- [Cookie names: DS and DSR](#cookie-names-ds-and-dsr-configurable)
+- [User claims differ (dct, tenants, email not default)](#user-claims-differ)
+- [Audience validation requires explicit setup](#audience-validation-requires-explicit-setup)
+- [One session token, not two](#auth0-separate-access-tokens--descope-session-token-reuse)
+- [Logout requires two steps](#logout-requires-two-steps)
+- [One env var instead of five](#one-env-var-instead-of-five)
+- [Auth0 Actions/Rules → Flows + JWT Templates](#auth0-actionsrules--descope-flows--jwt-templates)
+- [authRequired: false needs manual replication](#authrequired-false-needs-manual-replication)
+
+**Framework Sections**
+- [Express.js](#expressjs)
+- [Flask / Python](#flask--python)
+- [Next.js (standalone)](#nextjs-standalone)
+- [Next.js (B2B): Migration Bug Catalog](#nextjs-b2b-migration-bug-catalog)
+- [Next.js (with separate Express API server)](#nextjs-with-separate-express-api-server)
+- [Go + Encore](#go--encore)
+- [Agentic AI Stacks (LangChain / LangGraph + FGA + Token Vault)](#agentic-ai-stacks-langchain--langgraph--fga--token-vault)
+
+> **See also:** `flows-and-widgets.md` in this directory — Auth0→Descope lingo map, Flow structure and templates, Widget types, SSO Setup Suite, and the Console-vs-code decision guide. Read it before migrating any auth UI, MFA enrollment, user management pages, or SSO configuration.
+
+---
+
 ## General Insights
+
+**— Architecture & Flow —**
 
 ### Auth0 owns the flow; Descope validates tokens
 
@@ -26,6 +81,8 @@ Descope exposes standard [OIDC endpoints](https://docs.descope.com/getting-start
 | Revocation | `https://api.descope.com/oauth2/v1/revoke` |
 
 An app using `express-openid-connect` could swap `ISSUER_BASE_URL` from `https://YOUR_AUTH0_DOMAIN` to `https://api.descope.com` and keep the existing OIDC client code intact. Differences in claim shapes (`nickname`, `email_verified` vs `verifiedEmail`), token lifetimes, and configuration semantics mean the OIDC swap still requires testing and adjustments. Still, it's a viable incremental path: swap the IdP first, then refactor to Descope-native SDKs later.
+
+**— Common Gotchas —**
 
 ### No drop-in middleware for Express or Flask
 
@@ -62,7 +119,7 @@ The default Descope session JWT ([structure ref](https://docs.descope.com/author
 | Email verified | `email_verified` | Not in JWT by default. Available on user object as `verifiedEmail`. Add to JWT via Custom Claims if needed. |
 | Roles | Via `https://DOMAIN/roles` namespace claim (added by Auth0 Actions) | `roles` array in JWT (embedded by default with [RBAC](https://docs.descope.com/authorization/role-based-access-control)) |
 | Permissions | Via namespace claim or `permissions` array (added by Actions) | `permissions` array in JWT (embedded by default) |
-| Tenant | `org_id` (Auth0 Organizations) | `tenants` object with per-tenant roles ([ref](https://docs.descope.com/authorization/role-based-access-control#tenants-and-roles)) |
+| Tenant ID | `org_id` (flat string) | `dct` — flat string with active tenant ID, direct `org_id` equivalent; `tenants` — object keyed by tenant ID containing per-tenant `roles` and `permissions`. Use `dct` when you only need the ID; use `tenants` when you need per-tenant roles ([ref](https://docs.descope.com/authorization/role-based-access-control#tenants-and-roles)) |
 
 `nickname` is Auth0-specific (derived from the email prefix). Descope lacks it. Fall back to `name`.
 
@@ -117,6 +174,8 @@ Auth0 Actions are imperative Node.js code. Descope Flows are declarative and vis
 
 Auth0's `express-openid-connect` supports [`authRequired: false`](https://github.com/auth0/express-openid-connect#readme) globally: unauthenticated users browse freely, the middleware skips populating `req.oidc.user`. Descope equivalent: your session middleware catches validation errors and sets `req.isAuthenticated = false` instead of returning 401.
 
+**— Feature Mapping: Auth0 → Descope —**
+
 ### Social login / connection mapping
 
 Auth0 [Social Connections](https://auth0.com/docs/authenticate/identity-providers/social-identity-providers) (Google, GitHub, Facebook, etc.) are configured in the Auth0 dashboard and appear automatically on the Universal Login page.
@@ -124,6 +183,15 @@ Auth0 [Social Connections](https://auth0.com/docs/authenticate/identity-provider
 Descope equivalent: configure [social auth methods](https://docs.descope.com/authentication/social) in the Descope Console, then add them to a [Flow](https://docs.descope.com/flows). The Descope web component renders the configured providers. No code changes needed; configuration only.
 
 SAML/OIDC enterprise connections in Auth0 map to Descope's [SSO configuration](https://docs.descope.com/sso) (per-tenant SSO for B2B). Auth0 Organizations' per-org connections map to Descope's per-tenant SSO settings.
+
+**SSO Setup Suite:** For apps that expose a self-service SSO settings page where tenant admins configure their IdP, the SSO Setup Suite (Console wizard) can replace `sso.configureSAMLByTenant()` / `configureOIDCByTenant()` calls entirely — tenant admins configure their own IdP through a guided wizard with no engineering involvement. Surface this before migrating any Management SDK SSO code. See `flows-and-widgets.md` → SSO Setup Suite.
+
+**SSO callback and ACS URLs:**
+- Social OAuth callback (Google, GitHub, etc.): `https://api.descope.com/v1/oauth/callback`
+- SAML ACS URL (per-tenant enterprise SSO): found in Console → SSO → [tenant] → SP Settings — tenant-specific, not a global hardcoded URL
+- OIDC authorization server endpoints (Descope acting as IdP): `/oauth2/v1/authorize`, `/oauth2/v1/token` — already in the OIDC compatibility table above
+
+`https://api.descope.com/oauth2/v1/callback` does not exist — do not use it as a callback URL when configuring an IdP.
 
 ### RBAC: Auth0 → Descope
 
@@ -147,6 +215,7 @@ Key differences:
 - Auth0 requires organization-scoped login via `organization` parameter. Descope routes by email domain or tenant-specific login URLs ([ref](https://docs.descope.com/sso/multi-sso)).
 - Descope supports tenant-level SSO enforcement (require SAML/OIDC for all users in a tenant) ([ref](https://docs.descope.com/management/tenant-management/tenant)).
 - Users are project-level entities in Descope; they're associated with tenants, not created per-tenant.
+- **Finding a user's tenants**: use `management.user.load(loginId)` and read `.userTenants` — it lists only that user's tenants. Avoid `management.tenant.loadAll()` + client-side filter; it scans every tenant in the project (O(n)).
 - Auth0's org-scoped login issues a JWT with one `org_id`. Descope's JWT contains **all** tenants the user belongs to at once. Switching tenants does not require re-authentication — implement it client-side (e.g. an `active_tenant` cookie) and read the active tenant from the `tenants` object in the JWT.
 - When a tenant is created and the user is added via the Management SDK, the existing JWT is stale — the `tenants` claim was set at login and doesn't include the new tenant. The user must re-authenticate (clear `DS`/`DSR` cookies and redirect to login) to get a JWT with the updated tenant list. Without this, the app sees an empty `tenants` claim and may loop back to onboarding.
 
@@ -156,13 +225,37 @@ Auth0 Organizations have a dedicated invitation system with invitation objects, 
 
 Descope's `management.user.invite()` creates a user record immediately in `"invited"` status and sends an invitation email. There is no separate invitation object to list, update, or revoke independently. To list pending invitations for a tenant, filter users by `status === "invited"`. To revoke an invitation, delete the user.
 
+### MFA enrollment and factor management
+
+MFA enrollment is managed through Flows, not the Management SDK — there is no equivalent to Auth0 Guardian's `createEnrollmentTicket()`. Add an MFA step to a Flow in the Console; users enroll in-browser through the Flow component.
+
+**Factor deletion SDK support varies by type:**
+- **Passkeys**: `descopeClient.management.user.removeAllPasskeys(loginId)` — SDK-supported
+- **TOTP (authenticator apps)**: no SDK method; deletion is Console-only (User Management → [user] → Delete TOTP Seed)
+- **SMS/OTP factors**: no documented SDK method — may require REST API calls
+
 ### SCIM: HTTP API only, not in SDK
 
 Auth0 exposes SCIM configuration via the Management SDK (`managementClient.connections.createScimConfiguration()`, etc.). Descope supports SCIM but only via the HTTP API (`https://api.descope.com/v1/mgmt/scim/*`), not the Node.js or Python SDKs. Implement with raw `fetch()` calls. Verify the request/response shapes against the current API — the endpoints are documented but not SDK-wrapped.
 
 ### Session refresh after profile changes
 
-Auth0's `appClient.updateSession()` lets you immediately reflect profile changes (e.g. display name) in the cached session without re-authentication. Descope has no equivalent — profile changes via the Management SDK don't update the JWT. The user must wait for token refresh (if using DSR), sign out and back in, or call `refresh()` from the client SDK. Plan for this if the app has a profile editing flow that expects immediate UI updates.
+Auth0's `appClient.updateSession()` lets you immediately reflect profile changes in the cached session without re-authentication. Descope has no equivalent — profile changes via the Management SDK don't update the JWT already in the browser.
+
+To trigger an immediate client-side token refresh after a profile update:
+```ts
+// @descope/react-sdk, @descope/nextjs-sdk/client, or WebJS SDK
+const { refresh } = useDescope()
+await refresh()
+```
+
+The user can also wait for the next auto-refresh (default: ~5 min, driven by the DSR refresh token) or sign out and back in. Use the explicit `refresh()` call if the app has a profile editing page that expects immediate UI updates.
+
+**Session change event listeners** — instead of calling `refresh()` imperatively, subscribe to auth state changes via [docs.descope.com/client-sdk/auth-helpers#handling-authentication-state-changes](https://docs.descope.com/client-sdk/auth-helpers#handling-authentication-state-changes). Use event listeners when the session can change from multiple places (profile update, admin role grant, tenant assignment) and the UI needs to react consistently.
+
+**Update JWT endpoint** — for server-side custom claim updates without waiting for a client refresh: `POST /v1/mgmt/user/jwt/update`. This updates stored JWT custom claims for a specific user; it is not a session mutation and does not push an update to the browser. The user's next token refresh picks up the new claims. Verify the current endpoint behavior against Descope docs — this endpoint is less documented than the Management SDK methods.
+
+**User Profile Widget** — if the app is building a profile edit page, the Widget handles profile updates and session refresh automatically with no custom SDK calls. See `flows-and-widgets.md` → Widgets.
 
 ### Management API mapping
 
@@ -422,6 +515,15 @@ After migrating, verify:
 - `useUser()` → [`useSession()`](https://docs.descope.com/client-sdk/auth-helpers#booleans) + [`useUser()`](https://docs.descope.com/client-sdk/auth-helpers#core-sdk-functions) (Auth0 combines these; Descope separates session state from user data).
 - Removed `pages/api/auth/[...auth0].tsx` catch-all route. In [Auth0 v4 this became automatic middleware](https://github.com/auth0/nextjs-auth0/blob/main/V4_MIGRATION_GUIDE.md), but with Descope there's no server-side OIDC handling at all.
 - Added `pages/login.tsx` with [`<Descope>` component](https://docs.descope.com/client-sdk/descope-components#descope-component) rendering the `sign-up-or-in` flow.
+  - **`onSuccess` is required for redirect** — the component does not auto-navigate after login. Without it, the user finishes auth and stays on the login page:
+    ```tsx
+    const router = useRouter()
+    <Descope
+      flowId="sign-up-or-in"
+      onSuccess={() => router.push('/dashboard')}
+      onError={(e) => console.error(e)}
+    />
+    ```
 - `withPageAuthRequired` (client) replaced by manual `useSession()` check + redirect to `/login`. Auth0 v4 [deprecated `withPageAuthRequired`](https://github.com/auth0/nextjs-auth0/blob/main/V4_MIGRATION_GUIDE.md) in favor of `getSession()` anyway.
 - `withApiAuthRequired` replaced by server-side `session()` + manual 401 response. Descope's Next.js SDK exposes [`session()`](https://github.com/descope/descope-js/tree/main/packages/sdks/nextjs-sdk#server-side) for this.
 - Logout changed from `<a href="/api/auth/logout">` to a button calling [`sdk.logout()`](https://docs.descope.com/client-sdk/auth-helpers#logout) via [`useDescope()`](https://docs.descope.com/client-sdk/auth-helpers#core-sdk-functions).
@@ -429,13 +531,14 @@ After migrating, verify:
 **Notes:**
 - Auth0 provides `withPageAuthRequired` as both a client-side HOC and a `getServerSideProps` wrapper. Descope's Next.js SDK has no equivalent HOC. You check `isAuthenticated` from `useSession()` and redirect yourself. More verbose, more explicit.
 - `NEXT_PUBLIC_` prefix is required on the project ID because [`AuthProvider`](https://docs.descope.com/client-sdk/descope-components#auth-provider) runs client-side.
+- **Client vs. server session access:** `session()` from `@descope/nextjs-sdk/server` is for server components, server actions, and API routes **only**. In React client components, use `useSession()` + `useUser()` from `@descope/nextjs-sdk/client`. Using `session()` in a client component compiles but throws at runtime (attempts to read cookies in a browser context). Scan for this pattern before finishing any Next.js migration.
 - Both CSR and SSR protected pages are preserved: client-side uses `useSession()`, server-side uses `session()` from the [Next.js SDK server helpers](https://github.com/descope/descope-js/tree/main/packages/sdks/nextjs-sdk#server-side).
 - Auth0's `withApiAuthRequired` wraps the handler. Descope: call `session()` at handler top, return 401 yourself.
 - `User` interface: removed `nickname`, `email_verified`, `updated_at`; `sub` → `userId`.
 
 ---
 
-## Next.js (B2B SaaS / Multi-tenant)
+## Next.js (B2B): Migration Bug Catalog
 
 
 This section documents bugs discovered during a migration review of a reference Next.js B2B SaaS
