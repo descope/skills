@@ -49,14 +49,14 @@ Keywords: `model` `type` `relation` `permission` `condition` `constraint` `with`
 Operators:
 - Permission expr: `|` union, `&` intersect, `-` subtract. Mix operators with parens: `a | (b - c)`
 - Set arrow: `relation.permission` — walks a stored relation to reach the subject's own permissions (e.g. `parent.can_view`)
-- Userset: `Type#relation` — see dedicated section below
+- Target set: `Type#relation` — see dedicated section below
 - `with` clause (relations only): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time** — relations are stored unconditionally; `with` only affects whether the relation counts during permission evaluation.
 
 **No comments** — the DSL parser has no comment token.
 
 Naming: **PascalCase** for Types, Conditions, Constraints. **snake_case** for relations and permissions.
 
-## Userset Pattern (`Type#relation`)
+## Target Set Pattern (`Type#relation`)
 
 When a relation should be held by members of a group (e.g. "any member of this Team"), put `Type#relation` directly in the relation definition. This stores individual member subjects — the right granularity for permission checks.
 
@@ -75,7 +75,7 @@ type Repository
   relation contributor: Team#member
 ```
 
-You can mix direct subjects with userset subjects: `relation editor: User | Team#member`
+You can mix direct subjects with target set subjects: `relation editor: User | Team#member`
 
 ## ABAC Anti-Patterns to Avoid
 
@@ -221,7 +221,7 @@ type Doc
   permission can_edit: owner
 ```
 
-### Group membership via userset
+### Group membership via target set
 
 ```
 model AuthZ 1.0
