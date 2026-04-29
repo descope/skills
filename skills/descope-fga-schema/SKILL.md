@@ -120,7 +120,7 @@ A **relation** adds an edge to the pure relations graph. A **permission** is a d
 
 ## Built-in Constraints
 
-Use built-in constraints before reaching for custom CEL — they're validated at schema-save time and cheaper to evaluate.
+Use built-in constraints before reaching for custom CEL — they're validated at schema-save time.
 
 | Constraint | Runtime params (zero-arg form) | Hardcoded form |
 |---|---|---|
