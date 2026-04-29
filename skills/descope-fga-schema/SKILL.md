@@ -60,16 +60,16 @@ Naming: **PascalCase** for Types, Conditions, Constraints. **snake_case** for re
 
 When a relation should be held by members of a group (e.g. "any member of this Team"), put `Type#relation` directly in the relation definition. This stores individual member subjects — the right granularity for permission checks.
 
-The tempting wrong way is to store the group itself and walk to its members via a permission. This looks like it works but stores the wrong thing (a group object instead of its members), and the permission traversal does not expand correctly at check time.
+The indirect way — storing the group itself and deriving membership via a permission — produces correct relation expansion, but it introduces a `contributor_team` relation with no semantic meaning of its own. The only meaningful entity is the individual member. The target set syntax is more concise and directly expresses the intent.
 
-**Wrong:**
+**Avoid (extra relation with no semantic value):**
 ```
 type Repository
   relation contributor_team: Team
   permission contributor: contributor_team.member
 ```
 
-**Right:**
+**Prefer (concise, direct):**
 ```
 type Repository
   relation contributor: Team#member
