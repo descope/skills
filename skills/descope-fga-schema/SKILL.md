@@ -157,7 +157,8 @@ CEL param types: `int`, `string`, `bool`, `double`, `list`, `ipaddress`. Body mu
 When editing an existing schema, first read the current schema with `GetFGASchema` so you have the real state.
 
 - If the user asks to add something already present, tell them exactly what exists and stop — don't silently overwrite.
-- Removing an entire **type** or a **relation definition** from the schema will cause all relation tuples of that type or relation to be permanently deleted from the database. **Editing a relation definition is equivalent to deleting it and recreating it** — the same data loss risk applies. Always confirm with the user and make sure they understand the impact before proceeding.
+- Removing an entire **type** or a **relation definition** from the schema will cause all relation tuples of that type or relation to be permanently deleted from the database. **Editing the target type(s) of a relation definition is equivalent to deleting it and recreating it** — the same data loss risk applies. Always confirm with the user and make sure they understand the impact before proceeding.
+- **Exception: editing only the `with` condition of a relation does NOT delete tuples.** Relations are stored unconditionally; the condition is evaluated at check time. Changing `with CondA` to `with CondB` on an otherwise unchanged relation preserves all existing tuples — they simply start being evaluated against the new condition. This is safer than a full relation edit, but still requires caution: callers relying on the old condition's behavior will get different access results after the change.
 - Removing or editing a **permission** deletes no relation tuples, but any downstream permissions or checks that depended on it will silently stop working. Confirm with user.
 - Adding a new type, relation, or permission is generally safe.
 
