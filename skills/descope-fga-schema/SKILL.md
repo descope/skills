@@ -104,12 +104,12 @@ A custom `condition` that checks a numeric range is just reinventing `NumRange` 
 
 **Wrong:**
 ```
-condition DuringBusinessHours(hour_utc int) { hour_utc >= 10 && hour_utc < 22 }
+condition DuringBusinessHours(seconds_since_midnight int) { seconds_since_midnight >= 32400 && seconds_since_midnight < 61200 }
 ```
 
 **Right:**
 ```
-constraint BusinessHours:NumRange(10, 21)
+constraint BusinessHours:NumRange(32400, 61200)
 ```
 
 (Use a named alias when you want a descriptive name for the constraint.)
