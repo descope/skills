@@ -201,11 +201,20 @@ If `hasDeletes` is false, just show the schema and ask for confirmation.
 
 ### Step 3 — Get confirmation
 
-Wait for explicit user approval before applying. Do not apply automatically.
+End your turn after Step 2. Do not call `CreateFGASchema` in the same turn as `DryRunSchema` — the user must see the schema and any deletion warnings before you proceed. Wait for the user to reply with explicit approval ("yes", "apply", "go ahead", etc.).
 
 ### Step 4 — Apply
 
-Use the `CreateFGASchema` MCP tool with the same DSL. Confirm success to the user.
+Before calling `CreateFGASchema`, verify all three of the following are true:
+- You showed the full DSL in a code block in a prior turn (not in this turn)
+- You surfaced all deletion warnings from the dry-run response (or confirmed `hasDeletes` was false)
+- The user's most recent message is an explicit approval in response to your confirmation prompt
+
+If any of these are not true, do not call `CreateFGASchema`. Go back to Step 2 instead.
+
+When all three are confirmed, call `CreateFGASchema` with the same DSL from the dry run. Confirm success to the user.
+
+The reason this gate matters: `CreateFGASchema` is irreversible. Relation tuples deleted by a schema change cannot be recovered. Skipping confirmation is never safe, even when the change looks minor.
 
 ## Examples
 
