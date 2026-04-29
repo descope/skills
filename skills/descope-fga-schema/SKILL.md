@@ -247,12 +247,12 @@ type Repository
 ```
 model AuthZ 1.0
 
-condition DuringShift(now int, begin int, end int) { now >= begin && now <= end }
+constraint ShiftHours:NumRange
 
 type User
 
 type PatientRecord
-  relation viewer: User with DuringShift
+  relation viewer: User with ShiftHours
   relation owner: User
   permission can_view: viewer | owner
 ```
