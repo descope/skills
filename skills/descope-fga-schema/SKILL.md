@@ -312,9 +312,8 @@ type User
 
 type Document
   relation reader: User
-  relation editor: User
   permission can_read: reader with BusinessHours
-  permission can_edit: can_read with OfficeNetwork | editor with BusinessHours & OfficeNetwork
+  permission can_edit: can_read with OfficeNetwork
 ```
 
-`can_edit` via the `can_read` path requires both `BusinessHours` (from `can_read`) **and** `OfficeNetwork` (from `can_edit`'s own `with`). Both conditions must be true at check time — `with` clauses on nested permissions accumulate.
+`can_edit` requires both `BusinessHours` (from `can_read`) **and** `OfficeNetwork` (from `can_edit`'s own `with`). Both conditions must be true at check time — `with` clauses on nested permissions accumulate.
