@@ -41,7 +41,7 @@ model AuthZ 1.0
 
 type <TypeName>
   [relation <name>: <TypeRef> [| <TypeRef>]* [with <condExpr>]]*
-  [permission <name>: <expr>]*
+  [permission <name>: <expr> [with <condExpr>]]*
 ```
 
 Keywords: `model` `type` `relation` `permission` `condition` `constraint` `with`
@@ -50,7 +50,7 @@ Operators:
 - Permission expr: `|` union, `&` intersect, `-` subtract. Mix operators with parens: `a | (b - c)`
 - Set arrow: `relation.permission` — walks a stored relation to reach the subject's own permissions (e.g. `parent.can_view`)
 - Target set: `Type#relation` — see dedicated section below
-- `with` clause (relations only): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time** — relations are stored unconditionally; `with` only affects whether the relation counts during permission evaluation.
+- `with` clause (relations and permissions): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time** — `with` gates whether the relation or permission counts during evaluation. Only one `with` clause is allowed per relation or permission definition — combine multiple conditions inside it with `&`/`|`/`!`.
 
 **No comments** — the DSL parser has no comment token.
 
@@ -95,8 +95,6 @@ permission can_delete: creator - blocked
 relation creator: User with !NorthKorea
 permission can_delete: creator
 ```
-
-**Note:** `with` is currently only supported on **relation definitions**, not on permission expressions. If the user needs a condition on a permission expression directly (e.g. `permission can_delete: creator with !NorthKorea`), that is not yet supported — tell them and ask how they'd like to handle it.
 
 ### Don't write custom CEL when a built-in constraint covers it
 
@@ -282,17 +280,40 @@ type PatientRecord
   permission can_view: viewer | owner
 ```
 
-### Reused constraint kind with aliases
+### Reused constraint kind with aliases — and `with` on a permission
 
 ```
 model AuthZ 1.0
 
 constraint FiveEyes:GeoCountry("US","GB","CA","AU","NZ")
 constraint Sanction:GeoCountry("KP","IR","SY","RU")
+constraint OfficeOnly:IpRange("10.0.0.0/8")
 
 type User
 
 type Resource
   relation allowed: User with FiveEyes & !Sanction
+  relation owner: User
   permission can_access: allowed
+  permission can_delete: owner with OfficeOnly
 ```
+
+`allowed` carries geo-gating on the relation — it applies to every permission that uses `allowed`. `can_delete` uses `with` on the permission itself so the IP restriction scopes only deletion, not access.
+
+### Nested permissions with `with` — conditions stack
+
+```
+model AuthZ 1.0
+
+constraint BusinessHours:NumRange(32400, 61200)
+constraint OfficeNetwork:IpRange("10.0.0.0/8")
+
+type User
+
+type Document
+  relation reader: User
+  permission can_read: reader with BusinessHours
+  permission can_edit: can_read with OfficeNetwork
+```
+
+`can_edit` requires both `BusinessHours` (from `can_read`) **and** `OfficeNetwork` (from `can_edit`'s own `with`). Both conditions must be true at check time — `with` clauses on nested permissions accumulate.

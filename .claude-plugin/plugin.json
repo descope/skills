@@ -1,7 +1,7 @@
 {
   "name": "descope-skills",
   "description": "Skills for integrating Descope authentication, managing projects with Terraform, and authoring FGA authorization schemas",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Descope",
     "email": "support@descope.com"
