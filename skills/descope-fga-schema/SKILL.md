@@ -299,3 +299,22 @@ type Resource
 ```
 
 `allowed` carries geo-gating on the relation — it applies to every permission that uses `allowed`. `can_delete` uses `with` on the permission itself so the IP restriction scopes only deletion, not access.
+
+### Nested permissions with `with` — conditions stack
+
+```
+model AuthZ 1.0
+
+constraint BusinessHours:NumRange(32400, 61200)
+constraint OfficeNetwork:IpRange("10.0.0.0/8")
+
+type User
+
+type Document
+  relation reader: User
+  relation editor: User
+  permission can_read: reader with BusinessHours
+  permission can_edit: can_read with OfficeNetwork | editor with BusinessHours & OfficeNetwork
+```
+
+`can_edit` via the `can_read` path requires both `BusinessHours` (from `can_read`) **and** `OfficeNetwork` (from `can_edit`'s own `with`). Both conditions must be true at check time — `with` clauses on nested permissions accumulate.
