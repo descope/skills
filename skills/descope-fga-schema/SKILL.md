@@ -50,7 +50,7 @@ Operators:
 - Permission expr: `|` union, `&` intersect, `-` subtract. Mix operators with parens: `a | (b - c)`
 - Set arrow: `relation.permission` — walks a stored relation to reach the subject's own permissions (e.g. `parent.can_view`)
 - Target set: `Type#relation` — see dedicated section below
-- `with` clause (relations and permissions): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time**. On a relation, `with` gates whether that relation counts during evaluation; on a permission expression, `with` gates the entire permission result.
+- `with` clause (relations and permissions): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time** — `with` gates whether the relation or permission counts during evaluation.
 
 **No comments** — the DSL parser has no comment token.
 
