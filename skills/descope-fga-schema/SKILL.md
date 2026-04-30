@@ -41,7 +41,7 @@ model AuthZ 1.0
 
 type <TypeName>
   [relation <name>: <TypeRef> [| <TypeRef>]* [with <condExpr>]]*
-  [permission <name>: <expr>]*
+  [permission <name>: <expr> [with <condExpr>]]*
 ```
 
 Keywords: `model` `type` `relation` `permission` `condition` `constraint` `with`
