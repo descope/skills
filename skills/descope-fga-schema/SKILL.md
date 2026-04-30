@@ -50,7 +50,7 @@ Operators:
 - Permission expr: `|` union, `&` intersect, `-` subtract. Mix operators with parens: `a | (b - c)`
 - Set arrow: `relation.permission` — walks a stored relation to reach the subject's own permissions (e.g. `parent.can_view`)
 - Target set: `Type#relation` — see dedicated section below
-- `with` clause (relations only): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time** — relations are stored unconditionally; `with` only affects whether the relation counts during permission evaluation.
+- `with` clause (relations and permissions): `&` AND, `|` OR, `!` NOT, parens: `with A & (B | !C)`. Conditions are evaluated at **check time**. On a relation, `with` gates whether that relation counts during evaluation; on a permission expression, `with` gates the entire permission result.
 
 **No comments** — the DSL parser has no comment token.
 
@@ -96,7 +96,7 @@ relation creator: User with !NorthKorea
 permission can_delete: creator
 ```
 
-**Note:** `with` is currently only supported on **relation definitions**, not on permission expressions. If the user needs a condition on a permission expression directly (e.g. `permission can_delete: creator with !NorthKorea`), that is not yet supported — tell them and ask how they'd like to handle it.
+`with` on a permission is useful when the condition should scope only that permission, not the relation itself — e.g. `permission can_delete: creator with !NorthKorea` gates deletion by country without affecting other permissions that also use `creator`.
 
 ### Don't write custom CEL when a built-in constraint covers it
 
