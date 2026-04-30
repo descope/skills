@@ -280,17 +280,22 @@ type PatientRecord
   permission can_view: viewer | owner
 ```
 
-### Reused constraint kind with aliases
+### Reused constraint kind with aliases — and `with` on a permission
 
 ```
 model AuthZ 1.0
 
 constraint FiveEyes:GeoCountry("US","GB","CA","AU","NZ")
 constraint Sanction:GeoCountry("KP","IR","SY","RU")
+constraint OfficeOnly:IpRange("10.0.0.0/8")
 
 type User
 
 type Resource
   relation allowed: User with FiveEyes & !Sanction
+  relation owner: User
   permission can_access: allowed
+  permission can_delete: owner with OfficeOnly
 ```
+
+`allowed` carries geo-gating on the relation — it applies to every permission that uses `allowed`. `can_delete` uses `with` on the permission itself so the IP restriction scopes only deletion, not access.
