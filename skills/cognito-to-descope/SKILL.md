@@ -264,7 +264,7 @@ Auth flow: [describe login → token → API call path in plain English]
 Token storage: [localStorage / httpOnly cookie / memory / secure storage]
 Session model: [stateless JWT / server-side sessions / hybrid]
 
-Cognito patterns: [A-K with specific files]
+Cognito integrations: [plain-language description of each integration detected, with specific files — e.g., "Amplify v6 custom sign-in UI — src/auth.ts:12", "Cognito Hosted UI acting as OAuth Authorization Server for external clients — src/App.tsx:45", "NextAuth.js with Cognito provider — pages/api/auth/[...nextauth].ts:1"]
 Special behaviors: [client secret / Lambda triggers / device tracking / etc.]
 
 Cross-cutting auth dependencies:
@@ -372,6 +372,8 @@ When MFA is detected (TOTP, SMS, or device-based), do not default to mapping it 
 ## Phase 3: Generate Migration Plan
 
 Write `migration-plan.md` at the root of the repository. This is a distribution-quality document — usable by any engineer on the team without additional context.
+
+> **Output language rule**: Never reference internal pattern codes (A, B, C, D1, D2, E1, E2, F, G, H, I, J, K) in any user-visible output — not in the migration plan, not in step descriptions, not in summaries. Pattern codes are internal routing keys for this skill only. Describe what was found in plain English: instead of "Pattern D2 detected," write "Your Cognito User Pool is currently acting as an OAuth Authorization Server — external clients redirect to it for authorization."
 
 The plan has 10 sections:
 
@@ -498,7 +500,7 @@ Ready to apply? (yes / skip / show me more context)
 ```
 ## Migration Complete
 
-Patterns migrated: [list each A-K with AUTOMATED / MANUAL / N/A]
+Integrations migrated: [for each, a plain-language description of what was migrated and its status — e.g., "Amplify v6 custom sign-in → Descope Flow component: AUTOMATED", "Cognito as OAuth Authorization Server for external clients → Descope OIDC Application: MANUAL"]
 Files transformed: [N]
 Packages removed: [list]
 Packages added: [list]

@@ -20,7 +20,7 @@ This is a template. Replace all `[placeholder]` values with codebase-specific in
 ## 1. Executive Summary
 
 ### Current State
-[Describe how Cognito is used today — patterns detected (A–K), auth flows, user volume if discoverable, infra dependencies]
+[Describe how Cognito is used today in plain English — what auth patterns are in use, e.g., "The app uses Amplify v6 with a custom sign-in form, Cognito Hosted UI acting as an OAuth Authorization Server for two external client apps, and SMS-based MFA." Include auth flows, user volume if discoverable, and infra dependencies. Do not reference internal pattern codes.]
 
 ### Target State
 [Describe the Descope architecture that replaces it — which flows, which SDK, how tokens change]
@@ -129,7 +129,7 @@ User → [React SPA] → Amplify.configure → Cognito Hosted UI
 | User Pool | [Y/N] | Descope Project | Yes |
 | Identity Pool (IAM credentials) | [Y/N] | Not replaced by Descope | Separate handling needed |
 | API Gateway Cognito Authorizer | [Y/N] | API Gateway JWT Authorizer | Yes (with JWT Template) |
-| Cognito as OIDC Provider (D2) | [Y/N] | Descope OIDC Application | Yes |
+| Cognito as OAuth Authorization Server (external clients redirect to Cognito for authorization) | [Y/N] | Descope OIDC Application | Yes |
 
 ---
 
