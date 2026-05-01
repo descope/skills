@@ -365,7 +365,7 @@ When MFA is detected (TOTP, SMS, or device-based), do not default to mapping it 
 
 > MFA enrollments (TOTP apps, SMS codes) **cannot be migrated**. All enrolled users must re-enroll after migration. Flag this prominently in Section 7 (Risk & Edge Cases).
 
-**Reference**: `references/IMPLEMENTATION-NOTES-DIST.md` for framework-specific before/after patterns and additional context per integration type.
+**Reference**: `references/implementation-guide.md` for framework-specific before/after patterns and additional context per integration type.
 
 ---
 
@@ -514,7 +514,7 @@ Re-scan for remaining Cognito references:
 [list any found with file:line]
 ```
 
-**Full code reference for all execution steps**: `references/execution-guide.md` — pre-flight questions, user migration commands, dual-validation middleware (Node.js + Python), package replacement, all code transformation patterns, env var handling, hosted UI/federation paths, and infrastructure changes.
+**Full code reference for all execution steps**: `references/implementation-guide.md` — pre-flight questions, user migration commands, dual-validation middleware (Node.js + Python), package replacement, all code transformation patterns, env var handling, hosted UI/federation paths, and infrastructure changes.
 
 ---
 
@@ -524,6 +524,5 @@ Re-scan for remaining Cognito references:
 |---|---|
 | `references/detection-patterns.md` | All Phase 1 grep/glob patterns: architecture globs, package detection, Patterns A–K, special behaviors, full project scan, Lambda triggers, env vars, API Gateway, cross-cutting dependency analysis |
 | `references/migration-plan-template.md` | Full `migration-plan.md` template with all 10 sections, placeholder text, table structures, and agent instructions |
-| `references/execution-guide.md` | Full execution code: pre-flight questions, user migration (full + JIT), dual-validation middleware, package replacement, all code transformation patterns, env var handling, hosted UI/federation patterns, infrastructure |
-| `references/IMPLEMENTATION-NOTES-DIST.md` | Framework-specific before/after code examples for Amplify v5/v6, React, Next.js, Node.js/Express, and Python/Flask |
+| `references/implementation-guide.md` | Complete implementation reference: architecture & flow differences, 14 Cognito-specific gotchas, feature mapping (RBAC, multi-tenancy, Lambda triggers, MFA, user migration, M2M), framework-specific before/after patterns (Amplify v5/v6, React, Next.js, Node.js/Express, Python/Flask), dual-validation middleware, JIT migration with SECRET_HASH proxy, infrastructure changes, env var handling, and full migration checklist |
 | `references/flows-widgets-console.md` | Cognito → Descope terminology mapping, Flows/Widgets/SSO Setup Suite overview, Lambda trigger → Flow step mapping, and Console-vs-code decision guide |
