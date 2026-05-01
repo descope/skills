@@ -524,3 +524,4 @@ Re-scan for remaining Cognito references:
 | `references/migration-plan-template.md` | Full `migration-plan.md` template with all 10 sections, placeholder text, table structures, and agent instructions |
 | `references/execution-guide.md` | Full execution code: pre-flight questions, user migration (full + JIT), dual-validation middleware, package replacement, all code transformation patterns, env var handling, hosted UI/federation patterns, infrastructure |
 | `references/IMPLEMENTATION-NOTES-DIST.md` | Framework-specific before/after code examples for Amplify v5/v6, React, Next.js, Node.js/Express, and Python/Flask |
+| `references/flows-widgets-console.md` | Cognito → Descope terminology mapping, Flows/Widgets/SSO Setup Suite overview, Lambda trigger → Flow step mapping, and Console-vs-code decision guide |
