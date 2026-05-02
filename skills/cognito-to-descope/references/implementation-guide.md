@@ -39,9 +39,6 @@ Covers AWS Amplify v5/v6, React, Next.js, Node.js/Express, Python/Flask, and inf
 - [MFA enrollment](#mfa-enrollment)
 - [User migration](#user-migration)
 - [M2M: client credentials → Descope Access Keys](#m2m-client-credentials--descope-access-keys)
-- [Email templates](#email-templates)
-- [Custom domains](#custom-domains)
-- [Attack protection](#attack-protection)
 - [Testing checklist](#testing-checklist)
 
 **Framework Sections**
@@ -63,8 +60,6 @@ Covers AWS Amplify v5/v6, React, Next.js, Node.js/Express, Python/Flask, and inf
 - [M2M: Access Keys](#m2m-access-keys)
 
 **Reference**
-- [Auth method equivalents](#auth-method-equivalents)
-- [Terminology mapping](#terminology-mapping)
 - [Environment variables](#environment-variables)
 - [Migration checklist](#migration-checklist)
 - [Useful links](#useful-links)
@@ -361,37 +356,6 @@ Keep Cognito running during a transition window. On each user's first Descope lo
 | `POST /oauth2/token` with `grant_type=client_credentials` | `descopeClient.auth.exchangeAccessKey(accessKey)` |
 | Token scoped to `audience` | JWT with tenant/role claims (configure via Access Key settings) |
 | Token validated via JWKS | Token validated via `descopeClient.validateSession()` — same as user tokens |
-
-### Email templates
-
-| Email type | Cognito | Descope |
-|---|---|---|
-| Magic Link / OTP | SES / Cognito built-in | Console → Authentication Methods → Magic Link or OTP → Connector → + New Template |
-| Password Reset | Cognito built-in / Lambda Custom Message | Console → Authentication Methods → Passwords → Reset Password Email |
-| User Invitation | Custom implementation | Console → Project Settings → Sign Ups and User Invitations → Connector → + New Template |
-| Account verification | Cognito built-in | Handled as a Flow step (email verification is a Flow step, not a standalone email) |
-
-### Custom domains
-
-Cognito Hosted UI supports custom domains. Descope supports [custom domains](https://docs.descope.com/how-to-deploy-to-production/custom-domain):
-
-1. Create a CNAME record (e.g. `auth.example.com`) pointing to `cname.descope.com` (US) or `CNAME.euc1.descope.com` (EU).
-2. Set the App URL in Console → Project Settings → General.
-3. Verify the custom domain in Console.
-4. Pass `baseUrl` to the SDK/component: `<AuthProvider projectId="..." baseUrl="https://auth.example.com">`.
-
-### Attack protection
-
-Cognito has built-in advanced security features (compromised credential detection, adaptive authentication) as Dashboard toggles.
-
-Descope handles security through [Flows](https://docs.descope.com/flows) and connectors — more composable but requiring explicit configuration:
-
-| AWS / Cognito feature | Descope equivalent |
-|---|---|
-| Compromised credentials check | [Have I Been Pwned connector](https://docs.descope.com/connectors) — blocks credentials found in known breaches |
-| Bot detection | Flow step with [Arkose Bot Manager](https://docs.descope.com/connectors), reCAPTCHA Enterprise, or Fingerprint |
-| Adaptive authentication | Flow conditional logic + connector-based risk signals |
-| IP-based blocking | Flow step with AbuseIPDB connector or IP conditional logic |
 
 ### Testing checklist
 
@@ -730,33 +694,7 @@ interface AuthenticationInfo {
 
 Because incorrect casts like `session as unknown as DescopeSession` bypass TypeScript, these bugs fail silently at runtime: every `!session?.isAuthenticated` check evaluates as `true` (property doesn't exist), making every auth guard fail open.
 
-Correct typed adapter:
-```ts
-import { session as sdkSession } from '@descope/nextjs-sdk/server';
-
-export interface DescopeSession {
-  isAuthenticated: boolean;
-  jwt: string;
-  token: {
-    sub: string;
-    email?: string;
-    name?: string;
-    roles?: string[];
-    tenants?: Record<string, { roles: string[]; permissions: string[] }>;
-    [key: string]: unknown;
-  };
-}
-
-export async function getDescopeSession(): Promise<DescopeSession | null> {
-  const authInfo = await sdkSession();
-  if (!authInfo) return null;
-  return {
-    isAuthenticated: true,
-    jwt: authInfo.jwt,
-    token: authInfo.token as DescopeSession['token'],
-  };
-}
-```
+Build a typed adapter that wraps `sdkSession()` and maps it to a shape your app understands — adding an `isAuthenticated: true` flag, exposing `jwt` (raw string) and `token` (decoded claims). Do not invent a `claims` property or a `token: string` shorthand; both diverge from the SDK's actual shape.
 
 ---
 
@@ -779,16 +717,6 @@ Check `package.json` for `next >= 15` before generating any `cookies()` or `head
 When any shared helper that reads cookies/headers becomes async, every function that calls it must also become async and add `await`. This can cascade through 20+ files. TypeScript accepts `await` on non-Promise values without error, so missing `await` calls fail silently at runtime.
 
 **Practice**: After making any shared auth helper async, immediately grep all call sites and propagate `async`/`await` before finishing the edit.
-
----
-
-**Summary: verify before generating Next.js + `@descope/nextjs-sdk` code**
-
-1. Resolve `node_modules/@descope/nextjs-sdk/dist/types/server/*.d.ts` — confirm exact export names before writing any import.
-2. `session()` returns `AuthenticationInfo | undefined`, not a session object with `isAuthenticated`.
-3. Decoded claims are under `.token`, not `.claims`. Raw JWT string is under `.jwt`.
-4. Check `package.json` for Next.js ≥ 15 — if so, `cookies()` and `headers()` are async.
-5. Async cascade from `cookies()` may require updating many files. Plan for it before starting.
 
 ---
 
@@ -1026,43 +954,7 @@ def profile():
     return jsonify({'id': request.user['sub'], 'email': request.user.get('email')})
 ```
 
-Dual-validation (Python, for cutover):
-```python
-import base64, json
-from descope import DescopeClient, AuthException
-import cognitojwt
-
-descope_client = DescopeClient(project_id=os.environ['DESCOPE_PROJECT_ID'])
-
-def require_auth(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        if not token:
-            return jsonify({'error': 'Unauthorized'}), 401
-        try:
-            payload_part = token.split('.')[1]
-            payload_part += '=' * (-len(payload_part) % 4)
-            iss = json.loads(base64.b64decode(payload_part)).get('iss', '')
-        except Exception:
-            return jsonify({'error': 'Malformed token'}), 401
-
-        if 'api.descope.com' in iss:
-            try:
-                claims = descope_client.validate_session(session_token=token)
-                request.user = {**claims, 'source': 'descope'}
-                return f(*args, **kwargs)
-            except AuthException:
-                return jsonify({'error': 'Invalid Descope token'}), 401
-        else:
-            try:
-                claims = cognitojwt.decode(token, os.environ['AWS_REGION'], os.environ['COGNITO_USER_POOL_ID'])
-                request.user = {'sub': claims['sub'], 'email': claims.get('email'), 'source': 'cognito'}
-                return f(*args, **kwargs)
-            except Exception:
-                return jsonify({'error': 'Invalid token'}), 401
-    return decorated
-```
+**Dual-validation (cutover)**: same `iss`-peek pattern as the Node.js section above — base64-decode the JWT payload, read `iss`, route to `descope_client.validate_session()` or `cognitojwt.decode()` accordingly. Add `'source': 'descope'` / `'source': 'cognito'` to `request.user` for log monitoring.
 
 User management:
 ```python
@@ -1292,66 +1184,6 @@ await descopeClient.management.accessKey.create(name, expireTime, roles, keyTena
 ---
 
 ## Reference
-
-### Auth method equivalents
-
-| Cognito / Amplify | Descope | Notes |
-|---|---|---|
-| `Auth.signIn(user, pass)` | `<Descope flowId="sign-up-or-in" />` | Flow handles all auth methods |
-| `Auth.signUp(...)` | Same Flow | Detects new vs returning user |
-| `Auth.forgotPassword(email)` | Built into Descope Flow | Remove — no code equivalent needed |
-| `Auth.confirmForgotPassword(...)` | Built into Descope Flow | Remove |
-| `Auth.resendSignUp(username)` | Built into Descope Flow | Remove |
-| `Auth.confirmSignUp(username, code)` | Built into Descope Flow | Remove |
-| `Auth.signOut()` | `logout()` from `useDescope()` | |
-| `Auth.signOut({ global: true })` | `descopeClient.management.user.logout(userId)` | Backend call |
-| `Auth.currentAuthenticatedUser()` | `useSession()` + `useUser()` | |
-| `Auth.currentSession()` | `useSession()` — `session.token` | Auto-refreshed |
-| `fetchAuthSession()` (v6) | `useSession()` — `session.token` | |
-| `Auth.changePassword(user, old, new)` | `descopeClient.password.update(loginId, newPwd)` | Backend management call |
-| `Auth.updateUserAttributes(user, attrs)` | `descopeClient.management.user.update(loginId, attrs)` | |
-| `Auth.deleteUser()` | `descopeClient.management.user.delete(loginId)` | |
-| `Amplify.configure({ Auth: ... })` | `<AuthProvider projectId="...">` | |
-| `withAuthenticator` HOC | `<Descope flowId="sign-up-or-in" />` | |
-| `<Authenticator>` component | `<Descope flowId="sign-up-or-in" />` | |
-| `Hub.listen('auth', ...)` | `useSession().isAuthenticated` (reactive) | No listener setup needed |
-| `CognitoJwtVerifier.create(...)` | `DescopeClient({ projectId })` | Node.js backend |
-| `cognitoVerifier.verify(token)` | `descopeClient.validateSession(token)` | |
-| `cognitojwt.decode(...)` | `descope_client.validate_session(...)` | Python backend |
-| `AdminAddUserToGroupCommand` | `management.user.setRoles(loginId, roles)` | |
-| `AdminUserGlobalSignOutCommand` | `management.user.logout(userId)` | |
-| Cognito User Groups | Descope Roles | Auto-converted by migration tool |
-| `custom:*` attributes | Descope custom attributes | Define schema in Console first |
-| `cognito:username` claim | `sub` claim | Different UUID value |
-| `cognito:groups` claim | `authInfo.token.roles` / `validateRoles()` | |
-| Cognito Hosted UI | Descope Flow (embeddable) | No external redirect required |
-| Pre-Token Generation trigger | JWT Templates | Console → Project Settings → JWT Templates |
-| Cognito User Pool authorizer (API GW) | Descope JWT authorizer | See Infrastructure section |
-
----
-
-### Terminology mapping
-
-| AWS Cognito | Descope |
-|---|---|
-| User Pool | Project |
-| User Pool ID (`us-east-1_XXXX`) | Project ID (`Pxxx...`) |
-| App Client | Inbound Application (or uses Project ID directly) |
-| App Client secret | Not needed for frontend flows; Management Key for admin ops |
-| User Group | Role |
-| Identity Pool | Not replaced — federate with Descope as OIDC provider |
-| Hosted UI | Descope Flow (embeddable component) |
-| Lambda Trigger | Flow step / Connector / Webhook |
-| Pre-Token Generation | JWT Template |
-| `custom:*` attribute | Custom Attribute (define schema in Console → Users → Attributes) |
-| `cognito:username` | `sub` (Descope user ID UUID) |
-| `cognito:groups` | JWT `roles` array or checked via `validateRoles()` SDK method |
-| JWKS URL | `https://api.descope.com/v2/keys/{projectId}` |
-| Admin operations (boto3/AWS SDK) | Descope Management SDK (node-sdk, python-sdk, go-sdk) |
-| Management Key | Descope Management Key (`Kxxx...`) |
-| Cognito Adaptive Authentication | Descope Flow-based security connectors |
-
----
 
 ### Environment variables
 
