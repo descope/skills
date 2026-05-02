@@ -81,6 +81,8 @@ Required env vars:
 
 > **Never decode the JWT manually on the backend** (e.g., `Buffer.from(token.split('.')[1], 'base64')`) as a substitute for validation. Manual decoding skips signature verification. The only exception is peeking at the `iss` claim for dual-validation routing during cutover — and even then the token must still be fully verified afterward.
 
+> **AWS API Gateway JWT authorizers**: If the codebase uses an API Gateway with a Cognito JWT authorizer, note that API Gateway's native JWT authorizer is not Cognito-specific — it validates any JWT against a configurable issuer and audience. Descope tokens can be accepted by the same authorizer by updating the issuer URL to `https://api.descope.com/<DESCOPE_PROJECT_ID>` and the audience to the Descope Project ID. Descope also provides an AWS API Gateway JWT Template in the Console that shapes the token claims to match what your Gateway and downstream Lambdas expect. This is usually simpler than replacing the authorizer entirely.
+
 ### Next.js client/server split
 
 Using the wrong import path in the wrong context fails silently or leaks server secrets. **This is the most common source of errors in Next.js migrations — read carefully.**

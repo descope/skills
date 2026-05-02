@@ -82,7 +82,10 @@ Cognito's auth model depends on which pattern the app uses:
 - **Amplify + custom UI** (`Auth.signIn()`, `Auth.signUp()`): The Amplify SDK manages the auth ceremony client-side, issuing an ID token and access token stored in localStorage or memory. The backend validates tokens against Cognito's JWKS. No server-side OAuth callback routes required.
 - **Cognito Hosted UI** (OAuth PKCE redirect): The browser redirects to Cognito's hosted page. Cognito returns an authorization code. Amplify exchanges it for tokens automatically — there are no explicit `/callback` routes to write — but the app depends on the redirect flow.
 
-Descope unifies both patterns. The [`<Descope>` component](https://docs.descope.com/client-sdk/descope-components) runs the authentication ceremony inside the browser, storing JWTs in `DS` (session) and `DSR` (refresh) cookies. No redirect to an external page, no code exchange, no server-side callback route.
+Descope supports both approaches:
+
+- **Embedded (recommended for most migrations)**: Use the `<Descope>` component to run the auth ceremony inside your app. You can use Descope-built Flows as the UI, or build your own custom UI using the Descope SDK while Flows handle the logic underneath. JWTs are stored in `DS` (session) and `DSR` (refresh) cookies. No redirect, no code exchange, no server-side callback route.
+- **Hosted page + Federated Apps (redirect path)**: Use Descope's hosted authentication page. Your app redirects users to Descope's hosted domain, which runs the Flow there, and redirects back with an authorization code — the same model as Cognito Hosted UI. This path is configured via Federated Applications in the Descope Console and suits cases where you need a fully hosted experience or are acting as an OIDC Authorization Server for external clients.
 
 Every Cognito→Descope migration:
 - Removes `Amplify.configure({ Auth: {...} })` and all Amplify auth imports
@@ -110,7 +113,7 @@ Apps that use Cognito Hosted UI with PKCE can swap the Authorization Server to D
 ### Token differences
 
 - **Cognito**: Two tokens per session — an **ID token** (identity: `sub`, `email`, `cognito:username`, `cognito:groups`, custom attributes) and an **access token** (authorization: scopes, client). JWKS at `https://cognito-idp.{region}.amazonaws.com/{userPoolId}/.well-known/jwks.json`. Issuer: `https://cognito-idp.{region}.amazonaws.com/{userPoolId}`.
-- **Descope**: One **session token** (JWT) plus a **refresh token** (`DSR` cookie). JWKS at `https://api.descope.com/v2/keys/{projectId}`. Issuer: `https://api.descope.com/{projectId}`.
+- **Descope**: One **session token** (JWT) plus a **refresh token** (`DSR` cookie). JWKS at `https://api.descope.com/v2/keys/{projectId}`. Issuer: `https://api.descope.com/{projectId}` for standard flows. **Note**: the issuer URL changes when using Inbound Apps or MCP Auth — do not hardcode it. Use the Descope Docs MCP server (`ask-question-about-descope`) to confirm the correct issuer and JWKS endpoint for your specific setup before configuring any JWT authorizer or `iss` validation.
 
 Key claim differences:
 
@@ -129,7 +132,7 @@ Key claim differences:
 ### Session management
 
 - **Amplify v5**: `Auth.currentAuthenticatedUser()` for current user, `Auth.currentSession()` for tokens, `Hub.listen('auth', callback)` for auth events.
-- **Amplify v6**: `getCurrentUser()` and `fetchAuthSession()` with tree-shaking imports.
+- **Amplify v6**: `getCurrentUser()` and `fetchAuthSession()`, imported directly from `aws-amplify/auth` rather than the top-level `aws-amplify` package (Amplify v6 split its API into subpath imports so bundlers can strip unused modules from the final build).
 - **Descope React SDK**: `useSession()` provides `isAuthenticated`, `isSessionLoading`, `session.token`. `useUser()` provides user attributes. Tokens auto-refresh transparently. No event listener setup needed.
 
 ---
@@ -144,25 +147,36 @@ Key claim differences:
 
 ### FORCE_CHANGE_PASSWORD users
 
-Cognito users with `UserStatus: FORCE_CHANGE_PASSWORD` have never completed their initial sign-in after admin creation. These users cannot authenticate via JIT migration (Cognito rejects the credential). Mark them with a `freshlyMigrated` custom attribute and route them through a password-set or magic-link step in your Descope Flow on first sign-in.
+Cognito users with `UserStatus: FORCE_CHANGE_PASSWORD` have never completed their initial sign-in after admin creation. These users cannot authenticate via JIT migration (Cognito rejects the credential). Mark them with a `mustResetPassword` custom attribute set to `true` and route them through a password-set or magic-link step in your Descope Flow on first sign-in.
 
-### `cognito:groups` is a JWT claim; Descope roles are not
+**Before running the migration**, create the `mustResetPassword` custom attribute in Descope — either via Console → Users → Attributes, or via the Management API — so the field is not silently dropped during import. Once a user completes the reset step, update the attribute to `false` via a post-reset Connector or Scriptlet in the Flow.
+
+### `cognito:groups` → `roles` claim (and use the SDK helper)
 
 Cognito embeds group membership as a `cognito:groups` array directly in the JWT. Code like `token['cognito:groups'].includes('admin')` is common.
 
-Descope surfaces roles in the JWT `roles` array, but the idiomatic way to check them is via the SDK:
+Descope surfaces roles in the JWT `roles` array. How you check them depends on context:
+
+**Backend** — after `validateSession()`, use the SDK helper rather than reading the array directly. This is the authoritative server-side check:
 
 ```js
-// Before (Cognito)
+// Before (Cognito — backend)
 const groups = decoded['cognito:groups'] || [];
 if (groups.includes('admin')) { ... }
 
-// After (Descope)
+// After (Descope — backend)
+const authInfo = await descopeClient.validateSession(token);
 const isAdmin = descopeClient.validateRoles(authInfo, ['admin']);
-// OR read the array directly from the validated token:
-if (authInfo.token.roles?.includes('admin')) { ... }
 // Tenant-scoped roles (multi-tenant apps):
 const isTenantAdmin = descopeClient.validateTenantRoles(authInfo, tenantId, ['admin']);
+```
+
+**Frontend** — read from the session hook. Do not use this as an authorization gate; it is display-only:
+
+```js
+// After (Descope — frontend, React)
+const { session } = useSession();
+if (session?.token.roles?.includes('admin')) { /* show admin UI */ }
 ```
 
 ### `cognito:username` → `sub`
@@ -175,7 +189,10 @@ Descope's default session JWT contains `sub`, `amr`, `drn`, `tenants`, `roles`, 
 
 ### Custom attributes need schema pre-creation
 
-Cognito custom attributes (`custom:department`, `custom:role`, etc.) migrate to Descope custom attributes. Descope requires the attribute schema to be defined in Console → Users → Attributes **before** importing users with those attributes. Pre-create all `custom:*` definitions first or the batch import will silently drop those fields.
+Cognito custom attributes (`custom:department`, `custom:role`, etc.) migrate to Descope custom attributes. Descope requires the attribute schema to be defined **before** importing users with those attributes — otherwise the batch import will silently drop those fields. You can create the schema in two ways:
+
+- **Console**: Console → Users → Attributes → add each attribute manually.
+- **Management API**: use the `customAttributes.set` method in the Descope management SDK to create attribute definitions programmatically — useful if you have many attributes or want this step scripted as part of a repeatable migration pipeline. Consult the Descope Docs MCP server (`ask-question-about-descope "create custom attribute schema management API"`) for the exact method signature.
 
 ### Amplify v5 vs v6 APIs differ significantly
 
@@ -197,7 +214,7 @@ Check `package.json` for `aws-amplify` version before writing migration code. Bo
 
 If a Cognito App Client has a client secret, the `USER_PASSWORD_AUTH` flow requires a `SECRET_HASH` = `HMAC-SHA256(clientSecret, username + clientId)`. The Descope Generic HTTP Connector cannot compute this hash itself. Options:
 
-1. **(Recommended) Deploy a proxy service** — a small Lambda or Express endpoint that receives `{ username, password }`, computes `SECRET_HASH`, calls Cognito's `InitiateAuth`, and returns the result. Point the Descope Connector at the proxy.
+1. **(Recommended) Deploy a proxy service** — yes, this is a developer task. Because the `SECRET_HASH` is computed from your App Client secret (which must never leave your infrastructure), Descope cannot do this on your behalf. You deploy a small Lambda or Express endpoint that receives `{ username, password }`, computes the hash server-side, calls Cognito's `InitiateAuth`, and returns the result. The Descope Generic HTTP Connector calls your proxy, not Cognito directly. This proxy is only needed during the JIT migration window — decommission it once all users have migrated.
 2. **Create a new public App Client** — no client secret, used only for JIT migration, deleted after all users have migrated.
 
 ### Hosted UI redirect flows
