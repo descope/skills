@@ -40,28 +40,36 @@ Integrate Descope authentication into applications with support for passwordless
 </details>
 
 <details>
-<summary><b>auth0-to-descope</b> — Migrate from Auth0 to Descope</summary>
+<summary><b>auth-review</b> — Static security review for authentication and authorization vulnerabilities</summary>
 
-Step-by-step migration guidance from Auth0 to Descope, covering scope assessment, migration path selection, framework-specific code changes, and verification. Handles Auth0 SDK replacements across multiple languages and frameworks.
+Framework- and vendor-agnostic static review that enumerates every route/endpoint in a codebase, builds an authorization matrix, applies a vulnerability catalog (OWASP Web + API Top 10 identity categories), and writes a triage report ready to slice into GitHub issues or PRs.
 
 **Use when:**
-- "How do I migrate from Auth0 to Descope?"
-- "Replace Auth0 with Descope in my app"
-- "We're moving off Auth0"
-- "My app uses nextjs-auth0 / express-openid-connect / auth0-fastapi and I want to switch"
-- "How does Descope handle Auth0 Actions / Organizations / FGA?"
+- "/auth-review"
+- "Audit authentication in my app"
+- "Find authorization bugs / IDOR / BOLA"
+- "Review access control"
+- "Identity security review before release"
 
-**Frameworks supported:**
-- Next.js (`nextjs-auth0` → `@descope/nextjs-sdk`)
-- Node.js / Express (`express-openid-connect` → `@descope/node-sdk`)
-- Python / FastAPI (`auth0-fastapi` → Descope Python SDK)
-- Any framework with a Descope SDK
+**Covers:**
+- Broken authentication (missing auth, weak password handling, SQLi-in-login, enumeration)
+- JWT / token flaws (`alg:none`, algorithm confusion, unverified decode, missing claim validation)
+- Session management (cookie flags, fixation, logout invalidation, predictable IDs)
+- Broken access control (IDOR / BOLA, BFLA, tenant crossing, client-trusted input)
+- Privilege escalation & mass assignment
+- OAuth / OIDC / SAML (state/PKCE, open redirect, ID-token validation, SAML XSW)
+- Password reset & account recovery (predictable/non-expiring tokens, host poisoning, MFA bypass)
+- MFA bypass and step-up gaps
+- Rate limiting & enumeration on auth surfaces
+- CSRF, CORS, identity-adjacent SSRF
 
-**Features:**
-- **Pre-generation protocol** - Verifies SDK exports, wrapper types, and package versions before writing code
-- **Feature mapping** - Auth0 Actions → Descope Connectors/Webhooks, Organizations → Tenants, FGA → RBAC/ReBAC
-- **Descope Docs MCP integration** - Uses live docs for accurate SDK lookups when available
-- **Cascading change detection** - Finds all call sites affected by async conversions and import removals
+**Output:**
+- Triage report in `./auth-review/report-YYYY-MM-DD.md`
+- Endpoint inventory and authorization matrix
+- Findings with severity (High/Medium/Low), CWE, `file:line`, evidence, remediation
+- Pre-formatted issue bodies ready to paste into GitHub
+
+**Scope:** static and read-only. Does not run the target application, make network probes, modify code, or file issues directly.
 
 </details>
 
@@ -182,6 +190,27 @@ Add an HTTP connector and S3 audit logging to my Descope Terraform config
 
 </details>
 
+<details>
+<summary><b>auth-review examples</b></summary>
+
+```
+/auth-review
+```
+
+```
+Audit my app for authentication and authorization vulnerabilities
+```
+
+```
+Find IDOR and broken access control bugs in this repo
+```
+
+```
+Run an identity security review before I ship
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -211,10 +240,13 @@ skills/
 │       ├── project-resource.md - Full descope_project schema
 │       ├── other-resources.md - descope_management_key and descope_descoper schemas
 │       └── connectors.md - All 60+ supported connector types
-└── auth0-to-descope/
-    ├── SKILL.md - Migration protocol, feature mapping, and framework-specific guidance
+└── auth-review/
+    ├── SKILL.md - Four-phase workflow, severity scale, guardrails
     └── references/
-        └── implementation-nuances.md - Verified migration patterns and Auth0→Descope mappings
+        ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
+        ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
+        ├── authz-matrix.md - Matrix schema and expected-principal inference rules
+        └── report-template.md - Exact report structure and issue-ready finding format
 ```
 
 </details>
