@@ -153,6 +153,27 @@ Add OAuth login (Google and GitHub) using Descope
 </details>
 
 <details>
+<summary><b>auth0-to-descope examples</b></summary>
+
+```
+Migrate my Next.js app from nextjs-auth0 to Descope
+```
+
+```
+How do I replace Auth0 Actions with Descope?
+```
+
+```
+Help me migrate our Auth0 Organizations setup to Descope
+```
+
+```
+Our Express API uses express-openid-connect — how do we switch to Descope?
+```
+
+</details>
+
+<details>
 <summary><b>descope-terraform examples</b></summary>
 
 ```

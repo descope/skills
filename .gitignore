@@ -34,3 +34,5 @@ coverage/
 # Build
 dist/
 build/
+
+*.zip
