@@ -104,6 +104,59 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<details>
+<summary><b>auth0-to-descope</b> — Migrate applications from Auth0 to Descope</summary>
+
+Guides self-service migrations from Auth0 to Descope across any language or framework. Analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Auth0 to Descope"
+- "Replace Auth0 with Descope"
+- "Our app uses nextjs-auth0 / express-openid-connect / auth0-fastapi — switch to Descope"
+- "How do Auth0 Actions / Organizations / Token Vault map to Descope?"
+- "We're moving off Auth0"
+
+**Covers:**
+- SDK replacement for all major frameworks (Next.js, React, Express, Python, etc.)
+- Auth0 feature mappings: Actions → Descope flows, Organizations → Tenants, Token Vault, CIBA
+- Descope Flow and Widget setup (console-first approach)
+- SSO and OIDC compatibility
+- Session validation patterns
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow and Widget integration
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
+<details>
+<summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
+
+Author, edit, and apply Descope FGA schemas using the ReBAC/ABAC DSL. Validates changes via dry run before applying, warns on data loss, and requires user confirmation before modifying live schema. Requires the Descope Management MCP.
+
+**Use when:**
+- "/descope-fga-schema"
+- "Set up authorization / define roles and permissions"
+- "Add team-based access control"
+- "Create a new FGA schema"
+- "Update my authorization model"
+- "Add types/relations/permissions/conditions to my schema"
+
+**Covers:**
+- Full DSL grammar (`model AuthZ 1.0`, types, relations, permissions, conditions)
+- ReBAC (relationship-based) and ABAC (attribute-based) patterns
+- Dry-run validation before applying
+- Data loss detection and warnings
+- Reading current schema before edits
+
+**Requirements:**
+- Descope Management MCP installed and authorized
+
+</details>
+
 ## Installation
 
 <details>
@@ -211,6 +264,27 @@ Run an identity security review before I ship
 
 </details>
 
+<details>
+<summary><b>descope-fga-schema examples</b></summary>
+
+```
+/descope-fga-schema
+```
+
+```
+Define an FGA schema with users, organizations, and resource-level permissions
+```
+
+```
+Add a condition to my FGA schema that checks attribute values
+```
+
+```
+Update my authorization model to support team-based access control
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -234,19 +308,26 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
+├── auth0-to-descope/
+│   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
+│   └── references/
+│       ├── implementation-nuances.md - Per-framework migration patterns and gotchas
+│       └── flows-and-widgets.md - Descope terminology, Flow/Widget guides, console-vs-code
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
 │       ├── project-resource.md - Full descope_project schema
 │       ├── other-resources.md - descope_management_key and descope_descoper schemas
 │       └── connectors.md - All 60+ supported connector types
-└── auth-review/
-    ├── SKILL.md - Four-phase workflow, severity scale, guardrails
-    └── references/
-        ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
-        ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
-        ├── authz-matrix.md - Matrix schema and expected-principal inference rules
-        └── report-template.md - Exact report structure and issue-ready finding format
+├── auth-review/
+│   ├── SKILL.md - Four-phase workflow, severity scale, guardrails
+│   └── references/
+│       ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
+│       ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
+│       ├── authz-matrix.md - Matrix schema and expected-principal inference rules
+│       └── report-template.md - Exact report structure and issue-ready finding format
+└── descope-fga-schema/
+    └── SKILL.md - DSL grammar, dry-run workflow, data loss guards
 ```
 
 </details>
