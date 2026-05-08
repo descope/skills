@@ -234,5 +234,5 @@ terraform destroy   # Remove managed resources
 ## References
 
 - `references/project-resource.md` - Full descope_project schema and all nested blocks
-- `references/other-resources.md` - descope_management_key and descope_descoper schemas
+- `references/other-resources.md` - descope_management_key, descope_descoper, and descope_inbound_app schemas
 - `references/connectors.md` - All supported connector types and configuration
