@@ -42,9 +42,10 @@ variable "descope_management_key" {
 | `descope_project` | Full project configuration (auth methods, roles, connectors, flows, settings) |
 | `descope_management_key` | Management keys with RBAC scoping |
 | `descope_descoper` | Console user accounts with role assignments |
+| `descope_inbound_app` | OAuth/OIDC inbound application registrations with scopes and session settings |
 
 See `references/project-resource.md` for the full `descope_project` schema.
-See `references/other-resources.md` for `descope_management_key` and `descope_descoper` schemas.
+See `references/other-resources.md` for `descope_management_key`, `descope_descoper`, and `descope_inbound_app` schemas.
 
 ## Quick Start - New Project
 
@@ -202,7 +203,7 @@ terraform {
   required_providers {
     descope = {
       source  = "descope/descope"
-      version = ">= 0.9"  # pin to a known-good minimum
+      version = ">= 0.3.10"  # pin to a known-good minimum
     }
   }
 }
