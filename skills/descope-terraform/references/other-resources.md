@@ -123,3 +123,77 @@ resource "descope_descoper" "admin_user" {
   }
 }
 ```
+
+---
+
+# descope_inbound_app Resource
+
+Manage OAuth/OIDC inbound application registrations that authenticate into a Descope project.
+
+## Schema
+
+**Required:**
+- `name` (String) - Application name
+- `project_id` (String) - ID of the Descope project this app belongs to
+
+**Optional:**
+- `client_id` (String) - OAuth client ID
+- `client_secret` (String, Sensitive) - OAuth client secret
+- `non_confidential_client` (Boolean) - Set true for public clients (no client secret)
+- `approved_callback_urls` (List of String) - Allowed redirect URIs
+- `login_page_url` (String) - Custom login page URL
+- `logo_url` (String) - Application logo URL
+- `default_audience` (List of String) - Default token audience
+- `force_add_all_authorization_info` (Boolean) - Include all authorization claims in tokens
+- `audience_whitelist` (List of String) - Restrict accepted audiences
+- `scopes` (Attributes) - Scopes the app can request (see below)
+- `session_settings` (Attributes) - Token expiration and JWT template overrides
+
+**Read-Only:**
+- `id` (String)
+
+## scopes Block
+
+Three scope types share the same structure: `attributes`, `connections`, `permissions`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | String | Yes | Scope name |
+| `description` | String | No | Scope description |
+| `optional` | Boolean | No | Whether the scope is optional |
+| `values` | List of String | No | Allowed values for this scope |
+
+## session_settings Block
+
+Overrides project-level token settings for this app.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `access_token_expiration` | String | Access token lifetime (e.g. `"1 hour"`) |
+| `refresh_token_expiration` | String | Refresh token lifetime (e.g. `"7 days"`) |
+| `jwt_template_id` | String | JWT template to apply to tokens |
+
+## Example
+
+```hcl
+resource "descope_inbound_app" "my_app" {
+  name       = "My App"
+  project_id = descope_project.myproject.id
+
+  approved_callback_urls = ["https://myapp.example.com/callback"]
+
+  scopes = {
+    permissions = [
+      {
+        name        = "read:profile"
+        description = "Read user profile"
+      }
+    ]
+  }
+
+  session_settings = {
+    access_token_expiration  = "1 hour"
+    refresh_token_expiration = "7 days"
+  }
+}
+```

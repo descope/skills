@@ -22,6 +22,26 @@ Detect the user's framework and use the appropriate reference:
 1. Get Project ID from https://app.descope.com/settings/project
 2. Set environment variable: `NEXT_PUBLIC_DESCOPE_PROJECT_ID=<your-id>`
 3. Follow framework-specific reference
+4. **Verify**: After setup, confirm the `<Descope>` component renders the login form. Check the browser console — a missing or invalid Project ID produces a clear `Could not load flows` error.
+
+### Minimal Inline Example (Next.js)
+
+```tsx
+// src/app/login/page.tsx
+import { Descope } from '@descope/nextjs-sdk';
+
+export default function LoginPage() {
+  return (
+    <Descope
+      flowId="sign-up-or-in"
+      onSuccess={(e) => console.log('Authenticated:', e.detail.user)}
+      onError={(e) => console.error('Auth failed:', e.detail)}
+    />
+  );
+}
+```
+
+For React SPA or backend-only setups, see the framework-specific references below.
 
 ## Valid Flow IDs (CRITICAL - do not invent others)
 
