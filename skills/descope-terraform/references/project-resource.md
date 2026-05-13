@@ -108,6 +108,7 @@ Each provider accepts: `client_id`, `client_secret` (Sensitive), `scopes`, `clai
 |-------|------|-------------|
 | `disabled` | Boolean | Disable passkey auth |
 | `top_level_domain` | String | Domain for WebAuthn |
+| `android_fingerprints` | Set of String | SHA-256 APK key hash fingerprints (colon-separated hex) for Android apps allowed to create passkeys |
 
 ### sso
 
@@ -149,12 +150,21 @@ authorization = {
     {
       name        = "admin"                       # Required
       description = "Full access"                 # Optional
-      key         = "admin-role"                  # Optional
+      key         = "admin-role"                  # Optional; stable identifier across renames
       permissions = ["read:data", "write:data"]   # Optional, Set of String
       default     = false                         # Optional
       private     = false                         # Optional
     }
   ]
+  fga = "..."  # Optional; FGA schema string — copy from Console > Authorization > FGA (code view)
+}
+```
+
+The `fga` field accepts the raw FGA schema text from the Descope console (Authorization → FGA tab → code view). Use `file()` to load it from a separate file if it's large:
+
+```hcl
+authorization = {
+  fga = file("fga-schema.fga")
 }
 ```
 
