@@ -1,7 +1,7 @@
 {
   "name": "descope-skills",
-  "description": "Skills for integrating Descope authentication, migrating from Auth0, managing projects with Terraform, authoring FGA authorization schemas, and reviewing authentication security",
-  "version": "1.1.4",
+  "description": "Skills for integrating Descope authentication, migrating from Auth0 or Okta CIS, managing projects with Terraform, authoring FGA authorization schemas, and reviewing authentication security",
+  "version": "1.1.5",
   "author": {
     "name": "Descope",
     "email": "support@descope.com"
