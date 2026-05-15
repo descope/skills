@@ -23,9 +23,10 @@ It runs in three parts:
 
 Do not collapse these parts or skip ahead. The plan must be reviewed before code changes begin.
 
-**Primary references** (both in this skill's directory):
-- `references/implementation-nuances.md` — verified migration patterns for each framework, Okta CIS feature-to-Descope mappings, and known gotchas
+**Primary references** (all in this skill's directory):
+- `references/implementation-nuances.md` — verified migration patterns for each JS/TS framework, Okta CIS feature-to-Descope mappings, and known gotchas
 - `references/flows-and-widgets.md` — Descope terminology/lingo (Okta→Descope), Flow structure and templates, Widgets, SSO Setup Suite, Console-vs-code decision guide
+- `references/backend-sdks.md` — Python and Java backend migration patterns (Flask, FastAPI, Django, Spring Boot, management SDK, M2M)
 
 ---
 
@@ -106,7 +107,7 @@ Do not proceed until this is resolved — everything else depends on it.
 
 **Remaining triage — first `AskUserQuestion` call (up to 3 questions):**
 
-1. **Backend language / framework** — Present the most likely options based on cues in the conversation (Node.js/Express, Next.js, Angular, React SPA, Go, Python). The user can always pick "Other."
+1. **Backend language / framework** — Present the most likely options based on cues in the conversation (Node.js/Express, Next.js, Angular, React SPA, Go, Python, Java). The user can always pick "Other."
 2. **Migration goal** — Full cut-over, incremental/phased migration, or just evaluating.
 3. **Existing user base** — Are they migrating an app with active users in Okta, or starting fresh? This determines whether user migration planning is needed.
 
@@ -269,7 +270,7 @@ curl -s -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
   "https://${OKTA_DOMAIN}/api/v1/policies?type=MFA_ENROLL" \
   | jq '[.[] | {name, id, rules: [.rules[] | {priority, conditions, actions}]}]'
 
-# Global Session Policies (session lifetime → Console → Project → Session Management)
+# Global Session Policies (session lifetime → Console → Project Settings → Session Management)
 curl -s -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
   "https://${OKTA_DOMAIN}/api/v1/policies?type=OKTA_SIGN_ON" \
   | jq '[.[] | {name, id, rules: [.rules[] | {maxSessionIdleMinutes: .actions.signon.session.maxSessionIdleMinutes, maxSessionLifetimeMinutes: .actions.signon.session.maxSessionLifetimeMinutes}]}]'
@@ -387,7 +388,7 @@ List every Console setup item as a checkbox. Group into "Required before any tes
 **Required before any testing:**
 - [ ] **Create a Descope project** — Takes 2 minutes. Produces a Project ID that replaces all Okta credentials in the app's environment variables.
 - [ ] **Create an authentication Flow** — The built-in `sign-up-or-in` flow works for most apps without customization. Use it to start.
-- [ ] **Configure a JWT Template** — Okta ID tokens include `email` and `name` by default. Descope does not. Add `{"email": "{{user.email}}", "name": "{{user.name}}"}` to a JWT Template before testing any UI that shows profile information. (~10 minutes)
+- [ ] **Configure a JWT Template** — Okta ID tokens include `email` and `name` by default. Descope does not. In Console → **Project Settings → JWT Templates → + JWT Template → User JWT**, add claims with **Type: Dynamic**: `email` → `user.email`, `name` → `user.name`. Without this, any UI reading the user's name or email shows blank values. (~10 minutes)
 - [ ] **Configure authentication methods** — Enable the methods that match the Okta Authenticators in use (Passkeys, TOTP, SMS OTP, Email OTP/Magic Link). (~5 minutes each)
 
 **Required before production:**
@@ -498,7 +499,7 @@ complexity of policy rules.
 - [ ] Fetch Authenticator Enrollment Policies: `GET /api/v1/policies?type=MFA_ENROLL` — note required vs. optional factors
 - [ ] Add MFA steps or subflows to sign-in Flow for each required factor
 - [ ] Fetch Global Session Policies: `GET /api/v1/policies?type=OKTA_SIGN_ON` — note session lifetime values
-- [ ] Set session lifetime in Console → Project → Session Management to match
+- [ ] Set session lifetime in Console → Project Settings → Session Management to match
 - [ ] Configure Tenant SSO: (list actual IdPs found, if any)
 - [ ] Create roles: (list actual roles found)
 
@@ -700,9 +701,9 @@ Required for: user management API, role/permission management, tenant operations
 
 ### 5. Configure a JWT Template (almost always needed)
 Okta ID tokens include `email` and `name` by default. Descope does not.
-- Console → **Authorization → JWT Templates → New Template**
-- Add claims: `{"email": "{{user.email}}", "name": "{{user.name}}", "picture": "{{user.picture}}"}`
-- For custom Okta Expression Language claims: recreate them here using `{{user.customAttributes.X}}`
+- Console → **Project Settings → JWT Templates → + JWT Template → User JWT**
+- Under **Custom Claims**, add each with **Type: Dynamic**: `email` → `user.email`, `name` → `user.name`, `picture` → `user.picture`
+- For custom Okta Expression Language claims: recreate them with Type: Dynamic, value `user.customAttributes.X`
 - Without this step, any code reading `token.email` will get `undefined` after migration.
 
 ### 6. Create roles in the Console (if using Groups for RBAC)
@@ -736,13 +737,15 @@ Read `references/implementation-nuances.md` in two passes before writing any cod
 
 1. **General Insights** (always) — architecture, Inbound vs. Federated Apps decision, scp/scope claim, feature mapping, gotchas.
 2. **Framework section** — read only the section matching the user's stack:
-   - React + `@okta/okta-react` → `## React + @okta/okta-react`
-   - Angular + `@okta/okta-angular` → `## Angular + @okta/okta-angular`
-   - Vue + `@okta/okta-vue` → `## Vue + @okta/okta-vue`
-   - Node.js / Express + `@okta/oidc-middleware` → `## Node.js / Express + @okta/oidc-middleware`
-   - Backend JWT validation only → `## Backend JWT validation (okta-jwt-verifier)`
-   - Next.js → `## Next.js`
-   - Custom/open-source OIDC client → `## Custom / open-source OIDC clients`
+   - React + `@okta/okta-react` → `## React + @okta/okta-react` in `implementation-nuances.md`
+   - Angular + `@okta/okta-angular` → `## Angular + @okta/okta-angular` in `implementation-nuances.md`
+   - Vue + `@okta/okta-vue` → `## Vue + @okta/okta-vue` in `implementation-nuances.md`
+   - Node.js / Express + `@okta/oidc-middleware` → `## Node.js / Express + @okta/oidc-middleware` in `implementation-nuances.md`
+   - Backend JWT validation only → `## Backend JWT validation (okta-jwt-verifier)` in `implementation-nuances.md`
+   - Next.js → `## Next.js` in `implementation-nuances.md`
+   - Custom/open-source OIDC client → `## Custom / open-source OIDC clients` in `implementation-nuances.md`
+   - **Python** (Flask / FastAPI / Django) → `references/backend-sdks.md` → Python section
+   - **Java** (Spring Boot / standalone) → `references/backend-sdks.md` → Java section
 
 ---
 
@@ -826,7 +829,7 @@ curl -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
   "https://${OKTA_DOMAIN}/api/v1/policies?type=OKTA_SIGN_ON"
 ```
 
-In Descope: Console → **Project → Session Management**. Set session token lifetime and refresh token lifetime to match the Okta values.
+In Descope: Console → **Project Settings → Session Management**. Map Okta fields to Descope fields correctly: `maxSessionLifetimeMinutes` → **Refresh Token Timeout** (total logged-in duration); `maxSessionIdleMinutes` → **Session Inactivity** (idle timeout). These are different fields — do not conflate them.
 
 ---
 
@@ -875,7 +878,7 @@ SDK: `descopeClient.management.role.create(name, description, permissionNames, t
 | Okta | Descope |
 |---|---|
 | Service App (client ID + secret) | Access Key |
-| `POST /token` (client credentials) | `descopeClient.auth.exchangeAccessKey(accessKey)` |
+| `POST /token` (client credentials) | `descopeClient.exchangeAccessKey(accessKey)` |
 
 ### Log Streams → Audit Connectors
 
@@ -913,7 +916,7 @@ curl -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
 
 | Okta field | Descope field |
 |---|---|
-| `profile.login` or `profile.email` | `loginIds` (required; unique per user) |
+| `profile.login` or `profile.email` | `loginId` (required; unique per user) |
 | `profile.firstName` | `givenName` |
 | `profile.lastName` | `familyName` |
 | `profile.email` | `email` |
@@ -1169,8 +1172,9 @@ Sign-On Policy rule chains), flag the high-effort items explicitly with estimate
 
 ## Reference Files
 
-- `references/implementation-nuances.md` — Verified migration patterns, code-level diffs, and edge cases for each framework and Okta CIS feature.
+- `references/implementation-nuances.md` — Verified migration patterns, code-level diffs, and edge cases for each JS/TS framework and Okta CIS feature.
 - `references/flows-and-widgets.md` — Okta→Descope lingo map, Flow structure, Widgets, SSO Setup Suite, Console-vs-code decision guide.
+- `references/backend-sdks.md` — Python and Java backend migration patterns (Flask, FastAPI, Django, Spring Boot, management SDK, M2M access keys).
 - Descope Docs: https://docs.descope.com
 - Descope Migration Guide: https://docs.descope.com/migrate
 - Descope OIDC Endpoints: https://docs.descope.com/getting-started/oidc-endpoints

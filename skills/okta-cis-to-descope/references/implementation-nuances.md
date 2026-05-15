@@ -208,9 +208,12 @@ curl -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
 Authenticator Enrollment Policies control when users must enroll in MFA and which factors are required vs. optional. In Descope, **enrollment is inline** — it happens during the sign-in Flow, not through a separate journey.
 
 Migration approach:
-- For **required** authenticators: add an MFA step to the main sign-in Flow. If the user hasn't enrolled, the Flow handles enrollment inline.
-- For **optional** authenticators: add a conditional MFA step or a subflow triggered by group membership or risk context.
-- For **context-sensitive enrollment** (e.g., require MFA only for admins): use a Condition branch → subflow pattern.
+
+> **What "MFA" means in Descope Flows:** there is no single "MFA step" action. MFA = two sequential auth method steps in a Flow (e.g., password → OTP, or passkey → TOTP). Add a second auth method step after the first sign-in step, and the Flow enforces two factors in sequence.
+
+- For **required** authenticators: add a second auth method step after the primary step in the sign-in Flow. If the user hasn't enrolled in that method, the Flow prompts inline enrollment automatically.
+- For **optional** authenticators: add a Condition branch that routes to the second auth step only when a condition is met (e.g., user role, risk signal).
+- For **context-sensitive enrollment** (e.g., require MFA only for admins): use a Condition branch → subflow pattern. The subflow contains the MFA sequence and returns to the parent on success.
 
 Note: Passkeys and TOTP cannot be migrated from Okta (see Authenticators section). Users must reprovision these factors after cutover — add a re-enrollment prompt to the Flow conditioned on `freshlyMigrated: true`.
 
@@ -224,11 +227,15 @@ curl -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
 
 Global Session Policies control session lifetime, idle timeout, and re-authentication requirements. These do **not** map to Flows — they map to Descope's project-level session settings.
 
-In Descope: Console → **Project → Session Management**. Set:
-- Session token lifetime → match Okta's `maxSessionLifetimeMinutes`
-- Refresh token lifetime → match Okta's idle session duration
+In Descope: Console → **Project Settings → Session Management**. Match each Okta value to the correct Descope field — they are not the same:
 
-Re-authentication requirements (e.g., step-up after N minutes) can be implemented using the `step-up` Flow template and the `su` JWT claim.
+| Okta field | Descope field | What it controls |
+|---|---|---|
+| `maxSessionLifetimeMinutes` | **Refresh Token Timeout** | Total time a user stays logged in before full re-auth |
+| `maxSessionIdleMinutes` | **Session Inactivity** | Idle timeout before the session expires |
+| (n/a) | **Session Token Timeout** | Short-lived JWT lifetime (default ~5 min); leave at default unless there's a specific reason to change it |
+
+Re-authentication requirements (e.g., step-up after N minutes) map to the `step-up` Flow template, which adds an `su` claim to the JWT on success.
 
 ---
 
@@ -305,18 +312,19 @@ Language (e.g., `user.profile.department`, `user.roles`). These claims appear in
 ID tokens depending on the claim's "Include in token type" setting.
 
 In Descope, custom claims are defined in **JWT Templates** — associated with an Inbound App or
-the project — and expressed as a JSON template with `{{user.*}}` interpolation:
+the project. Configure them in the Console UI (not as raw JSON):
 
-```json
-{
-  "email": "{{user.email}}",
-  "name": "{{user.name}}",
-  "department": "{{user.customAttributes.department}}"
-}
-```
+**Console → Project Settings → JWT Templates → + JWT Template → User JWT**
 
-Console path: **Authorization → JWT Templates → New Template**. Apply the template to the
-relevant Inbound App.
+Under **Custom Claims**, add each claim with **Type: Dynamic**:
+
+| Claim key | Dynamic value |
+|---|---|
+| `email` | `user.email` |
+| `name` | `user.name` |
+| `department` | `user.customAttributes.department` |
+
+Apply the template to the relevant Inbound App in its **Token Format** settings.
 
 **Key difference:** In Okta, custom claims can be attached at the Resource level. In Descope,
 JWT Templates are always on the Inbound App or project — never on the Resource.
@@ -346,7 +354,7 @@ for an access token. Descope's equivalent is [Access Keys](https://docs.descope.
 | Okta | Descope |
 |---|---|
 | Service App (client ID + secret) | Access Key |
-| `POST /token` with `client_credentials` grant | `descopeClient.auth.exchangeAccessKey(accessKey)` |
+| `POST /token` with `client_credentials` grant | `descopeClient.exchangeAccessKey(accessKey)` |
 | Resulting access token | Short-lived JWT (same validation as user tokens) |
 | Scopes on the token | Scopes configured on the Inbound App |
 
@@ -391,7 +399,7 @@ curl -H "Authorization: SSWS ${OKTA_API_TOKEN}" \
 
 | Okta field | Descope field | Notes |
 |---|---|---|
-| `profile.login` or `profile.email` | `loginIds` | Required; must be unique per user |
+| `profile.login` or `profile.email` | `loginId` | Required; must be unique per user |
 | `profile.email` | `email` | |
 | `profile.firstName` | `givenName` | |
 | `profile.lastName` | `familyName` | |
@@ -539,7 +547,7 @@ for the Descope component.
 <descope-wc flow-id="sign-up-or-in" project-id="YOUR_PROJECT_ID"></descope-wc>
 <script>
   document.querySelector('descope-wc').addEventListener('success', (e) => {
-    const { sessionToken } = e.detail;
+    const { sessionJwt } = e.detail;
     // store token, redirect user
   });
 </script>
@@ -581,15 +589,26 @@ and the `OKTA_AUTH` injection token.
 **Changes:**
 - Remove `@okta/okta-angular` and `okta-auth-js`; add `@descope/angular-sdk`
 - Replace `OktaAuthModule.forRoot({...})` with `DescopeAuthModule.forRoot({projectId: ...})`
-- Replace `OktaAuthGuard` with a custom guard using `DescopeAuthGuard` or `AuthGuard` from
-  the Descope Angular SDK
+- Replace `OktaAuthGuard` with `descopeAuthGuard` from `@descope/angular-sdk`
 - Replace `OktaCallbackComponent` route — Descope has no redirect callback
-- Add `/login` route with `<descope-wc flowId="sign-up-or-in">` or Descope Angular component
+- Add `/login` route with the Angular SDK component: `<descope flowId="sign-up-or-in"></descope>`
+  (selector is `descope[flowId]`; alternatively use `<descope-sign-up-or-in-flow>` from the SDK)
 - Inject `DescopeAuthService` in place of `OktaAuthService`
 
 **Key differences:**
 - `OktaAuthStateService.authState$` → `DescopeAuthService.session$`
-- Route guards: `canActivate: [OktaAuthGuard]` → `canActivate: [AuthGuard]`
+- Route guards: `canActivate: [OktaAuthGuard]` → `canActivate: [descopeAuthGuard]`:
+  ```typescript
+  import { descopeAuthGuard } from '@descope/angular-sdk';
+
+  // In your route config:
+  {
+    path: 'protected',
+    component: ProtectedComponent,
+    canActivate: [descopeAuthGuard],
+    data: { descopeFallbackUrl: '/login' }  // where to redirect if unauthenticated
+  }
+  ```
 - No callback route needed (`/authorization-code/callback` → delete)
 
 ---
@@ -600,13 +619,21 @@ and the `OKTA_AUTH` injection token.
 
 **Changes:**
 - Remove `@okta/okta-vue` and `okta-auth-js`; add `@descope/vue-sdk`
-- Replace `createOktaAuth({...})` + `app.use(OktaVue, {oktaAuth})` with
-  `app.use(descope, { projectId: ... })`
-- Replace `navigationGuard` with Descope's session check in router `beforeEach`
-- Add `/login` component with `<Descope flowId="sign-up-or-in" />`
+- Remove `@okta/okta-vue` and `okta-auth-js`; add `@descope/vue-sdk`
+- Replace `createOktaAuth({...})` + `app.use(OktaVue, {oktaAuth})` with:
+  ```js
+  import descope, { routeGuard } from '@descope/vue-sdk'
+  app.use(descope, { projectId: process.env.VUE_APP_DESCOPE_PROJECT_ID })
+  ```
+- Replace `navigationGuard` with the built-in `routeGuard`:
+  ```js
+  import { routeGuard } from '@descope/vue-sdk'
+  router.beforeEach(routeGuard)
+  ```
+- Add `/login` component with `<Descope flow-id="sign-up-or-in" />`
 
 **Key differences:**
-- `$auth.isAuthenticated()` → `useSession().isAuthenticated`
+- `$auth.isAuthenticated()` → `useSession().isAuthenticated` (Vue computed ref; auto-unwrapped in templates)
 - No callback route needed
 
 ---

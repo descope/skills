@@ -40,7 +40,7 @@ Sources:
 | **Application** (Web, SPA, Native) | **Federated App** or **Inbound App** | Federated = OIDC/SAML federation only; Inbound = OAuth with scope enforcement. Use Inbound when the backend validates scopes. |
 | **Sign-On Policy** (per-app) | **Flow** | Visual auth pipeline; replaces Okta's per-app policy rule chain. |
 | **Authenticator Enrollment Policy** | **Flow** (MFA step or subflow) | Inline enrollment replaces Okta's separate enrollment journey. |
-| **Global Session Policy** | **Project session config** | Lifetime and refresh settings in Console → Project → Session Management. |
+| **Global Session Policy** | **Project session config** | Lifetime and refresh settings in Console → Project Settings → Session Management. |
 | **Authenticator** (Passkeys/FIDO2, TOTP, Okta Verify, Password, SMS, Phone, Security Question) | **Auth Method** | Configured in Console → Authentication. One auth method per authenticator type. |
 | **Token Inline Hook** | **Flow Scriptlet** or **Generic HTTP Connector** | Custom logic during auth. Scriptlet = inline JS; Connector = external HTTP call. |
 | **Group** | **Role** (flat or tenant-scoped) | Project-level or per-tenant RBAC. |
@@ -126,9 +126,9 @@ Okta's Authenticator Enrollment Policies trigger a separate enrollment journey w
 factor is missing. That separate journey has no direct Descope equivalent.
 
 **The Descope approach:**
-- Add an MFA step to the main sign-up/sign-in Flow — enrollment happens inline during the auth journey
-- Or embed MFA as a **subflow** — triggered by a condition (e.g., user is admin, or role requires MFA)
-- Or use the **step-up** flow template to gate sensitive operations
+- Add a second auth method step after the primary step in the sign-in Flow — there is no single "MFA step" button; MFA is two sequential auth method steps. If the user hasn't enrolled in the second method, the Flow prompts enrollment inline.
+- Or embed the MFA sequence as a **subflow** — triggered by a Condition (e.g., user role is admin, or a risk signal is present)
+- Or use the **step-up** Flow template to gate sensitive operations after initial sign-in
 
 Before migrating a standalone MFA enrollment flow, ask whether MFA can be integrated into the
 main sign-in Flow. This is almost always the cleaner approach in Descope.
@@ -224,8 +224,8 @@ Key indicators:
 | Per-tenant SSO configuration | SSO (or SSO Setup Suite) |
 | Social OAuth providers | Authentication → Social |
 | Email/SMS templates | Authentication method settings → Templates |
-| Session token lifetime and refresh settings | Project → Session Management |
-| Custom JWT claims (profile fields, roles in token) | Authorization → JWT Templates |
+| Session token lifetime and refresh settings | Project Settings → Session Management |
+| Custom JWT claims (profile fields, roles in token) | Project Settings → JWT Templates |
 | Custom tenant/user attributes | Project → Custom Attributes |
 | Connectors (Slack, Salesforce, HTTP webhooks, etc.) | Connectors |
 | Access Keys (M2M) | Access Keys |
