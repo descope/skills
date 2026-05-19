@@ -5,7 +5,7 @@
 **General Insights — Architecture & Flow**
 - [Okta owns the redirect; Descope validates tokens](#okta-owns-the-redirect-descope-validates-tokens)
 - [Inbound Apps vs. Federated Apps: the core strategy fork](#inbound-apps-vs-federated-apps-the-core-strategy-fork)
-- [OIDC compatibility path](#oidc-compatibility-path-alternative-to-full-migration)
+- [OIDC compatibility path](#oidc-compatibility-path-default-for-redirect-based-login)
 - [scp vs. scope claim](#scp-vs-scope-claim)
 - [No drop-in middleware](#no-drop-in-middleware)
 
@@ -54,19 +54,20 @@ sign-in page, Okta authenticates, issues an authorization code, and the app exch
 for tokens via the token endpoint. The frontend SDK (`okta-auth-js`) and middleware packages
 (`@okta/oidc-middleware`) handle this ceremony.
 
-Descope splits the work differently. The frontend ([Descope Flows](https://docs.descope.com/flows)
-via [web components](https://docs.descope.com/client-sdk/descope-components) or [client SDKs](https://docs.descope.com/client-sdk/initialize-sdk))
-runs the authentication ceremony embedded in the app and stores JWTs in `DS` (session) and
-`DSR` (refresh) cookies. The backend [validates those JWTs](https://docs.descope.com/authorization/session-management/session-validation/backend).
-No redirect to an external login page, no authorization code exchange, no server-managed session store.
+There are two migration paths depending on how the app handles login:
 
-Every Okta→Descope migration adds a dedicated login page (or embeds the `<Descope>` component)
-and removes the redirect/callback plumbing.
+**Redirect-based login (hosted Okta page, `@okta/oidc-middleware`, `loginWithRedirect`, any app
+that sends users to an Okta URL to authenticate):** The fastest migration path is the OIDC
+compatibility path — point the existing OIDC client config at Descope's OIDC endpoints and
+set up an Inbound App or Federated App in the Console. The redirect/callback flow stays intact;
+only the issuer, client ID, and secret change. See the OIDC compatibility path section below.
 
-**Exception:** Descope can also act as a [standard OIDC provider](https://docs.descope.com/getting-started/oidc-endpoints).
-If you want to preserve existing OIDC client code (e.g., `openid-client`, `passport-openidconnect`,
-`@okta/oidc-middleware`), you can point it at Descope's OIDC endpoints instead of Okta's.
-See the OIDC compatibility path section below.
+**Embedded login (Okta Sign-In Widget embedded in the page, or a custom auth UI built with
+`okta-auth-js` in non-redirect mode):** Replace the widget or custom flow with a Descope Flow
+component (`<Descope flowId="sign-up-or-in" />` or the equivalent web component). The
+[Descope Flows](https://docs.descope.com/flows) run embedded in the app and store JWTs in `DS`
+(session) and `DSR` (refresh) cookies. The backend [validates those JWTs](https://docs.descope.com/authorization/session-management/session-validation/backend).
+No redirect to an external login page, no authorization code exchange.
 
 ---
 
@@ -101,9 +102,30 @@ clients and Federated Apps for the rest. Resolve this per-client, not globally.
 
 ---
 
-### OIDC compatibility path (alternative to full migration)
+### OIDC compatibility path (default for redirect-based login)
 
-Descope exposes standard [OIDC endpoints](https://docs.descope.com/getting-started/oidc-endpoints):
+**When to use:** Any app using Okta's hosted/redirect login — `@okta/oidc-middleware`,
+`okta-auth-js` with `loginWithRedirect`, Angular/React/Vue apps that redirect to Okta,
+`passport-openidconnect`, `openid-client`, or any standard OIDC client library. This is
+the **default recommended first step** for these apps because it preserves all redirect/callback
+plumbing and requires only config changes.
+
+**Console prerequisite — create a Federated OIDC App in Descope first:**
+
+Console → **Applications → Federated Apps → + Application** → choose OIDC.
+
+Register the app's redirect/callback URL in the Console app. The Descope Flow linked to this
+app handles the login UI — configure it before testing.
+
+**Credentials — important:** for a Federated OIDC App, Descope does not generate a new
+client ID/secret pair. Use:
+- `client_id` → your **Descope Project ID** (found in Console → Project Settings)
+- `client_secret` → a **Descope Access Key** (Console → Access Keys → + Access Key)
+
+For Inbound Apps (scope-enforcing path), the App does generate its own client credentials —
+see the Inbound Apps docs for that setup.
+
+**OIDC endpoint map:**
 
 | Endpoint | Okta | Descope |
 |---|---|---|
@@ -114,21 +136,75 @@ Descope exposes standard [OIDC endpoints](https://docs.descope.com/getting-start
 | JWKS | `https://YOUR_DOMAIN.okta.com/oauth2/v1/keys` | `https://api.descope.com/YOUR_PROJECT_ID/.well-known/jwks.json` |
 | End Session | `https://YOUR_DOMAIN.okta.com/oauth2/v1/logout` | `https://api.descope.com/oauth2/v1/logout` |
 
-An app using `openid-client` or `@okta/oidc-middleware` can swap `OKTA_ISSUER` to
-`https://api.descope.com/YOUR_PROJECT_ID` and keep the existing OIDC client code intact.
-Claim shape differences (`scp` vs `scope`, `email_verified` behavior, etc.) still require
-testing and adjustment, but it's a viable incremental path.
+**`@okta/oidc-middleware` note:** This package is Okta-specific and is not confirmed to work
+when pointing at a non-Okta issuer. For the OIDC endpoint swap, replace it with a standard
+OIDC library (`openid-client`, `passport-openidconnect`) — the replacement is straightforward
+and the rest of the Express app stays intact. See the Node.js + @okta/oidc-middleware section
+below for specifics.
+
+**Config swap for `openid-client`:**
+
+```javascript
+// Before
+const issuer = await Issuer.discover(process.env.OKTA_ISSUER)
+const client = new issuer.Client({
+  client_id: process.env.OKTA_CLIENT_ID,
+  client_secret: process.env.OKTA_CLIENT_SECRET,
+  redirect_uris: [process.env.OKTA_REDIRECT_URI],
+  response_types: ['code'],
+})
+
+// After — discovery URL and credentials change; everything else stays
+const issuer = await Issuer.discover(`https://api.descope.com/${process.env.DESCOPE_PROJECT_ID}`)
+const client = new issuer.Client({
+  client_id: process.env.DESCOPE_PROJECT_ID,        // Project ID is the OIDC client_id
+  client_secret: process.env.DESCOPE_ACCESS_KEY,    // Access Key is the client_secret
+  redirect_uris: [process.env.APP_REDIRECT_URI],    // same callback URL as before
+  response_types: ['code'],
+})
+```
+
+**Config swap for `passport-openidconnect`:** update `issuer`, `authorizationURL`,
+`tokenURL`, `userInfoURL`, and `callbackURL` to the Descope equivalents above. Set
+`clientID` to the Project ID and `clientSecret` to an Access Key.
+
+**After the config swap, check these claim differences:**
+- `scp` → `scope` (see [scp vs. scope claim](#scp-vs-scope-claim) for the full breakdown)
+- `email` and `name` are not included in Descope tokens by default — configure a JWT Template
+  in Console → Project Settings → JWT Templates → User JWT before testing
+- `email_verified` behavior may differ — test the claim shape in your app
+
+This is a viable standalone migration. A Descope-native SDK migration (embedded flows,
+session cookies) can happen as a separate phase later if desired.
 
 ---
 
 ### scp vs. scope claim
 
-Okta access tokens include scopes in the `scp` claim as a JSON array of strings:
+There are two distinct `scp`/`scope` concepts in an Okta migration. They often get conflated
+but require different actions:
+
+**1 — "Does the backend validate scopes?" (architectural signal)**
+
+This is the question in Decision 1 of the triage. It means: does any backend code read the
+scopes from a token and use them to make authorization decisions — e.g., "allow this request
+only if the token contains `read:invoices`"? This is about *whether OAuth scopes are enforced
+at all*, not what the claim is called.
+
+- **Yes** → configure an **Inbound App** in Descope (scope definitions live there; Descope
+  issues access tokens with the allowed scopes)
+- **No** → configure a **Federated App** (identity only; no scope enforcement needed)
+
+**2 — `scp` → `scope` claim rename (code change)**
+
+Regardless of which app type is used, the JWT claim name differs between Okta and Descope:
+
+Okta access tokens carry scopes in `scp` as a JSON array:
 ```json
 { "scp": ["read:invoices", "write:invoices"] }
 ```
 
-Descope uses the `scope` claim, which may be a JSON array or a space-separated string:
+Descope uses `scope`, which may be a space-separated string or a JSON array:
 ```json
 { "scope": "read:invoices write:invoices" }
 ```
@@ -137,9 +213,13 @@ or
 { "scope": ["read:invoices", "write:invoices"] }
 ```
 
-Any backend code that reads `token.scp`, `claims["scp"]`, or similar must be updated to
-read `token.scope` (and handle both formats if the value may be a string). Check your
-scope-parsing middleware carefully — this is a silent correctness bug, not a compile error.
+Any backend code reading `token.scp`, `claims["scp"]`, `req.auth.scp`, or similar must be
+updated to read `token.scope` and handle both formats. This is a silent correctness bug —
+the backend will receive `undefined` for `scp` after migration, and authorization checks will
+fail without an error thrown.
+
+**In practice:** Decision 1 determines Console setup (Inbound vs. Federated App). The
+`scp` → `scope` rename is always a code change to make once the Console setup is done.
 
 ---
 
@@ -643,7 +723,49 @@ and the `OKTA_AUTH` injection token.
 `@okta/oidc-middleware` auto-mounts `/login`, `/logout`, and `/authorization-code/callback`
 and attaches `req.userContext` to every request.
 
-**Changes:**
+**Option A — OIDC endpoint swap via `openid-client` (preferred for redirect-mode apps):**
+
+`@okta/oidc-middleware` is Okta-specific and is not confirmed to work when the issuer is
+changed to a non-Okta OIDC provider. Replace it with `openid-client` (a standards-based
+OIDC library) and keep all the Express route/session wiring intact:
+
+```javascript
+// Remove: const { ExpressOIDC } = require('@okta/oidc-middleware')
+// Add:
+const { Issuer, generators } = require('openid-client')
+
+// In your app startup (async):
+const issuer = await Issuer.discover(`https://api.descope.com/${process.env.DESCOPE_PROJECT_ID}`)
+const oidcClient = new issuer.Client({
+  client_id: process.env.DESCOPE_PROJECT_ID,     // Project ID is the OIDC client_id
+  client_secret: process.env.DESCOPE_ACCESS_KEY, // Access Key is the client_secret
+  redirect_uris: [process.env.APP_REDIRECT_URI], // same callback URL as before
+  response_types: ['code'],
+})
+
+// /login route (replaces ExpressOIDC auto-mount)
+app.get('/login', (req, res) => {
+  const state = generators.state()
+  req.session.oidcState = state
+  const url = oidcClient.authorizationUrl({ scope: 'openid profile email', state })
+  res.redirect(url)
+})
+
+// /authorization-code/callback route (same path as before)
+app.get('/authorization-code/callback', async (req, res) => {
+  const params = oidcClient.callbackParams(req)
+  const tokenSet = await oidcClient.callback(process.env.APP_REDIRECT_URI, params, { state: req.session.oidcState })
+  req.session.userInfo = tokenSet.claims()
+  res.redirect('/')
+})
+```
+
+Console prerequisite: create a Federated App (Applications → Federated Apps → + Application)
+and register the callback URL. After the swap, update `scp` → `scope` references and
+configure a JWT Template for `email`/`name` claims.
+
+**Option B — Full SDK replacement (when removing the redirect flow entirely):**
+
 - Remove `@okta/oidc-middleware`; add `@descope/node-sdk` + `cookie-parser`
 - Remove the auto-mounted routes; write a `/login` route that renders the Descope web component
 - Replace `app.use(ExpressOIDC(...))` with custom middleware:

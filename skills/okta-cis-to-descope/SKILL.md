@@ -84,9 +84,33 @@ The migration path differs significantly based on these answers.
 
 Do not proceed to Step 0.5 until the user has answered.
 
-**Decision 0 — Inbound Apps vs. Federated Apps (resolve this before anything else):**
+**Decision 0 — Login mode (resolve this before anything else):**
 
-This single decision shapes the entire migration. Ask it as the first `AskUserQuestion`:
+Ask this as the first `AskUserQuestion`:
+
+> "Is the app using Okta's **hosted/redirect login** — for example, `loginWithRedirect`, `@okta/oidc-middleware`, or users being sent to an Okta-hosted login page to authenticate? Or does it use an **embedded login UI** — the Okta Sign-In Widget embedded in the page, or a custom auth form built with `okta-auth-js` in non-redirect mode?"
+
+Decision tree:
+```
+Login mode?
+├── REDIRECT (hosted Okta page, loginWithRedirect, oidc-middleware, passport-openidconnect)
+│     → Default to OIDC path: update OIDC client config to point at Descope endpoints
+│       Set up Federated App or Inbound App in Console (Decision 1 determines which)
+│       No new login page, no new SDK required — redirect/callback plumbing stays intact
+│
+└── EMBEDDED (Okta Sign-In Widget in-page, custom okta-auth-js non-redirect flow)
+      → Default to embedded Descope Flow component path
+        Replace widget/form with <Descope flowId="sign-up-or-in" />
+        Still determine Federated vs. Inbound App via Decision 1
+```
+
+Do not proceed until this is resolved — it determines the entire migration approach.
+
+---
+
+**Decision 1 — Inbound Apps vs. Federated Apps:**
+
+Ask as the second `AskUserQuestion` (applies to both login modes — it determines which type of app to configure in the Console):
 
 > "Does the backend validate OAuth scopes from the Okta access token? (i.e., is there backend code that reads `token.scp`, `claims["scp"]`, or similar to make authorization decisions?)"
 
@@ -101,7 +125,7 @@ Does any backend service validate token scopes (scp claim)?
              Then re-ask.
 ```
 
-Do not proceed until this is resolved — everything else depends on it.
+Do not proceed until this is resolved.
 
 ---
 
@@ -144,7 +168,8 @@ Batch into calls of up to 4 questions. Skip questions that are clearly inapplica
 Step 0 answers (e.g., skip user migration planning if they said they're starting fresh).
 
 **Strategy confirmation**
-- Does the backend validate `scp` claims from the Okta access token? (If yes → Inbound Apps. If unsure, show them what to grep for: `token.scp`, `claims["scp"]`, `req.auth.scp`.)
+- Does the backend validate `scp` claims from the Okta access token? (If yes → Inbound Apps. If unsure, show them what to grep for: `token.scp`, `claims["scp"]`, `req.auth.scp`.) — skip if already resolved in Decision 1
+- For redirect-mode apps: is the migration goal to keep the redirect flow (OIDC endpoint swap only) or eventually move to the embedded Descope Flow component? (The OIDC path is a valid permanent solution — not just a stepping stone.)
 - Are Sign-On Policies per-app, global, or both? (Determines scope of Flow migration.)
 - Is scope validation in application code or in an API gateway / JWT authorizer? (If gateway → just update JWKS URL and Issuer, no code change.)
 
@@ -185,7 +210,7 @@ There are three migration paths — pick one or combine them. Confirm which fits
 
 **Console/Flow/Widget opportunities** (flag before codebase analysis, then ask):
 - If the app embeds the **Okta Sign-In Widget** (`@okta/okta-signin-widget`): the migration is almost entirely Console-side. Embed the Descope Flow component (`<Descope flowId="sign-up-or-in" />`) in the same location. No redirect required; the same low-code/no-code principle applies.
-- If the app uses Okta's hosted sign-in page (redirect flow): this becomes Descope's **Auth Hosting Application** — configure the Flow in Console, update the redirect URL in your SDK config.
+- If the app uses Okta's **hosted/redirect login** (`loginWithRedirect`, `@okta/oidc-middleware`, or any redirect-based OIDC flow): **default to the OIDC path** — set up a Federated App or Inbound App in Console and update the issuer/client-ID env vars. Do NOT recommend replacing the redirect flow with an embedded Descope component unless the user explicitly wants that. See `references/implementation-nuances.md` → OIDC compatibility path and the Node.js + @okta/oidc-middleware section (Option A).
 - If the app has a custom SSO settings page: ask whether the SSO Setup Suite + Tenant Profile Widget replaces that code.
 - If the app has a profile edit page or user management UI: ask whether a Descope Widget covers the use case.
 - If the app has a separate MFA enrollment page: ask whether MFA should be integrated into the main sign-in Flow as a step or subflow (almost always cleaner in Descope).
@@ -199,9 +224,27 @@ Summarize any blockers and Console/Flow opportunities before proceeding to codeb
 
 Before running codebase analysis, determine whether the app qualifies for a minimal-code migration.
 
-**Minimal-code path indicators — all four must be true based on Step 0 answers:**
+**Fast-track A — OIDC redirect swap (all three must be true):**
+1. App uses **hosted/redirect login** (Decision 0 = redirect)
+2. **Decision 1 resolved to Federated Apps** (no backend scope validation)
+3. **No Token Inline Hooks** selected in the feature multiselect
+
+**If all three are true:** this is a minimal-config migration. The work is ~80% Console setup:
+- Create a Federated App in Console (Applications → Federated Apps → + Application); register the callback URL
+- Configure the Descope Flow linked to the app (auth methods, branding) — this replaces the Okta hosted login page
+- Update env vars: `OKTA_ISSUER` → `https://api.descope.com/DESCOPE_PROJECT_ID`; `OKTA_CLIENT_ID` → Project ID; `OKTA_CLIENT_SECRET` → a Descope Access Key
+- If using `@okta/oidc-middleware`: replace with `openid-client` (Okta's middleware is not confirmed to work with non-Okta issuers)
+- Check `scp` → `scope` claim rename in any backend authorization code (see `implementation-nuances.md` → scp vs. scope claim)
+- Configure JWT Template for `email`/`name` claims
+- No new login page, no SDK swap, no changes to callback routes
+
+Skip or abbreviate framework-specific code changes in Step 2. Codebase analysis is still useful to find stale Okta references and `scp` usages, but the diff will be small.
+
+---
+
+**Fast-track B — Embedded widget swap (all four must be true):**
 1. App embeds the **Okta Sign-In Widget** (`@okta/okta-signin-widget`) rather than a custom SDK-based auth flow
-2. **Decision 0 resolved to Federated Apps** (Step 0 confirmed no backend scope validation)
+2. **Decision 1 resolved to Federated Apps** (no backend scope validation)
 3. **No Token Inline Hooks** selected in the Step 0 feature multiselect
 4. **No Authorization Servers** with custom claims or resource policies selected in Step 0
 
@@ -213,7 +256,7 @@ Before running codebase analysis, determine whether the app qualifies for a mini
 
 Skip or abbreviate Step 2 (framework-specific code changes). Codebase analysis is still useful to find any stale Okta references, but the diff will be small.
 
-**If any indicator is false:** proceed with full codebase analysis below.
+**If neither fast-track applies:** proceed with full codebase analysis below.
 
 ---
 
@@ -403,18 +446,32 @@ List every Console setup item as a checkbox. Group into "Required before any tes
 
 Diff table with plain-English notes for each removal and addition:
 
+**For the OIDC path (redirect-based login):**
+
+| Remove | Add | Why |
+|---|---|---|
+| `OKTA_ISSUER` / `OKTA_DOMAIN` | — | Replaced by `DESCOPE_PROJECT_ID` in the issuer URL (`https://api.descope.com/PROJECT_ID`). |
+| `OKTA_CLIENT_ID` | `DESCOPE_PROJECT_ID` | For Federated OIDC Apps, the Project ID is the OIDC `client_id`. |
+| `OKTA_CLIENT_SECRET` | `DESCOPE_ACCESS_KEY` | For Federated OIDC Apps, an Access Key is the `client_secret`. Generate one in Console → Access Keys. |
+| `OKTA_AUDIENCE` | — | Handled by the Inbound App definition, if in use. |
+| — | `DESCOPE_MANAGEMENT_KEY` | Only needed if the app manages users, roles, or tenants server-side. |
+
+`OKTA_REDIRECT_URI` / callback URL stays — Descope's OIDC endpoints accept the same callback path.
+
+**For the embedded path (Descope Flow component):**
+
 | Remove | Add | Why |
 |---|---|---|
 | `OKTA_CLIENT_ID` | — | Okta identifies apps by client ID. Descope uses a Project ID instead. |
 | `OKTA_CLIENT_SECRET` | — | Not needed. Descope's embedded flow doesn't require a secret. |
 | `OKTA_ISSUER` / `OKTA_DOMAIN` | — | The Okta tenant URL. Replaced by the Project ID. |
 | `OKTA_AUDIENCE` | — | Used for API access scoping. Can be replicated via Inbound App + JWT Template if needed. |
-| `OKTA_REDIRECT_URI` | — | Descope doesn't use redirect URIs for embedded flows. |
+| `OKTA_REDIRECT_URI` | — | Descope's embedded flow doesn't use redirect URIs. |
 | — | `DESCOPE_PROJECT_ID` | The single identifier for the Descope project. Replaces all of the above. |
 | — | `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Same value, exposed to the browser for Next.js client components. |
 | — | `DESCOPE_MANAGEMENT_KEY` | Only needed if the app manages users, roles, or tenants server-side. |
 
-Follow with: "Net change: 5 variables removed, 1–3 added."
+Follow with: "Net change: [N variables removed, N added — use the appropriate table above based on login mode]."
 
 ---
 
@@ -441,12 +498,15 @@ End with a brief PM-trackable checklist:
 
 Write each in plain English with three parts: **what it is**, **what breaks if it's ignored**, **what to do**.
 
-> **Risk: scp vs. scope claim mismatch**
-> Okta access tokens use `scp` (JSON array). Descope uses `scope` (array or space-separated
-> string). Any backend code reading `token.scp` will receive `undefined` after migration and
-> authorization checks will fail silently.
-> **Action:** Grep for `scp` in backend code before testing. Update all references to `scope`
-> and handle both array and string formats.
+> **Risk: scp → scope claim rename (code change, always required)**
+> This is a JWT claim name change, separate from the Inbound vs. Federated App decision.
+> Okta access tokens carry scopes in `scp` (JSON array). Descope uses `scope` (space-separated
+> string or array). Any backend code reading `token.scp`, `claims["scp"]`, or `req.auth.scp`
+> will receive `undefined` after migration and authorization checks will fail silently —
+> regardless of whether Inbound or Federated Apps are used.
+> **Action:** Grep for `.scp` in backend code before testing. Update all references to `.scope`
+> and handle both string and array formats. This is separate from configuring Inbound Apps
+> (which is about *whether* scopes are enforced, not the claim name).
 
 > **Risk: User profile data won't appear after login until a JWT Template is configured**
 > Descope session tokens don't include `email` or `name` by default. Any UI that shows user
@@ -571,7 +631,9 @@ _Last updated: [timestamp of last completed step]_
 - Framework: [e.g., Next.js 14, Express + React]
 - Language: [TypeScript / Python / Go]
 - Package manager: [npm / yarn / pnpm / pip / etc.]
-- Migration path: [Inbound Apps / Federated Apps + OIDC layer]
+- Login mode: [Redirect (OIDC path) / Embedded (Descope Flow component)]
+- App type in Descope Console: [Federated App / Inbound App]
+- Migration path: [OIDC endpoint swap / Embedded Flow component / Full SDK replacement]
 - Migration goal: [Full cutover / Phased / Evaluating]
 
 ## Triage Answers
