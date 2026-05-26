@@ -104,6 +104,36 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<details>
+<summary><b>descope-byos-builder</b> — Build React BYOS custom UI on top of Descope flows</summary>
+
+Translate Descope flow JSON exports into working React BYOS screens that call `state.next(interactionId, form)`. Parses real interaction IDs, form-key `name` props, screen names, and subflow loaders from your exported flow JSON — so every generated component is grounded in the actual flow, not guesswork. Includes a 19-entry failure catalog covering every silent-failure mode observed in real BYOS sessions.
+
+**Use when:**
+- "Build custom UI over my Descope flow"
+- "My BYOS button does nothing" / "session is still anonymous after sign-in"
+- "no handler for screen" errors at runtime
+- "passkey ceremony aborts" / "WebAuthn hangs"
+- Updating a BYOS implementation after the flow changed in the Descope console
+- Adding post-auth promotion subflows (e.g. passkey enrollment after login)
+
+**What the skill does:**
+- Asks for exported flow JSONs (main flow + every subflow) before generating anything
+- Runs `parse-flow.mjs` to extract screen names, interaction IDs, input `name` props, next-rules, and subflow loaders
+- Generates per-screen React components with correct `state.next(interactionId, payload)` signatures
+- Detects shared screen-name collisions and writes router components with documented disambiguation heuristics
+- References the failure catalog before diagnosing any "doesn't work" symptom
+
+**Required inputs (skill asks for these before starting):**
+- Flow JSON exports — main flow + every invoked subflow, including post-auth promotion subflows
+- Descope Project ID + base URL
+- Mount point in the React app
+- Existing BYOS code paths (if modifying)
+
+**Iron rule:** Ground every BYOS component in the exported flow JSON. Do not guess interaction IDs, output key names, or screen names.
+
+</details>
+
 ## Installation
 
 <details>
@@ -191,6 +221,31 @@ Add an HTTP connector and S3 audit logging to my Descope Terraform config
 </details>
 
 <details>
+<summary><b>descope-byos-builder examples</b></summary>
+
+```
+Build custom login screens over my Descope sign-up-or-in flow
+```
+
+```
+My BYOS submit button does nothing — no errors in the console
+```
+
+```
+Getting "no handler for screen" after the user clicks Forgot Password
+```
+
+```
+Session is still anonymous after onSuccess fires
+```
+
+```
+Add passkey promotion screens that run after the user logs in
+```
+
+</details>
+
+<details>
 <summary><b>auth-review examples</b></summary>
 
 ```
@@ -240,13 +295,19 @@ skills/
 │       ├── project-resource.md - Full descope_project schema
 │       ├── other-resources.md - descope_management_key and descope_descoper schemas
 │       └── connectors.md - All 60+ supported connector types
-└── auth-review/
-    ├── SKILL.md - Four-phase workflow, severity scale, guardrails
+├── auth-review/
+│   ├── SKILL.md - Four-phase workflow, severity scale, guardrails
+│   └── references/
+│       ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
+│       ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
+│       ├── authz-matrix.md - Matrix schema and expected-principal inference rules
+│       └── report-template.md - Exact report structure and issue-ready finding format
+└── descope-byos-builder/
+    ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
+    ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
     └── references/
-        ├── enumeration.md - Entrypoint patterns across HTTP/GraphQL/WebSocket/RPC/serverless/queues
-        ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
-        ├── authz-matrix.md - Matrix schema and expected-principal inference rules
-        └── report-template.md - Exact report structure and issue-ready finding format
+        ├── byos-component-patterns.md - Core wiring, screen router, skeleton, and common screen examples
+        └── gotchas.md - 19 silent-failure modes with symptom → root cause → fix, plus pre-ship checklist
 ```
 
 </details>
@@ -266,6 +327,8 @@ skills/
 - [API Reference](https://docs.descope.com/api)
 - [Terraform Provider](https://registry.terraform.io/providers/descope/descope/latest/docs)
 - [Managing Environments with Terraform](https://docs.descope.com/managing-environments/terraform)
+- [BYOS (Bring Your Own Screen)](https://docs.descope.com/build/guides/byos/)
+- [BYOS Sample App](https://github.com/descope-sample-apps/byos-sample-app)
 
 ## Contributing
 
