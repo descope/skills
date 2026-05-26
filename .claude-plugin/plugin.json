@@ -1,7 +1,7 @@
 {
   "name": "descope-skills",
-  "description": "Skills for integrating Descope authentication, managing projects with Terraform, and authoring FGA authorization schemas",
-  "version": "1.1.1",
+  "description": "Skills for integrating Descope authentication, managing projects with Terraform, authoring FGA authorization schemas, and building React BYOS (Bring Your Own Screen) custom UI on top of Descope flows",
+  "version": "1.1.6",
   "author": {
     "name": "Descope",
     "email": "support@descope.com"

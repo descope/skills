@@ -8,13 +8,13 @@
     {
       "name": "descope-skills",
       "source": "./",
-      "description": "Skills for integrating Descope authentication and managing projects with Terraform",
+      "description": "Descope authentication skills: integration, Auth0/Okta migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
       "repository": "https://github.com/descope/skills.git",
       "author": {
         "name": "Descope",
         "email": "support@descope.com"
       },
-      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "mfa", "security", "oauth", "sso", "passkey", "ci-cd", "deployment"],
+      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "oauth", "sso", "passkey", "mfa", "fga", "authorization", "security", "byos", "ci-cd", "deployment"],
       "category": "authentication"
     }
   ]
