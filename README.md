@@ -104,6 +104,87 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<summary><b>auth0-to-descope</b> — Migrate applications from Auth0 to Descope</summary>
+
+Guides self-service migrations from Auth0 to Descope across any language or framework. Analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Auth0 to Descope"
+- "Replace Auth0 with Descope"
+- "Our app uses nextjs-auth0 / express-openid-connect / auth0-fastapi — switch to Descope"
+- "How do Auth0 Actions / Organizations / Token Vault map to Descope?"
+- "We're moving off Auth0"
+
+**Covers:**
+- SDK replacement for all major frameworks (Next.js, React, Express, Python, etc.)
+- Auth0 feature mappings: Actions → Descope flows, Organizations → Tenants, Token Vault, CIBA
+- Descope Flow and Widget setup (console-first approach)
+- SSO and OIDC compatibility
+- Session validation patterns
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow and Widget integration
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
+<details>
+<summary><b>okta-cis-to-descope</b> — Migrate applications from Okta CIS to Descope</summary>
+
+Guides self-service migrations from Okta Customer Identity Service (CIS) to Descope across any language or framework. Detects whether the app uses hosted/redirect login or an embedded widget and defaults to the appropriate migration path. Analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Okta to Descope"
+- "Replace Okta CIS with Descope"
+- "Our app uses okta-auth-js / @okta/okta-react / @okta/oidc-middleware / okta-jwt-verifier — switch to Descope"
+- "How do Okta Sign-On Policies / Authorization Servers / Authenticators / Log Streams map to Descope?"
+- "We're moving off Okta"
+
+**Covers:**
+- SDK replacement for all major frameworks (React, Angular, Vue, Next.js, Express, Python, Java, and more)
+- OIDC compatibility path for hosted/redirect login (swap issuer config, keep redirect flow intact)
+- Okta CIS feature mappings: Sign-On Policies → Flows, Authorization Servers → Resources/Inbound Apps, Authenticators → Auth Methods, Identity Providers → Tenant SSO, Log Streams → Audit Connectors
+- Inbound Apps vs. Federated Apps decision (scope-enforcing vs. identity-only)
+- `scp` → `scope` claim migration
+- Session validation patterns and dual-token validation for phased rollouts
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow and Console configuration guidance
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
+<details>
+<summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
+
+Author, edit, and apply Descope FGA schemas using the ReBAC/ABAC DSL. Validates changes via dry run before applying, warns on data loss, and requires user confirmation before modifying live schema. Requires the Descope Management MCP.
+
+**Use when:**
+- "/descope-fga-schema"
+- "Set up authorization / define roles and permissions"
+- "Add team-based access control"
+- "Create a new FGA schema"
+- "Update my authorization model"
+- "Add types/relations/permissions/conditions to my schema"
+
+**Covers:**
+- Full DSL grammar (`model AuthZ 1.0`, types, relations, permissions, conditions)
+- ReBAC (relationship-based) and ABAC (attribute-based) patterns
+- Dry-run validation before applying
+- Data loss detection and warnings
+- Reading current schema before edits
+
+**Requirements:**
+- Descope Management MCP installed and authorized
+
+</details>
+
 <details>
 <summary><b>descope-byos-builder</b> — Build React BYOS custom UI on top of Descope flows</summary>
 
@@ -204,6 +285,27 @@ Our Express API uses express-openid-connect — how do we switch to Descope?
 </details>
 
 <details>
+<summary><b>okta-cis-to-descope examples</b></summary>
+
+```
+Migrate my React app from @okta/okta-react to Descope
+```
+
+```
+Our Express app uses @okta/oidc-middleware — how do we switch to Descope?
+```
+
+```
+How do Okta Sign-On Policies and Authorization Servers map to Descope?
+```
+
+```
+Help me migrate our Okta Identity Providers (per-tenant SSO) to Descope
+```
+
+</details>
+
+<details>
 <summary><b>descope-terraform examples</b></summary>
 
 ```
@@ -266,6 +368,27 @@ Run an identity security review before I ship
 
 </details>
 
+<details>
+<summary><b>descope-fga-schema examples</b></summary>
+
+```
+/descope-fga-schema
+```
+
+```
+Define an FGA schema with users, organizations, and resource-level permissions
+```
+
+```
+Add a condition to my FGA schema that checks attribute values
+```
+
+```
+Update my authorization model to support team-based access control
+```
+
+</details>
+
 ## Compatible Agents
 
 Works with any agent supporting the Agent Skills format:
@@ -289,6 +412,17 @@ skills/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
 │       └── backend.md - Node.js/Python validation
+├── auth0-to-descope/
+│   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
+│   └── references/
+│       ├── implementation-nuances.md - Per-framework migration patterns and gotchas
+│       └── flows-and-widgets.md - Descope terminology, Flow/Widget guides, console-vs-code
+├── okta-cis-to-descope/
+│   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
+│   └── references/
+│       ├── implementation-nuances.md - Per-framework patterns, OIDC path, scp/scope, gotchas
+│       ├── flows-and-widgets.md - Okta→Descope lingo map, Flow/Widget guides, console-vs-code
+│       └── backend-sdks.md - Python and Java backend migration patterns
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
@@ -302,6 +436,8 @@ skills/
 │       ├── vulnerability-catalog.md - AuthN, tokens, sessions, IDOR/BOLA, OAuth, recovery, MFA, CSRF/CORS
 │       ├── authz-matrix.md - Matrix schema and expected-principal inference rules
 │       └── report-template.md - Exact report structure and issue-ready finding format
+├── descope-fga-schema/
+│   └── SKILL.md - DSL grammar, dry-run workflow, data loss guards
 └── descope-byos-builder/
     ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
     ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
