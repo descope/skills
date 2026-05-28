@@ -481,7 +481,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Support
 
 - [Descope Community Slack](https://www.descope.com/community)
-- [GitHub Discussions](https://github.com/descope/descope-js/discussions)
 - [Email Support](mailto:support@descope.com)
 
 ---
