@@ -217,7 +217,7 @@ const email = state?.context?.form?.email ?? form.email ?? 'your account'
 
 **Symptom:** Inside a subflow, Descope's logs show form fields (`password`, `fullName`, `keepMeSignedIn`) that the subflow's current screen doesn't need. Occasional "Request is invalid" errors with cryptic messages.
 
-**Root cause:** BYOS components spread `{ ...form, localKey: value }` on every submit. The form state is shared across the entire `<FlowOrByos>` lifetime. Parent-flow form values leak into subflow submissions.
+**Root cause:** BYOS components spread `{ ...form, localKey: value }` on every submit. The form state is shared across the entire BYOS wrapper component's lifetime. Parent-flow form values leak into subflow submissions.
 
 **Fix:** Send only the current screen's outputs in payloads:
 
