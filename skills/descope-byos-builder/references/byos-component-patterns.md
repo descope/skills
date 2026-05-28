@@ -142,10 +142,7 @@ export function EmailEntryScreen({ state }: { state: ByosState }) {
 }
 ```
 
-### 4b. OTP entry with resend guard
-
-Resend must fire once per screen mount, not on every render — `state.next` is a
-fresh reference on every update, so depend only on the stable error code.
+### 4b. OTP entry with resend
 
 ```tsx
 const VERIFY = 'verify-code'  // from flow JSON
@@ -153,17 +150,6 @@ const RESEND = 'resend-code'  // from flow JSON
 
 export function OtpScreen({ state }: { state: ByosState }) {
   const [code, setCode] = useState('')
-  const firedRef = useRef(false)
-  const nextRef  = useRef(state.next); nextRef.current = state.next
-
-  useEffect(() => {
-    if (state.context.error?.code === 'E061104') {
-      if (!firedRef.current) { firedRef.current = true; nextRef.current(RESEND, {}) }
-    } else {
-      firedRef.current = false
-    }
-  }, [state.context.error?.code])  // only the stable code, not state.next
-
   const submit = () => state.next(VERIFY, { code })
   return (
     <div>

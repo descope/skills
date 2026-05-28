@@ -227,6 +227,8 @@ run(SUBMIT, 'submit', { phone: phoneE164 })
 // NOT: run(SUBMIT, 'submit', { ...form, phone: phoneE164 })
 ```
 
+Descope's flow engine merges your payload into the accumulated server-side flow context — it already has `email`, `password`, and other values from prior screens. Re-sending them is redundant in simple flows and breaks subflow submissions, where the extra fields arrive as unexpected inputs.
+
 Per BYOS docs: "Each screen must update the form with all values listed in the 'Outputs' section." All, not more.
 
 ---
