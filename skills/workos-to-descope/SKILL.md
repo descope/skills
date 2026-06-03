@@ -1,5 +1,7 @@
 ---
-name: workos-to-descope
+
+## name: workos-to-descope
+
 description: >
   Use this skill whenever anyone asks about migrating from WorkOS to Descope — whether they're
   a developer doing it themselves or a technical lead evaluating the move. Triggers on: "how
@@ -9,7 +11,6 @@ description: >
   Admin Portal, RBAC, FGA, Audit Logs, Radar, Pipes) in the context of Descope. Works for any
   language or framework with a Descope SDK. Always use this skill before producing migration
   guidance — do not rely on memory alone.
----
 
 # WorkOS → Descope Migration Skill
 
@@ -28,6 +29,7 @@ features are in use, then maps each one to the closest Descope feature or migrat
 WorkOS migrations to be more B2B-enterprise heavy than a typical consumer-auth migration.
 
 **Primary references** (both in this skill's directory):
+
 - `references/implementation-nuances.md` — verified migration patterns for each framework, WorkOS feature-to-Descope mappings, and known gotchas
 - `references/flows-and-widgets.md` — Descope terminology/lingo, Flow structure and templates, Widgets, SSO Setup Suite, Console-vs-code decision guide
 
@@ -59,7 +61,7 @@ they want to install it first:
 > feature availability during migration. Without it, guidance is based on static training data,
 > which may be stale and can produce SDK calls that don't exist.
 >
-> You can install it in a few minutes at **https://docs-mcp.descope.com/** (server URL:
+> You can install it in a few minutes at **[https://docs-mcp.descope.com/](https://docs-mcp.descope.com/)** (server URL:
 > `https://docs-mcp.descope.com/mcp`). It significantly improves the accuracy of the
 > migration output — especially for SDK lookups and flow-specific configuration.
 >
@@ -91,47 +93,46 @@ Do not proceed to Step 0.5 until the user has answered.
 **First `AskUserQuestion` call (up to 4 questions):**
 
 1. **Backend language / framework** — Present the most likely options based on any cues
-   in the conversation (e.g., Next.js, Express, Flask/FastAPI, Go, Rails). The user can always
+  in the conversation (e.g., Next.js, Express, Flask/FastAPI, Go, Rails). The user can always
    pick "Other."
 2. **Migration goal** — Full cut-over, incremental/phased migration, or just evaluating.
 3. **Existing users and organizations** — Are they migrating an app with active users and
-   organizations in WorkOS, staging/dev only, or starting fresh? This determines whether user
+  organizations in WorkOS, staging/dev only, or starting fresh? This determines whether user
    and organization migration planning is needed (user export, org-to-tenant mapping, SCIM
    continuity, phased vs. big-bang cutover, forced re-login on cutover).
 4. **Preferred migration style** — Do they want to embed Descope Flows/Widgets directly (full native migration), or preserve an existing OIDC client library and point it at Descope's OIDC endpoints (OIDC compatibility layer)? Note: B2B features (Organizations/SSO/SCIM management) have no OIDC-layer equivalent and require native SDK calls regardless of path.
 
 **Second `AskUserQuestion` call — WorkOS feature usage (use `multiSelect: true`):**
 
-5. **Which WorkOS features are in use?** Present the highest-impact categories:
-   - AuthKit / User Management (core auth replacement)
-   - Organizations (multi-tenancy / B2B)
-   - Enterprise SSO (SAML / OIDC connections)
-   - Directory Sync / SCIM (directory provisioning)
-   - Admin Portal (hosted self-serve admin setup)
-   - Domain Verification / Custom Domains
-   - RBAC / roles / permissions
-   - Fine-Grained Authorization / FGA
-   - Audit Logs
-   - Radar / bot or fraud protection
-   - Pipes / connected accounts
-   - Webhooks / Events
-   - Widgets
-   - MCP Auth / Connect
-   - Vault
-   - Feature Flags
-
+1. **Which WorkOS features are in use?** Present the highest-impact categories:
+  - AuthKit / User Management (core auth replacement)
+  - Organizations (multi-tenancy / B2B)
+  - Enterprise SSO (SAML / OIDC connections)
+  - Directory Sync / SCIM (directory provisioning)
+  - Admin Portal (hosted self-serve admin setup)
+  - Domain Verification / Custom Domains
+  - RBAC / roles / permissions
+  - Fine-Grained Authorization / FGA
+  - Audit Logs
+  - Radar / bot or fraud protection
+  - Pipes / connected accounts
+  - Webhooks / Events
+  - Widgets
+  - MCP Auth / Connect
+  - Vault
+  - Feature Flags
    The user can add others via "Other." Follow up on anything selected:
-   - **Organizations** — organization membership, organization switching, metadata, whether users can belong to multiple organizations.
-   - **Enterprise SSO** — connections SAML, OIDC, or both; whether setup is handled by internal engineers or by customer admins; whether domain-based SSO routing is used.
-   - **Directory Sync / SCIM** — which directories; group sync; group-to-role mapping; deprovisioning behavior; directory webhook handlers.
-   - **Admin Portal / Widgets** — which customer-admin workflows are hosted by WorkOS today; whether the app generates portal links; whether Descope Widgets or the SSO Setup Suite can replace them.
-   - **RBAC** — whether roles are global or organization-scoped; where permission checks happen in code; whether roles/permissions are in tokens; whether IdP groups map to roles.
-   - **FGA** — the authorization model (resources, relationships, privileges, hierarchy); where checks are performed. Flag as high complexity.
-   - **Audit Logs** — whether logs are written to WorkOS, read back from WorkOS, shown to customers, or required for compliance.
-   - **Radar** — whether it blocks, challenges, or only monitors suspicious auth attempts; custom rules.
-   - **Pipes** — which providers are connected; where connected-account tokens are used (AI agents, integrations, background jobs).
-   - **Vault / Feature Flags** — flag as potentially outside the core Descope identity migration unless used directly for auth or access control.
-   - **MCP Auth / Connect** — flag for deeper review before implementation.
+  - **Organizations** — organization membership, organization switching, metadata, whether users can belong to multiple organizations.
+  - **Enterprise SSO** — connections SAML, OIDC, or both; whether setup is handled by internal engineers or by customer admins; whether domain-based SSO routing is used.
+  - **Directory Sync / SCIM** — which directories; group sync; group-to-role mapping; deprovisioning behavior; directory webhook handlers.
+  - **Admin Portal / Widgets** — which customer-admin workflows are hosted by WorkOS today; whether the app generates portal links; whether Descope Widgets or the SSO Setup Suite can replace them.
+  - **RBAC** — whether roles are global or organization-scoped; where permission checks happen in code; whether roles/permissions are in tokens; whether IdP groups map to roles.
+  - **FGA** — the authorization model (resources, relationships, privileges, hierarchy); where checks are performed. Flag as high complexity.
+  - **Audit Logs** — whether logs are written to WorkOS, read back from WorkOS, shown to customers, or required for compliance.
+  - **Radar** — whether it blocks, challenges, or only monitors suspicious auth attempts; custom rules.
+  - **Pipes** — which providers are connected; where connected-account tokens are used (AI agents, integrations, background jobs).
+  - **Vault / Feature Flags** — flag as potentially outside the core Descope identity migration unless used directly for auth or access control.
+  - **MCP Auth / Connect** — flag for deeper review before implementation.
 
 After both calls, summarize findings and flag high-complexity items (Directory Sync/SCIM, FGA,
 Pipes, MCP Auth/Connect, Vault) before proceeding to Step 0.5.
@@ -147,19 +148,23 @@ Batch into calls of up to 4 questions. Skip questions that are clearly inapplica
 Step 0 answers (e.g., skip user migration planning if they said they're starting fresh).
 
 **Access and credentials**
+
 - Do they have access to the Descope Console and a Project ID? (If not, see Step 1.5.)
 - Do they need a Management Key? (Required for user CRUD, role management, ReBAC, tenant/SSO/SCIM configuration, Outbound Apps.)
 
 **Codebase scope**
+
 - Are there places in the app that read claims directly from the session token (e.g. `user.email`, `claims.organization_id`, `role`/`permissions`)? These need a JWT Template configured before they'll work.
 - Does the app read WorkOS `organizationId`, `connectionId`, or `directoryId` in many places? The WorkOS Organization → Descope Tenant remap ripples through SSO, SCIM, RBAC, and membership checks — confirm the org model before writing code.
 - Are there multiple services or microservices validating WorkOS tokens/sessions? Each needs to be updated to validate Descope JWTs.
 
 **Deployment and risk**
+
 - Do they have multiple environments (dev / staging / prod)? Each needs its own Descope project and Project ID.
 - Is there a maintenance window, or does this need to be zero-downtime?
 
 **User and organization migration** (if they indicated existing users/orgs in Step 0)
+
 - How many users and organizations? This determines export approach and whether a phased cutover is warranted.
 - Do they use passwords in AuthKit? Plan how password credentials carry over (export/import vs. reset vs. passwordless). Verify the current WorkOS user-export capability and the Descope import path before committing to an approach.
 - Big-bang cutover or phased? Map each WorkOS Organization to a Descope Tenant first; user membership and tenant-scoped roles depend on it.
@@ -167,12 +172,14 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 - Are they aware that active WorkOS sessions will be invalidated on cutover unless a session-bridging approach is used? Plan for a forced re-login or phased rollout.
 
 **Gaps to flag immediately** (don't ask — flag these proactively based on Step 0 answers)
+
 - If they're using **Vault** or **Feature Flags**: these may have no direct Descope identity equivalent. Flag separately; do not pretend they are Descope SDK swaps. Ask whether they're in scope.
 - If they're using **MCP Auth / Connect**: flag for deeper review before any implementation — likely maps to Descope Inbound Apps / OAuth app patterns, but needs dedicated mapping.
 - If they're using **Audit Logs**: set up Descope's Audit Webhook Connector before cutover to avoid gaps in compliance/event logging. Missing this can break compliance visibility even though the app still runs.
 - If they're using **Pipes / connected accounts**: connected third-party tokens may power integrations or background jobs. Identify provider connections and whether users must reconnect accounts.
 
 **Console/Flow/Widget opportunities** (flag before codebase analysis, then ask):
+
 - If the app uses the **WorkOS Admin Portal** or generates portal links: ask whether the SSO Setup Suite + Tenant Profile Widget replaces that workflow instead of rebuilding it as custom code. Do not default to building custom admin setup screens.
 - If the app has a profile edit page or user management UI: ask whether a Descope Widget covers the use case.
 - If the app has a separate MFA enrollment page: ask whether MFA should be integrated into the main sign-in Flow as a step or subflow instead (almost always cleaner in Descope).
@@ -190,11 +197,6 @@ Scan the codebase to map every auth touchpoint before writing the plan.
 
 ```bash
 # Find all WorkOS / AuthKit import sites.
-# Case-insensitive (-i) so it also catches the `WorkOS` class and `WORKOS_` env prefix.
-# "workos" already matches every @workos-inc/* package (Node, widgets, all authkit-* libs:
-# authkit-js, authkit-react, authkit-nextjs, authkit-remix, authkit-react-router, authkit-tanstack-start)
-# plus the Python `workos`, Go `github.com/workos/workos-go`, Ruby/PHP/Java/.NET SDKs.
-# "authkit" is kept for bare references (e.g. authkitMiddleware, cookie names) that omit "workos".
 grep -rni "workos\|authkit" \
   --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
   --include="*.mjs" --include="*.cjs" --include="*.py" --include="*.go" \
@@ -211,7 +213,7 @@ grep -rn "WORKOS_\|workos\." \
   . 2>/dev/null
 
 # Find WorkOS SDK surface + claim / token / org access patterns (things that may need a JWT Template or org→tenant remap)
-grep -rn "workos.userManagement\|workos.organizations\|workos.sso\|workos.directorySync\|workos.auditLogs\|workos.fga\|workos.widgets\|workos.events\|workos.webhooks\|workos.pipes\|workos.portal\|workos.organizationDomains\|workos.featureFlags\|workos.mfa\|workos.authorization\|workos.vault\|organizationId\|organization_id\|orgId\|connectionId\|connection_id\|directoryId\|directory_id\|roleSlug\|permission" \
+grep -rn "workos.userManagement\|workos.organizations\|workos.sso\|workos.directorySync\|workos.auditLogs\|workos.fga\|workos.widgets\|workos.events\|workos.webhooks\|workos.pipes\|workos.portal\|workos.organizationDomains\|workos.featureFlags\|workos.types\|workos.mfa\|workos.authorization\|workos.vault\|organizationId\|organization_id\|orgId\|connectionId\|connection_id\|directoryId\|directory_id\|roleSlug\|permission" \
   --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" --include="*.go" \
   --exclude-dir=node_modules --exclude-dir=.next \
   . 2>/dev/null
@@ -234,6 +236,7 @@ find . -maxdepth 3 \( -name "package.json" -o -name "go.mod" -o -name "requireme
 ```
 
 For each hit, record:
+
 - **File path and line** — where the change happens
 - **What it does** — import, route protection, claim access, org/tenant read, SSO/SCIM config, webhook handler, logout handler, etc.
 - **Complexity** — Low (drop-in replacement), Medium (logic rewrite), High (no equivalent)
@@ -267,14 +270,16 @@ sessions, organizations, and existing accounts are preserved.
 
 Include a **Migration at a Glance** table:
 
-| | |
-|---|---|
-| **Approach** | Full native migration / OIDC compatibility layer |
-| **Files changing** | N source files across N areas |
-| **Console setup** | N configuration steps before launch |
-| **User impact** | No re-login required / Users will need to log in once after cutover |
-| **Estimated engineering effort** | N–N hours |
-| **Biggest risk** | One sentence naming the highest-complexity item |
+
+|                                  |                                                                     |
+| -------------------------------- | ------------------------------------------------------------------- |
+| **Approach**                     | Full native migration / OIDC compatibility layer                    |
+| **Files changing**               | N source files across N areas                                       |
+| **Console setup**                | N configuration steps before launch                                 |
+| **User impact**                  | No re-login required / Users will need to log in once after cutover |
+| **Estimated engineering effort** | N–N hours                                                           |
+| **Biggest risk**                 | One sentence naming the highest-complexity item                     |
+
 
 ---
 
@@ -304,17 +309,21 @@ Each group gets a sentence on what it does and what changes.
 **Session handling (3 files)** — These files read and validate the current user's login
 state. They'll be updated to use the Descope session SDK instead of WorkOS AuthKit.
 
-| File | What it does today | What changes |
-|---|---|---|
-| `lib/auth.ts:34` | Returns WorkOS session via `withAuth()` with `user`, `organizationId`, `role` | Rewritten to return Descope `AuthenticationInfo`; a thin adapter layer preserves the shape callers expect |
-| `middleware.ts:12` | `authkitMiddleware()` blocks unauthenticated requests app-wide | Updated to call Descope session validation; logic is identical, SDK call changes |
+
+| File               | What it does today                                                            | What changes                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `lib/auth.ts:34`   | Returns WorkOS session via `withAuth()` with `user`, `organizationId`, `role` | Rewritten to return Descope `AuthenticationInfo`; a thin adapter layer preserves the shape callers expect |
+| `middleware.ts:12` | `authkitMiddleware()` blocks unauthenticated requests app-wide                | Updated to call Descope session validation; logic is identical, SDK call changes                          |
+
 
 **Login / logout routes (2 files)** — These handle the AuthKit redirect-based login flow.
 Descope replaces this with an embedded UI component (or hosted Flow); the redirect cycle changes.
 
-| File | What it does today | What changes |
-|---|---|---|
+
+| File                    | What it does today             | What changes                                                                                                  |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | `app/callback/route.ts` | AuthKit OAuth callback handler | Deleted or rewritten — Descope handles this client-side; verify the replacement against the framework section |
+
 
 Cover all functional groupings. End with: "Total: N files. Estimated code-change effort: N–N hours."
 
@@ -350,25 +359,27 @@ it's needed, and roughly how long it takes. Group into "Required before any test
 "Required before production":
 
 **Required before any testing:**
-- [ ] **Create a Descope project** — Takes 2 minutes. Produces a Project ID that replaces
-  all WorkOS credentials in the app's environment variables.
-- [ ] **Create an authentication flow** — Descope uses a visual "flow" to define the login
-  experience (what methods are offered, in what order). The built-in `sign-up-or-in` flow
-  works for most apps and requires no customization to start.
-- [ ] **Configure a user profile token template** — By default, Descope session tokens don't
-  include the user's name, email, or profile photo. This template needs to be configured so
-  the app can display user profile information. Without it, any part of the UI that shows the
-  user's name or email will show nothing after login. (~10 minutes)
+
+- **Create a Descope project** — Takes 2 minutes. Produces a Project ID that replaces
+all WorkOS credentials in the app's environment variables.
+- **Create an authentication flow** — Descope uses a visual "flow" to define the login
+experience (what methods are offered, in what order). The built-in `sign-up-or-in` flow
+works for most apps and requires no customization to start.
+- **Configure a user profile token template** — By default, Descope session tokens don't
+include the user's name, email, or profile photo. This template needs to be configured so
+the app can display user profile information. Without it, any part of the UI that shows the
+user's name or email will show nothing after login. (~10 minutes)
 
 **Required before production:**
-- [ ] **Create tenants for each WorkOS Organization** — Descope Tenants must exist before
-  tenant-scoped code (SSO, roles, membership) will work.
-- [ ] **Create roles** (or whatever the codebase references) — Descope roles must exist in the
-  console before code that assigns them will work.
-- [ ] **Configure SSO connections per tenant** (or enable the SSO Setup Suite for self-serve) — SAML/OIDC connections need to be recreated.
-- [ ] **Configure social login providers** (Google, GitHub, etc.) — OAuth credentials for
-  each provider need to be entered in the console. (~15 minutes per provider)
-- [ ] (continue for each item found in analysis)
+
+- **Create tenants for each WorkOS Organization** — Descope Tenants must exist before
+tenant-scoped code (SSO, roles, membership) will work.
+- **Create roles** (or whatever the codebase references) — Descope roles must exist in the
+console before code that assigns them will work.
+- **Configure SSO connections per tenant** (or enable the SSO Setup Suite for self-serve) — SAML/OIDC connections need to be recreated.
+- **Configure social login providers** (Google, GitHub, etc.) — OAuth credentials for
+each provider need to be entered in the console. (~15 minutes per provider)
+- (continue for each item found in analysis)
 
 ---
 
@@ -376,15 +387,17 @@ it's needed, and roughly how long it takes. Group into "Required before any test
 
 Diff table with plain-English notes for each removal and addition:
 
-| Remove | Add | Why |
-|---|---|---|
-| `WORKOS_API_KEY` | — | WorkOS authenticates server-side calls with a secret API key. Descope uses a Project ID (+ optional Management Key) instead. |
-| `WORKOS_CLIENT_ID` | — | WorkOS identifies the AuthKit client. Descope uses a Project ID. |
-| `WORKOS_REDIRECT_URI` | — | AuthKit's OAuth callback URL. Descope's embedded Flow doesn't require a server redirect URI in the same way. |
-| `WORKOS_COOKIE_PASSWORD` | — | Used by AuthKit to encrypt/seal the session cookie. Descope issues a signed session JWT instead; no sealing password needed. |
-| — | `DESCOPE_PROJECT_ID` | The single identifier for the Descope project. Replaces all of the above. |
-| — | `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Same value, exposed to the browser for the login component (Next.js). |
-| — | `DESCOPE_MANAGEMENT_KEY` | Only needed if the app manages users, roles, tenants, or SSO/SCIM server-side. |
+
+| Remove                   | Add                              | Why                                                                                                                                 |
+| ------------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `WORKOS_API_KEY`         | —                                | WorkOS authenticates server-side calls with a secret API key. Descope uses a Project ID (+ optional Management Key) instead.        |
+| `WORKOS_CLIENT_ID`       | —                                | WorkOS identifies the AuthKit client. Descope uses a Project ID.                                                                    |
+| `WORKOS_REDIRECT_URI`    | —                                | AuthKit's OAuth callback URL, configured in console. Descope's embedded Flow doesn't require a server redirect URI in the same way. |
+| `WORKOS_COOKIE_PASSWORD` | —                                | Used by AuthKit to encrypt/seal the session cookie. Descope issues a signed session JWT instead; no sealing password needed.        |
+| —                        | `DESCOPE_PROJECT_ID`             | The single identifier for the Descope project. Replaces all of the above.                                                           |
+| —                        | `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Same value, exposed to the browser for the login component (Next.js only).                                                          |
+| —                        | `DESCOPE_MANAGEMENT_KEY`         | Only needed if the app manages users, roles, tenants, or SSO/SCIM server-side.                                                      |
+
 
 Follow with: "Net change: 4 variables removed, 1–3 added. No secrets need to be rotated
 on the WorkOS side — those credentials stop being used."
@@ -406,12 +419,13 @@ Prose strategy first, then steps. Start with: "X existing users across Y organiz
 > assume the Auth0 migration script (`descope/descope-migration`) supports WorkOS.
 
 End with a brief checklist of the migration steps at the level a PM can track:
-- [ ] Export users and organizations from WorkOS
-- [ ] Map each WorkOS Organization to a Descope Tenant
-- [ ] Re-point SCIM/Directory Sync at Descope (if Directory Sync is in use)
-- [ ] Do a dry run of the import against the Descope dev project
-- [ ] Review dry-run output for errors
-- [ ] Run live migration against staging, then production
+
+- Export users and organizations from WorkOS
+- Map each WorkOS Organization to a Descope Tenant
+- Re-point SCIM/Directory Sync at Descope (if Directory Sync is in use)
+- Do a dry run of the import against the Descope dev project
+- Review dry-run output for errors
+- Run live migration against staging, then production
 
 ---
 
@@ -461,40 +475,42 @@ Then labeled phases, each with a time estimate:
 **Phase 1 — Console Setup** (~30–60 minutes, no code required)
 Can be done by any team member with Descope console access, in parallel with other work.
 
-- [ ] Create Descope project, copy Project ID
-- [ ] Create authentication flow (use the built-in `sign-up-or-in` to start)
-- [ ] Configure user profile token template
-- [ ] Create tenants for each WorkOS Organization (list actual orgs found)
-- [ ] Create roles: (list actual roles found)
-- [ ] Configure SSO connections per tenant or enable the SSO Setup Suite (if SSO in use)
-- [ ] Configure social login providers: (list actual providers found)
+- Create Descope project, copy Project ID
+- Create authentication flow (use the built-in `sign-up-or-in` to start)
+- Configure user profile token template
+- Create tenants for each WorkOS Organization (list actual orgs found)
+- Create roles: (list actual roles found)
+- Configure SSO connections per tenant or enable the SSO Setup Suite (if SSO in use)
+- Configure social login providers: (list actual providers found)
 
 **Phase 2 — Code Changes** (~X–Y hours, 1 engineer)
 Work through files in the order listed. Run a compile check after each group.
 
-- [ ] Update environment variables in `.env.example` and CI config (15 min)
-- [ ] Rewrite session helper / `withAuth()` usage (30 min)
-- [ ] Swap AuthKit provider/middleware for Descope equivalents (15 min)
-- [ ] Update protected route files to use new session check (45 min)
-- [ ] Update org/tenant claim reads (`organizationId` → `token.dct`/`token.tenants`) (varies)
-- [ ] Update logout — two-step logout (15 min)
-- [ ] Compile check and fix any type errors before proceeding
+- Update environment variables in `.env.example` and CI config (15 min)
+- Rewrite session helper / `withAuth()` usage (30 min)
+- Swap AuthKit provider/middleware for Descope equivalents (15 min)
+- Update protected route files to use new session check (45 min)
+- Update org/tenant claim reads (`organizationId` → `token.dct`/`token.tenants`) (varies)
+- Update logout — two-step logout (15 min)
+- Compile check and fix any type errors before proceeding
 
 **Phase 3 — User & Organization Migration** (~1–2 hours, includes dry run)
 Run against dev/staging first. Do not run against production until Phase 4 passes.
 
-- [ ] (steps from user & organization migration section above)
+- (steps from user & organization migration section above)
 
 **Phase 4 — Testing** (~30–45 minutes)
-- [ ] Compile passes with zero errors
-- [ ] Server starts, no crashes on startup
-- [ ] Unauthenticated routes redirect to login correctly
-- [ ] Login flow completes, user profile data appears (confirms token template is working)
-- [ ] Tenant/SSO routing works for at least one organization
-- [ ] Logout invalidates session
+
+- Compile passes with zero errors
+- Server starts, no crashes on startup
+- Unauthenticated routes redirect to login correctly
+- Login flow completes, user profile data appears (confirms token template is working)
+- Tenant/SSO routing works for at least one organization
+- Logout invalidates session
 
 **Phase 5 — Production Cutover**
-- [ ] (cutover-specific steps based on their strategy — maintenance window, phased rollout, SCIM re-point, etc.)
+
+- (cutover-specific steps based on their strategy — maintenance window, phased rollout, SCIM re-point, etc.)
 
 ---
 
@@ -623,9 +639,11 @@ option objects, hook return shapes (`useDescope()` returns the SDK directly, not
 and subpath exports (`/client` vs root) differ just as often.
 
 **1a. After rewriting any module, grep for remaining imports of the removed package.**
+
 ```bash
 grep -r "from '@workos-inc/" --include="*.ts" --include="*.tsx" .
 ```
+
 Add remaining hits to the work list.
 
 **2. Derive wrapper types from the actual return type.**
@@ -644,10 +662,12 @@ span 10–20 files.
 **5. Verify published package versions before writing to `package.json` or running `npm install`.**
 Don't reuse WorkOS's version number or rely on training data for versions. Before writing any
 install command:
+
 ```bash
 npm view @descope/node-sdk version
 npm view @descope/nextjs-sdk version
 ```
+
 If npm is unavailable, leave the version as `"latest"` and flag it.
 
 ---
@@ -661,58 +681,72 @@ Use `AskUserQuestion` to ask whether they already have a Project ID and working 
 yes, skip to verifying items 5–7 — these are easy to miss even for existing projects.
 
 ### 1. Create a project and get your Project ID
+
 - Sign in at [console.descope.com](https://console.descope.com)
 - Your **Project ID** appears in the top-left project selector and under **Project → Settings**. It starts with `P` (e.g. `P2abc123...`).
 - For Next.js client-side code, this becomes `NEXT_PUBLIC_DESCOPE_PROJECT_ID`. For all server-side SDKs, it's `DESCOPE_PROJECT_ID`.
 
 ### 2. Get a Management Key (if needed)
+
 Required for: user management API, role/permission management, tenant operations, SSO/SCIM
 configuration, ReBAC (FGA), Outbound Apps. If the app does any server-side user, tenant, SSO,
 or SCIM management, they need this.
+
 - Console → **Company → Management Keys → Generate Key**
 - Store as `DESCOPE_MANAGEMENT_KEY`. Treat like a secret — never expose client-side.
 
 ### 3. Choose or create a Flow
+
 A Flow is the auth UI sequence. Reference it by Flow ID in the web component.
 
 - Console → **Authentication → Flows**
 - The built-in **"sign-up-or-in"** flow handles email/password, OTP, and social login.
-  Use it for most migrations.
+Use it for most migrations.
 - To customise: duplicate "sign-up-or-in", rename it, then edit in the visual builder.
 - The Flow ID is in the URL when editing and in the flow list.
 - There are 100+ Flow templates in the library — check for an existing template before building a custom flow. See `references/flows-and-widgets.md` → Flows.
 - MFA: add an MFA step to the Flow or embed MFA as a subflow. Descope manages MFA enrollment through Flows. For factor-deletion SDK support by type, see `references/implementation-nuances.md` → MFA section.
 
 ### 4. Configure authentication methods
+
 - Console → **Authentication** → select methods (Email OTP, Magic Link, Social, SSO, Passkeys, etc.)
 - For social providers (Google, GitHub, etc.): configure OAuth credentials here, then add
-  the provider step to your Flow.
+the provider step to your Flow.
 - For enterprise SSO (SAML/OIDC): Console → **SSO** → configure per tenant, or enable the SSO Setup Suite for tenant-admin self-serve. For correct SSO callback and ACS URLs (social OAuth, SAML ACS, what NOT to use), see `references/implementation-nuances.md` → Social login / SSO section.
 
 ### 5. Configure a JWT Template (almost always needed)
+
 WorkOS AuthKit tokens may include profile fields; Descope tokens do not by default.
+
 - Console → **Authorization → JWT Templates → New Template**
 - Add claims: `{"email": "{{user.email}}", "name": "{{user.name}}", "picture": "{{user.picture}}"}`
 - Apply the template to your project. Without this step, any code reading `token.email`
-  will get `undefined` after migration.
+will get `undefined` after migration.
 
 ### 6. Create roles in the Console (if using RBAC)
+
 Descope roles are referenced by **name**, not by ID. They must be created manually in the
 Console before the code that assigns them will work.
+
 - Console → **Authorization → RBAC → + Role**
 - Create each role the app references (e.g. `admin`, `member`)
 
 ### 7. Define custom attributes (if using tenant/user metadata)
+
 WorkOS Organization `metadata` and User metadata map to Descope `customAttributes`.
 Pre-define them in the Console schema before setting them via the SDK.
+
 - Console → **Project → Custom Attributes**
 
 ### 8. Env var summary
-| Variable | Where to get it | Used by |
-|---|---|---|
-| `DESCOPE_PROJECT_ID` | Console → Project Settings | All server-side SDKs |
-| `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Same value as above | Next.js `AuthProvider` (client-side) |
-| `DESCOPE_MANAGEMENT_KEY` | Console → Company → Management Keys | Management SDK, SSO/SCIM, Outbound Apps API |
+
+
+| Variable                         | Where to get it                     | Used by                                     |
+| -------------------------------- | ----------------------------------- | ------------------------------------------- |
+| `DESCOPE_PROJECT_ID`             | Console → Project Settings          | All server-side SDKs                        |
+| `NEXT_PUBLIC_DESCOPE_PROJECT_ID` | Same value as above                 | Next.js `AuthProvider` (client-side)        |
+| `DESCOPE_MANAGEMENT_KEY`         | Console → Company → Management Keys | Management SDK, SSO/SCIM, Outbound Apps API |
+
 
 ### 9. Consider Widgets for management UI
 
@@ -728,11 +762,14 @@ to the first code change step.
 
 ## Step 2: Framework-Specific Migration
 
-> **TODO (verify against WorkOS SDK + Descope docs before writing code):** The framework
-> recipes below are stubs listing the WorkOS idioms that need mapping. Confirm exact WorkOS SDK
-> surface (`@workos-inc/node`, `@workos-inc/authkit-nextjs`, `@workos-inc/authkit-react`) and the
-> matching Descope SDK calls via the Docs MCP or local type declarations before generating any
-> code. Do not ship code from these stubs without verification.
+WorkOS publishes exactly two SDK families (per the [WorkOS SDKs page](https://workos.com/docs/sdks)):
+
+- **Backend SDKs** (one per language): `workos-node`, `workos-go`, `workos-ruby`, `workos-rust`, `workos-python`, `workos-php`, `workos-php-laravel`, `workos-kotlin` (Java), `workos-dotnet` (.NET). These call the WorkOS API and hold server-side session helpers.
+- **AuthKit SDKs** (one per JS framework): `authkit-js`, `authkit-react`, `authkit-nextjs`, `authkit-remix`, `authkit-react-router`, `authkit-tanstack-start`. These handle the login UI + session.
+
+The recipes below cover exactly these SDKs — one section each — annotated with the matching Descope target. Do not infer other frameworks (e.g. Express, Flask, FastAPI); a WorkOS app using those is using the underlying language Backend SDK (`workos-node`, `workos-python`, etc.), so map it via that SDK's section.
+
+> The framework recipes below are stubs listing the WorkOS idioms that need mapping. Confirm the exact WorkOS SDK surface for the user's stack and the matching Descope SDK calls via the Docs MCP or local type declarations before generating any code. Do not ship code from these stubs without verification.
 
 Read `references/implementation-nuances.md` in two passes before writing any code:
 
@@ -742,14 +779,122 @@ Read `references/implementation-nuances.md` in two passes before writing any cod
 When a new framework is added to the file, add it to this list.
 
 ### Common WorkOS idioms to map (all frameworks)
+
+These idioms are **AuthKit-JS-specific**. Backend-SDK apps (Python, Go, Ruby, PHP, Java, .NET) don't
+have these helpers — they instead call the SDK directly (e.g. `workos.userManagement.authenticateWithCode(...)`
+for the code exchange and `workos.userManagement.loadSealedSession(...)` for session access), which map
+to Descope session validation + the hosted/embedded Flow the same way.
+
 - `withAuth()` / `getUser()` (AuthKit session access) → Descope session validation + an adapter returning the shape callers expect
 - `authkitMiddleware()` → Descope session-validation middleware
 - AuthKit sealed-session cookie (`WORKOS_COOKIE_PASSWORD`) → Descope signed session JWT in `DS`/`DSR` cookies
 - `getSignInUrl()` / hosted AuthKit redirect → embedded Descope Flow component (or hosted Flow), wiring `onSuccess`
 - WorkOS callback route (code exchange) → removed/rewritten; Descope handles auth client-side
 
-### Next.js  — TODO (verify)
-- `@workos-inc/authkit-nextjs` → `@descope/nextjs-sdk` + `@descope/node-sdk`
+### Backend SDKs
+
+#### Node.js
+
+*WorkOS SDK: `workos-node` (`@workos-inc/node`) → Descope `@descope/node-sdk`*
+
+- Remove `@workos-inc/node` auth/session usage; add `@descope/node-sdk`
+- Validate the `DS` session token via custom middleware calling `descopeClient.validateSession()` (parse the cookie yourself)
+- Login UI → `<descope-wc>` web component; logout: `descopeClient.logout(refreshToken)` + clear `DS`/`DSR` cookies
+
+#### Go
+
+#### *WorkOS SDK: `workos-go` → Descope `github.com/descope/go-sdk`*
+
+- Remove the WorkOS Go SDK; add `descope/go-sdk`
+- Session validation: `descopeClient.Auth.ValidateSessionWithToken(ctx, token)` returns `(bool, *descope.Token, error)`
+- WorkOS `organizationId` → Descope `Token.Claims` (`dct` / `tenants`)
+
+#### Ruby
+
+*WorkOS SDK: `workos-ruby` → Descope Ruby SDK*
+
+- Remove the WorkOS Ruby SDK; add the Descope Ruby SDK
+- Validate the `DS` session token via the Descope Ruby SDK in your request lifecycle
+- Login UI → `<descope-wc>` web component; logout: Descope SDK logout + clear `DS`/`DSR` cookies
+- No dedicated recipe in `implementation-nuances.md` yet — follow the Node.js / Python backend patterns and verify against the [Descope Ruby SDK](https://github.com/descope/ruby-sdk).
+
+#### Rust
+
+*WorkOS SDK: `workos-rust` → **No Descope Rust SDK**; validate via Descope JWKS + Management REST API*
+
+- There is no official Descope Rust SDK. Validate the `DS` session JWT directly against Descope's JWKS endpoint (`https://api.descope.com/v2/keys/<project_id>`) using a standard JWT library.
+- Management operations (users, tenants, roles, SSO) → call the Descope Management REST API directly.
+- Login UI → `<descope-wc>` web component; logout clears `DS`/`DSR` cookies.
+
+#### Python
+
+*WorkOS SDK: `workos-python` → Descope `descope` Python SDK*
+
+- Remove the WorkOS Python SDK auth/session usage; add the `descope` Python SDK
+- Validate the `DS` session token with `descope_client.validate_session(session_token)` (or validate against Descope's JWKS for a custom authorizer)
+- Login UI → `<descope-wc>` web component; logout: `descope_client.logout(refresh_token)` + delete cookies
+
+#### PHP
+
+*WorkOS SDK: `workos-php` → Descope PHP SDK*
+
+- Remove the WorkOS PHP SDK; add the Descope PHP SDK
+- Validate the `DS` token via the Descope PHP SDK in your request lifecycle
+- Login UI → `<descope-wc>` web component; logout clears `DS`/`DSR` cookies
+- No dedicated recipe yet — follow the Node.js / Python backend patterns and verify against the Descope PHP SDK.
+
+#### Laravel
+
+*WorkOS SDK: `workos-php-laravel` → Descope PHP SDK (no Descope Laravel-specific SDK)*
+
+- Remove the WorkOS Laravel package; use the Descope PHP SDK
+- Validate the `DS` token in Laravel middleware
+- Login UI → `<descope-wc>` web component; logout clears `DS`/`DSR` cookies
+- No dedicated recipe yet — follow the PHP backend patterns and verify.
+
+#### Java
+
+*WorkOS SDK: `workos-kotlin` (Java/Kotlin) → Descope `descope-java`*
+
+- Remove the WorkOS Java/Kotlin SDK; add `descope-java`
+- Validate the `DS` token via a filter/interceptor
+- Login UI → `<descope-wc>` web component; logout clears `DS`/`DSR` cookies
+- No dedicated recipe yet — follow the backend patterns and verify against the [Descope Java SDK](https://github.com/descope/descope-java).
+
+#### .NET
+
+*WorkOS SDK: `workos-dotnet` → Descope `descope-dotnet`*
+
+- Remove the WorkOS .NET SDK; add `descope-dotnet`
+- Validate the `DS` token in middleware / a custom auth handler
+- Login UI → `<descope-wc>` web component; logout clears `DS`/`DSR` cookies
+- No dedicated recipe yet — follow the backend patterns and verify against the [Descope .NET SDK](https://github.com/descope/descope-dotnet).
+
+### AuthKit SDKs
+
+#### JavaScript
+
+*WorkOS SDK: `authkit-js` → Descope `@descope/web-js-sdk` + `@descope/web-component`*
+
+- `createClient()` / `authkit.getUser()` / `getAccessToken()` → `@descope/web-js-sdk` (`getSessionToken()`, `isJwtExpired()`, `refresh()`)
+- Login UI → `<descope-wc project-id flow-id>` web component, listening for `success` / `error` events
+- Logout: `sdk.logout()` + clear stored tokens/cookies
+
+#### React
+
+*WorkOS SDK: `authkit-react` → Descope `@descope/react-sdk`*
+
+- `<AuthKitProvider>` → Descope `<AuthProvider projectId>`
+- `useAuth()` (user/session/loading) → `useSession()` + `useUser()` hooks
+- `signIn()` / hosted redirect → embedded `<Descope flowId>` component, wiring `onSuccess`
+- Logout: `sdk.logout()` via `useDescope()` hook
+- No dedicated recipe yet — follow the Next.js client-side patterns and verify each method against docs.
+
+#### Next.js
+
+*WorkOS SDK: `authkit-nextjs` → Descope `@descope/nextjs-sdk` + `@descope/node-sdk`*
+
+- `authkit-nextjs` → `@descope/nextjs-sdk` + `@descope/node-sdk`
 - AuthKit `<AuthKitProvider>` → Descope `AuthProvider` (takes `projectId`; must use `NEXT_PUBLIC_` prefix)
 - `withAuth()` / `useAuth()` → `session()` (server) + `useSession()` / `useUser()` (client)
 - Remove the AuthKit callback route — verify Descope's client-side handling
@@ -757,42 +902,47 @@ When a new framework is added to the file, add it to this list.
 - Logout: `sdk.logout()` via `useDescope()` hook + clear cookies (two-step)
 - **Client vs. server session access** — `session()` from `@descope/nextjs-sdk/server` is server-only; `useSession()`/`useUser()` from `@descope/nextjs-sdk/client` are client-only. Using `session()` in a client component compiles but throws at runtime. Verify exact exports before writing imports.
 
-### Express.js — TODO (verify)
-- Remove `@workos-inc/node` AuthKit/session usage; add `@descope/node-sdk` + `cookie-parser`
-- Replace AuthKit middleware with ~20-line custom middleware reading the `DS` cookie and calling `descopeClient.validateSession()`
-- Add `/login` route rendering `<descope-wc>` web component
-- Logout: `descopeClient.logout(refreshToken)` + clear `DS`/`DSR` cookies
+#### Remix
 
-### Flask / Python — TODO (verify)
-- Remove the WorkOS Python SDK auth/session usage; add the `descope` Python SDK
-- Remove the WorkOS callback route — no code exchange needed
-- `/login` renders the Descope web component
-- Logout: `descope_client.logout(refresh_token)` + delete cookies
+*WorkOS SDK: `authkit-remix` → Descope `@descope/react-sdk` + `@descope/web-js-sdk` (no Descope Remix SDK)*
 
-### FastAPI / Python — TODO (verify)
-- Replace WorkOS session validation with a custom `TokenVerifier` class: reads `Authorization` header, validates against Descope JWKS, attaches claims as a FastAPI `Security()` dependency
+- `authkitLoader` / `authLoader()` loaders → custom Remix loaders that validate the session token (`@descope/web-js-sdk` / `@descope/node-sdk`) and gate routes
+- `getSignInUrl()` → embedded Descope component (`@descope/react-sdk`) or hosted Flow
+- Logout: clear `DS`/`DSR` cookies in an action + `sdk.logout()`
+- No dedicated recipe yet — follow the Next.js (server + client split) patterns and verify.
 
-### Go — TODO (verify)
-- Remove the WorkOS Go SDK; add `descope/go-sdk`
-- Session validation: `descopeClient.Auth.ValidateSessionWithToken(ctx, token)` returns `(bool, *descope.Token, error)`
-- WorkOS `organizationId` → Descope `Token.Claims` (`dct` / `tenants`)
+#### React Router
+
+*WorkOS SDK: `authkit-react-router` → Descope `@descope/react-sdk`*
+
+- Same shape as Remix (`authkit-react-router` is the React Router 7+ port): loader-based session checks → custom loaders + Descope session validation
+- Login via embedded Descope component; logout via `sdk.logout()` + cookie clear
+- No dedicated recipe yet — follow the React / Remix patterns and verify.
+
+#### TanStack Start
+
+*WorkOS SDK: `authkit-tanstack-start` → Descope `@descope/react-sdk` / `@descope/web-js-sdk` (no Descope TanStack SDK)*
+
+- Server-route session helpers → TanStack server functions validating the Descope session token
+- Login via embedded Descope component; logout via `sdk.logout()` + cookie clear
+- No dedicated recipe yet — follow the Next.js / React patterns and verify.
 
 ### Path A: OIDC Compatibility (lower risk, incremental)
 
 Descope exposes standard OIDC endpoints. If the app uses a **generic OIDC client library**
 pointed at WorkOS, it can point at Descope's OIDC issuer instead with minimal code changes.
 
-> **TODO (verify):** Many WorkOS apps use AuthKit's own SDK rather than a generic OIDC client,
-> in which case Path A may not apply cleanly. Confirm whether the app uses a standard OIDC client
-> before recommending this path. Verify the Descope OIDC endpoint table below against current docs.
+> Many WorkOS apps use AuthKit's own SDK rather than a generic OIDC client, in which case Path A may not apply cleanly. Confirm whether the app uses a standard OIDC client before recommending this path. Verify the Descope OIDC endpoint table below against current docs.
 
-| Endpoint | Descope |
-|---|---|
-| Issuer | `https://api.descope.com` |
-| Authorization | `https://api.descope.com/oauth2/v1/authorize` |
-| Token | `https://api.descope.com/oauth2/v1/token` |
-| UserInfo | `https://api.descope.com/oauth2/v1/userinfo` |
-| JWKS | `https://api.descope.com/__ProjectID__/.well-known/jwks.json` |
+
+| Endpoint      | Descope                                                       |
+| ------------- | ------------------------------------------------------------- |
+| Issuer        | `https://api.descope.com`                                     |
+| Authorization | `https://api.descope.com/oauth2/v1/authorize`                 |
+| Token         | `https://api.descope.com/oauth2/v1/token`                     |
+| UserInfo      | `https://api.descope.com/oauth2/v1/userinfo`                  |
+| JWKS          | `https://api.descope.com/__ProjectID__/.well-known/jwks.json` |
+
 
 **Good for:** Teams that want to swap the IdP first, then refactor to Descope-native SDKs
 later. Preserves existing OIDC client code.
@@ -816,6 +966,7 @@ log any non-obvious decisions made (adapter types kept, async cascade scope, etc
 Scan for WorkOS references in non-code files after updating source files.
 
 ### `.env.example` / `.env.template` / `.env.sample`
+
 ```
 # REMOVE
 WORKOS_API_KEY=
@@ -828,18 +979,22 @@ DESCOPE_PROJECT_ID=             # Console → Project Settings
 NEXT_PUBLIC_DESCOPE_PROJECT_ID= # Next.js only — same value as above
 DESCOPE_MANAGEMENT_KEY=         # Console → Company → Management Keys (only if using management SDK)
 ```
+
 Run `grep -r "WORKOS"` to find all env var references — `.env.example`, Docker, CI, shell scripts.
 
 ### README / docs
+
 Search all `.md` files for WorkOS references. At minimum, update:
+
 - **Setup section** — replace "create a WorkOS app / AuthKit setup" instructions with Descope Console setup steps
 - **Environment variables section** — reflect the reduced env var set
 - **Run instructions** — replace WorkOS dashboard steps with Descope Console steps
 - **Auth flow diagrams or descriptions** — update to reflect Descope's cookie-based approach
 
 ### Docker / CI files
+
 Check `Dockerfile`, `docker-compose.yml`, `.github/workflows/`, and any CI config for
-`WORKOS_*` env var declarations. Update them to `DESCOPE_*`.
+`WORKOS_`* env var declarations. Update them to `DESCOPE_`*.
 
 ### Setup / bootstrap scripts
 
@@ -868,19 +1023,22 @@ WorkOS AuthKit handles login UI, authentication methods, users, sessions, and en
 routing. Descope splits these responsibilities across a Flow (UI + methods), session validation
 (SDK), Users/Tenants, and JWT Templates (profile claims).
 
-| WorkOS | Descope |
-|---|---|
-| Hosted AuthKit login UI | [Descope Flows](https://docs.descope.com/flows) |
-| `withAuth()` / `getUser()` session access | `validateSession()` + a thin adapter returning the shape callers expect |
-| AuthKit user object | Descope User (profile fields via JWT Template) |
-| Auth method config (password, social, passkeys, MFA, magic auth) | Methods toggled in Console + added as Flow steps |
+
+| WorkOS                                                           | Descope                                                          |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Hosted AuthKit login UI                                          | [Descope Flows](https://docs.descope.com/flows)                  |
+| `withAuth()` / `getUser()` session access                        | `validateSession()` + adapter returning the shape callers expect |
+| AuthKit user object                                              | Descope User (profile fields via JWT Template)                   |
+| Auth method config (password, social, passkeys, MFA, magic auth) | Methods toggled in Console + added as Flow steps                 |
+
 
 Use Flows for the user-facing journey whenever possible; write custom SDK calls only when Flows
 cannot express the requirement. Ask which auth methods are enabled before recommending details.
 **Effort: Low–Medium** (mostly SDK/UI/session swap; token differences matter).
 
 ### Organizations → Descope Tenants
-- WorkOS `externalId` → Descope `token.dct` (active tenant) or `token.tenants` (nested object: `{ [tenantId]: { roles, permissions } }`)
+
+- WorkOS `organizationId` (flat string) → Descope `token.dct` (active tenant) or `token.tenants` (nested object: `{ tenantId: { roles, permissions } }`)
 - WorkOS org-scoped login → Descope routes by email domain or tenant-specific URLs
 - Users are project-level in Descope; associated with tenants, not created per-tenant
 - Organization `metadata` → tenant `customAttributes` (pre-define in the Console schema)
@@ -903,11 +1061,13 @@ the SSO Setup Suite + Tenant Profile Widget may eliminate the SDK calls entirely
 
 **SDK path (when programmatic SSO is needed):**
 
-| WorkOS | Descope |
-|---|---|
-| SAML connection (`sso.*`) | `management.sso.configureSAMLByTenant(tenantId, settings)` |
-| OIDC connection | `management.sso.configureOIDCByTenant(tenantId, settings)` |
-| Per-Organization connection | Per-tenant SSO (Console → SSO or Management SDK) |
+
+| WorkOS                      | Descope                                           |
+| --------------------------- | ------------------------------------------------- |
+| SAML connection (`sso.`*)   | `management.ssoApplication.createSamlApplication` |
+| OIDC connection             | `management.ssoApplication.createOidcApplication` |
+| Per-Organization connection | Per-tenant SSO (Console → SSO or Management SDK)  |
+
 
 (Verify exact method names against the Docs MCP.) Ask whether SSO is configured by internal
 engineers or by customer admins. **Effort: Medium** — setup recreated per tenant.
@@ -919,12 +1079,14 @@ a one-time import** — enterprise directories keep pushing create/update/suspen
 cutover, so every directory must be re-pointed at Descope before cutover or provisioning silently
 breaks.
 
-| WorkOS Directory Sync | Descope |
-|---|---|
+
+| WorkOS Directory Sync                      | Descope                                  |
+| ------------------------------------------ | ---------------------------------------- |
 | SCIM endpoint + bearer token per directory | Descope SCIM endpoint + token per tenant |
-| Directory user create/update/deprovision | Tenant user provisioning lifecycle |
-| Directory groups | Group → role mapping in Descope |
-| `dsync.*` / directory webhooks | Descope provisioning events / connectors |
+| Directory user create/update/deprovision   | Tenant user provisioning lifecycle       |
+| Directory groups                           | Group → role mapping in Descope          |
+| `dsync.`* / directory webhooks             | Descope provisioning events / connectors |
+
 
 Identify every directory, whether groups are synced, and whether groups map to roles.
 **Effort: Medium–High** (lifecycle, groups, deprovisioning, and role mapping can be subtle).
@@ -943,12 +1105,14 @@ Ask which admin workflows are hosted by WorkOS today before choosing a replaceme
 
 ### RBAC → Descope RBAC
 
-| WorkOS | Descope |
-|---|---|
-| `role` / `permissions` claim in session | `token.roles` / `token.permissions` (built-in) |
-| Organization-scoped role | Tenant-scoped role under `token.tenants[tenantId].roles` |
-| `roleSlug` reference | Descope role **name** (not ID) |
-| IdP group → role mapping | Group-to-role mapping (Console / SCIM) |
+
+| WorkOS                                  | Descope                                                  |
+| --------------------------------------- | -------------------------------------------------------- |
+| `role` / `permissions` claim in session | `token.roles` / `token.permissions` (built-in)           |
+| Organization-scoped role                | Tenant-scoped role under `token.tenants[tenantId].roles` |
+| `roleSlug` reference                    | Descope role **name** (not ID)                           |
+| IdP group → role mapping                | Group-to-role mapping (Console / SCIM)                   |
+
 
 SDK: `descopeClient.management.role.create(name, description, permissionNames, tenantId)` (verify
 signature). Roles must exist in the Console before assignment. Check whether roles are global or
@@ -973,11 +1137,12 @@ type document
   permission can_view: owner or viewer
 ```
 
-| Operation | WorkOS FGA | Descope ReBAC |
-|---|---|---|
+
+| Operation      | WorkOS FGA                | Descope ReBAC                                         |
+| -------------- | ------------------------- | ----------------------------------------------------- |
 | Write relation | `fga.writeWarrant({...})` | `descopeClient.management.fga.createRelations([...])` |
-| Check | `fga.check({...})` | `descopeClient.management.fga.check([...])` |
-| List resources | `fga.query(...)` | `descopeClient.management.authz.whatCanTargetAccessWithRelation(...)` |
+| Check          | `fga.check({...})`        | `descopeClient.management.fga.check([...])`           |
+
 
 (Verify exact WorkOS and Descope shapes against current docs.) Identify resources,
 relationships/privileges, where checks run, and any hierarchical inheritance. **Effort: High** —
@@ -1004,11 +1169,13 @@ WorkOS Pipes (connected third-party accounts with OAuth token storage/refresh) m
 Outbound Apps.
 
 Users connect accounts client-side:
+
 ```
 sdk.outbound.connect(appId, { redirectURL, scopes })
 ```
 
 Fetch stored tokens server-side:
+
 ```
 POST https://api.descope.com/v1/mgmt/outbound/app/user/token
 Authorization: Bearer {projectId}:{managementKey}
@@ -1020,10 +1187,12 @@ whether users must reconnect accounts or tokens can be migrated. **Effort: Mediu
 
 ### Webhooks / Events → Descope Webhooks / Connectors / Events
 
-| WorkOS | Descope |
-|---|---|
-| Webhook endpoint + signing secret | Descope webhook/connector + signature validation |
-| `user.created` / `organization.*` / `dsync.*` events | Corresponding Descope events / connector triggers |
+
+| WorkOS                                               | Descope                                           |
+| ---------------------------------------------------- | ------------------------------------------------- |
+| Webhook endpoint + signing secret                    | Descope webhook/connector + signature validation  |
+| `user.created` / `organization.`* / `dsync.`* events | Corresponding Descope events / connector triggers |
+
 
 Search the codebase for webhook handlers; update event names, signature/validation logic, and
 payload handling. Identify which event types are business-critical. **Effort: Medium.**
@@ -1064,6 +1233,7 @@ out of scope.
 ## Step 4: Critical Gotchas (Always Cover These)
 
 ### JWT Claims Are Not the Same
+
 Descope session JWTs contain `sub`, `amr`, `drn`, `tenants`, `roles`, `permissions`, and `dct` by
 default. They do **not** contain `email`, `name`, or `picture`. WorkOS AuthKit tokens may expose
 some profile fields, so code that reads them directly will break after migration.
@@ -1078,37 +1248,44 @@ when you only need the tenant ID.
 `name`, and any other profile fields the app reads from the token.
 
 ### Sealed Sessions Become Signed JWTs
+
 WorkOS AuthKit uses an encrypted/sealed session cookie protected by `WORKOS_COOKIE_PASSWORD`.
 Descope issues a signed session JWT in the `DS` cookie (refresh in `DSR`). The sealing password is
 no longer needed, and code that unseals/inspects the WorkOS cookie must be replaced with Descope
 session validation (`validateSession()`), which returns decoded JWT claims.
 
 ### Logout Is Two Steps
+
 1. Call `descopeClient.logout(refreshToken)` to invalidate server-side
 2. Clear `DS` and `DSR` cookies
 
 Skipping either step leaves a broken state.
 
 ### Audience Validation Is Opt-In
+
 Descope session tokens have no `aud` claim by default. Apps that rely on audience-scoped API access
 must (1) configure a custom `aud` claim in JWT Templates and (2) pass `audience` to
 `validateSession()` on the backend.
 
 ### Organization Claim Shape Differs
+
 WorkOS exposes a flat `organizationId` (and `connectionId` / `directoryId`). Descope uses `dct`
 (active tenant) and the nested `tenants` object. Any code reading `organizationId` needs to be
 updated — this is mechanical but can span many files, so grep for all org-claim reads and update
 them in one pass.
 
 ### One Token, Not Provider-Specific Access Tokens
+
 Forward the Descope session JWT (`DS` cookie) as `Authorization: Bearer <DS>` to API servers. There
 is one session token; downstream services validate it with `validateSession()`.
 
 ### No Drop-In Middleware
+
 Descope has no `authkitMiddleware()` equivalent package. The middleware is ~20 lines of custom code
 that reads the `DS` cookie and calls `validateSession()`.
 
 ### `cookies()` and `headers()` Are Async in Next.js 15
+
 `cookies()` and `headers()` from `next/headers` return a `Promise` in Next.js 15+. Before
 generating any server-side helper that reads cookies:
 
@@ -1117,15 +1294,18 @@ generating any server-side helper that reads cookies:
 3. Trace upward — making a cookie-reading helper async cascades to every caller.
 
 ### Async Cascade: Trace All Callers Before Finishing
+
 When a shared utility becomes async, TypeScript accepts `await` on non-Promises without
 error — so callers that forget `await` silently return a Promise object. Always grep for
 all call sites of any utility you make async and update them in the same pass.
 
 ### SCIM Is a Lifecycle, Not a One-Time Import
+
 If Directory Sync is in use, re-point the SCIM pipeline at Descope before cutover. A one-time user
 import leaves provisioning broken the moment the directory pushes its next change.
 
 ### Env Var Reduction
+
 WorkOS: `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_REDIRECT_URI`, `WORKOS_COOKIE_PASSWORD` (4+).
 Descope: `DESCOPE_PROJECT_ID` only (+ `DESCOPE_MANAGEMENT_KEY` for management ops).
 
@@ -1163,6 +1343,7 @@ dotnet build        # .NET
 **Do not proceed until compilation exits with zero errors.**
 
 **If compilation fails, diagnose by error message:**
+
 - `Cannot find module '@workos-inc/...'` → stale import; re-run Phase 0
 - `Property 'X' does not exist on type 'AuthenticationInfo'` → wrapper built against WorkOS shape; re-derive
 - `'await' expression is not allowed in synchronous contexts` → async cascade gap
@@ -1223,11 +1404,12 @@ Check that `email`, `name`, and any other expected claims (including `dct`/`tena
 ```
 
 **Do not proceed to Step 6 until ALL of the following are true:**
-- [ ] Phase 0 grep returns zero WorkOS references
-- [ ] Phase 1 compilation passes with zero errors
-- [ ] Phase 1 server starts and stays running
-- [ ] Phase 3 root path returns 2xx or 3xx (not 5xx)
-- [ ] Phase 3 protected routes return 302 or 401 (not 500)
+
+- Phase 0 grep returns zero WorkOS references
+- Phase 1 compilation passes with zero errors
+- Phase 1 server starts and stays running
+- Phase 3 root path returns 2xx or 3xx (not 5xx)
+- Phase 3 protected routes return 302 or 401 (not 500)
 
 ---
 
@@ -1239,13 +1421,11 @@ remaining, and behavioral differences that matter before production.
 ### MIGRATION-SUMMARY.md
 
 1. **What was migrated** — a table mapping each WorkOS concept to its Descope replacement
-
 2. **Behavioral differences and open questions** — numbered list of significant differences
-   between the WorkOS and Descope implementations. For each item: WorkOS behavior, Descope
+  between the WorkOS and Descope implementations. For each item: WorkOS behavior, Descope
    behavior, action required.
-
 3. **Pre-deploy checklist** — actionable checkbox items for everything that must happen
-   before the migrated app can run. Prominently include all Console setup tasks (project, Flow,
+  before the migrated app can run. Prominently include all Console setup tasks (project, Flow,
    JWT template, tenants, SSO/SCIM) and the SCIM re-point — these are the things easiest to
    forget because the code compiles without them.
 
@@ -1264,43 +1444,46 @@ explicitly with estimated complexity (Low/Medium/High) so the user can plan.
 ## Reference Files
 
 - `references/implementation-nuances.md` — Verified migration patterns, code-level diffs, and edge
-  cases for several frameworks.
-- Descope Docs: https://docs.descope.com
-- WorkOS Migration Guide: https://docs.descope.com/migrate  <!-- TODO (verify): confirm the exact WorkOS migration guide URL, if one exists -->
-- User Import (Custom): https://docs.descope.com/migrate/custom
-- Descope OIDC Endpoints: https://docs.descope.com/getting-started/oidc-endpoints
-- Descope Flows: https://docs.descope.com/flows
-- JWT Templates: https://docs.descope.com/management/jwt-templates
-- Access Keys (M2M): https://docs.descope.com/management/m2m-access-keys
-- Messaging Templates: https://docs.descope.com/management/messaging-templates
-- Audit Webhook: https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook
-- Custom Domains: https://docs.descope.com/how-to-deploy-to-production/custom-domain
-- ReBAC: https://docs.descope.com/authorization/rebac
-- Outbound Apps: https://docs.descope.com/identity-federation/outbound-apps
+cases for several frameworks.
+- Descope Docs: [https://docs.descope.com](https://docs.descope.com)
+- WorkOS Migration Guide: [https://docs.descope.com/migrate](https://docs.descope.com/migrate)  
+- User Import (Custom): [https://docs.descope.com/migrate/custom](https://docs.descope.com/migrate/custom)
+- Descope OIDC Endpoints: [https://docs.descope.com/getting-started/oidc-endpoints](https://docs.descope.com/getting-started/oidc-endpoints)
+- Descope Flows: [https://docs.descope.com/flows](https://docs.descope.com/flows)
+- JWT Templates: [https://docs.descope.com/management/jwt-templates](https://docs.descope.com/management/jwt-templates)
+- Access Keys (M2M): [https://docs.descope.com/management/m2m-access-keys](https://docs.descope.com/management/m2m-access-keys)
+- Messaging Templates: [https://docs.descope.com/management/messaging-templates](https://docs.descope.com/management/messaging-templates)
+- Audit Webhook: [https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook](https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook)
+- Custom Domains: [https://docs.descope.com/how-to-deploy-to-production/custom-domain](https://docs.descope.com/how-to-deploy-to-production/custom-domain)
+- ReBAC: [https://docs.descope.com/authorization/rebac](https://docs.descope.com/authorization/rebac)
+- Outbound Apps: [https://docs.descope.com/identity-federation/outbound-apps](https://docs.descope.com/identity-federation/outbound-apps)
 
 ### Session Validation by Language
-- Node.js: https://docs.descope.com/getting-started/nodejs#implement-session-validation
-- Python: https://docs.descope.com/getting-started/python#implement-session-validation
-- Go: https://docs.descope.com/getting-started/golang#implement-session-validation
-- Ruby: https://docs.descope.com/getting-started/ruby#implement-session-validation
-- Java / Kotlin: https://docs.descope.com/getting-started/java#implement-session-validation
-- .NET / C#: https://docs.descope.com/getting-started/dotnet#implement-session-validation
-- Next.js: https://docs.descope.com/getting-started/nextjs#implement-session-validation
-- React: https://docs.descope.com/getting-started/react#implement-session-validation
-- Angular: https://docs.descope.com/getting-started/angular#implement-session-validation
-- Vue: https://docs.descope.com/getting-started/vue#implement-session-validation
-- Swift / iOS: https://docs.descope.com/getting-started/swift#implement-session-validation
-- Kotlin / Android: https://docs.descope.com/getting-started/android#implement-session-validation
-- Flutter: https://docs.descope.com/getting-started/flutter#implement-session-validation
+
+- Node.js: [https://docs.descope.com/getting-started/nodejs#implement-session-validation](https://docs.descope.com/getting-started/nodejs#implement-session-validation)
+- Python: [https://docs.descope.com/getting-started/python#implement-session-validation](https://docs.descope.com/getting-started/python#implement-session-validation)
+- Go: [https://docs.descope.com/getting-started/golang#implement-session-validation](https://docs.descope.com/getting-started/golang#implement-session-validation)
+- Ruby: [https://docs.descope.com/getting-started/ruby#implement-session-validation](https://docs.descope.com/getting-started/ruby#implement-session-validation)
+- Java / Kotlin: [https://docs.descope.com/getting-started/java#implement-session-validation](https://docs.descope.com/getting-started/java#implement-session-validation)
+- .NET / C#: [https://docs.descope.com/getting-started/dotnet#implement-session-validation](https://docs.descope.com/getting-started/dotnet#implement-session-validation)
+- Next.js: [https://docs.descope.com/getting-started/nextjs#implement-session-validation](https://docs.descope.com/getting-started/nextjs#implement-session-validation)
+- React: [https://docs.descope.com/getting-started/react#implement-session-validation](https://docs.descope.com/getting-started/react#implement-session-validation)
+- Angular: [https://docs.descope.com/getting-started/angular#implement-session-validation](https://docs.descope.com/getting-started/angular#implement-session-validation)
+- Vue: [https://docs.descope.com/getting-started/vue#implement-session-validation](https://docs.descope.com/getting-started/vue#implement-session-validation)
+- Swift / iOS: [https://docs.descope.com/getting-started/swift#implement-session-validation](https://docs.descope.com/getting-started/swift#implement-session-validation)
+- Kotlin / Android: [https://docs.descope.com/getting-started/android#implement-session-validation](https://docs.descope.com/getting-started/android#implement-session-validation)
+- Flutter: [https://docs.descope.com/getting-started/flutter#implement-session-validation](https://docs.descope.com/getting-started/flutter#implement-session-validation)
 
 ### SDKs (GitHub)
-- Node SDK: https://github.com/descope/node-sdk
-- Python SDK: https://github.com/descope/python-sdk
-- Go SDK: https://github.com/descope/go-sdk
-- Ruby SDK: https://github.com/descope/descope-ruby-sdk
-- Java SDK: https://github.com/descope/descope-java
-- .NET SDK: https://github.com/descope/descope-dotnet
-- Swift SDK: https://github.com/descope/swift-sdk
-- Kotlin SDK: https://github.com/descope/descope-kotlin
-- Flutter SDK: https://github.com/descope/descope-flutter
-- JS/TS monorepo (React, Angular, Vue, Next.js, Web Component, Web JS): https://github.com/descope/descope-js
+
+- Node SDK: [https://github.com/descope/node-sdk](https://github.com/descope/node-sdk)
+- Python SDK: [https://github.com/descope/python-sdk](https://github.com/descope/python-sdk)
+- Go SDK: [https://github.com/descope/go-sdk](https://github.com/descope/go-sdk)
+- Ruby SDK: [https://github.com/descope/descope-ruby-sdk](https://github.com/descope/descope-ruby-sdk)
+- Java SDK: [https://github.com/descope/descope-java](https://github.com/descope/descope-java)
+- .NET SDK: [https://github.com/descope/descope-dotnet](https://github.com/descope/descope-dotnet)
+- Swift SDK: [https://github.com/descope/swift-sdk](https://github.com/descope/swift-sdk)
+- Kotlin SDK: [https://github.com/descope/descope-kotlin](https://github.com/descope/descope-kotlin)
+- Flutter SDK: [https://github.com/descope/descope-flutter](https://github.com/descope/descope-flutter)
+- JS/TS monorepo (React, Angular, Vue, Next.js, Web Component, Web JS): [https://github.com/descope/descope-js](https://github.com/descope/descope-js)
+
