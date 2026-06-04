@@ -88,22 +88,24 @@ time and produces incorrect guidance.
 
 Do not proceed to Step 0.5 until the user has answered.
 
+
+////// comment down here ask kevin
+
 **First `AskUserQuestion` call (up to 4 questions):**
 
 1. **Backend language / framework** — Present the most likely options based on any cues
-  in the conversation (e.g., Next.js, Express, Flask/FastAPI, Go, Rails). The user can always
+  in the conversation (e.g., Node.js, Go, Ruby, Python). The user can always
    pick "Other."
 2. **Migration goal** — Full cut-over, incremental/phased migration, or just evaluating.
 3. **Existing users and organizations** — Are they migrating an app with active users and
   organizations in WorkOS, staging/dev only, or starting fresh? This determines whether user
    and organization migration planning is needed (user export, org-to-tenant mapping, SCIM
-   continuity, phased vs. big-bang cutover, forced re-login on cutover). /////// is the 4th even necessary?
-4. **Preferred migration style** — Do they want to embed Descope Flows/Widgets directly (full native migration), or preserve an existing OIDC client library and point it at Descope's OIDC endpoints (OIDC compatibility layer)? Note: B2B features (Organizations/SSO/SCIM management) have no OIDC-layer equivalent and require native SDK calls regardless of path.
+   continuity, phased vs. big-bang cutover, forced re-login on cutover). 
 
 **Second `AskUserQuestion` call — WorkOS feature usage (use `multiSelect: true`):**
 
 1. **Which WorkOS features are in use?** Present the highest-impact categories:
-  - **AuthKit** 
+  - **AuthKit** — WorkOS's hosted/embeddable login UI and session management (email/password, social login, passkeys, MFA, magic auth); which sign-in methods are enabled and whether the hosted or embedded flow is used.
   - **Organizations** — organization membership, organization switching, metadata, whether users can belong to multiple organizations.
   - **Enterprise SSO** — connections SAML, OIDC, or both; whether setup is handled by internal engineers or by customer admins; whether domain-based SSO routing is used.
   - **Directory Sync / SCIM** — which directories; group sync; group-to-role mapping; deprovisioning behavior; directory webhook handlers.
@@ -111,9 +113,9 @@ Do not proceed to Step 0.5 until the user has answered.
   - **RBAC** — whether roles are global/environment or organization-scoped; where permission checks happen in code; whether roles/permissions are in tokens; whether IdP groups map to roles.
   - **FGA** — the authorization model (resources, relationships, privileges, hierarchy); where checks are performed. Flag as high complexity.
   - **Audit Logs** — whether logs are written to WorkOS, read back from WorkOS, shown to customers, or required for compliance.
-  - **Radar** — whether it blocks, challenges, or only monitors suspicious auth attempts; custom rules.
+  - **Radar** — whether it blocks, challenges, or only notifies about suspicious auth attempts; custom rules.
   - **Pipes** — which providers are connected; where connected-account tokens are used (AI agents, integrations, background jobs).
-  - **Vault / Feature Flags** — flag as potentially outside the core Descope identity migration unless used directly for auth or access control.
+  - **Vault / Feature Flags** — flag as potentially outside the core Descope identity migration.
   - **MCP Auth / Connect** — flag for deeper review before implementation.
   - The user can add others via "Other."
 
@@ -133,7 +135,7 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 **Access and credentials**
 
 - Do they have access to the Descope Console and a Project ID? (If not, see Step 1.5.)
-- Do they need a Management Key? (Required for user CRUD, role management, ReBAC, tenant/SSO/SCIM configuration, Outbound Apps.)
+- Do they need a Management Key? (Required for user CRUD, RBAC, ReBAC, tenant/SSO/SCIM configuration, Outbound Apps.)
 
 **Codebase scope**
 
@@ -256,7 +258,7 @@ Include a **Migration at a Glance** table:
 
 |                                  |                                                                     |
 | -------------------------------- | ------------------------------------------------------------------- |
-| **Approach**                     | Full native migration / OIDC compatibility layer                    |
+| **Approach**                     | Full native migration                                               |
 | **Files changing**               | N source files across N areas                                       |
 | **Console setup**                | N configuration steps before launch                                 |
 | **User impact**                  | No re-login required / Users will need to log in once after cutover |
@@ -284,11 +286,33 @@ Tailor to triage findings.
 
 ---
 
+#### Client SDK vs. Backend SDK: A Specific 1-to-1 Mapping
+
+For every WorkOS touchpoint found in triage, produce a concrete, one-to-one mapping — WorkOS construct → the exact Descope SDK and method that replaces it —
+and state explicitly whether that replacement runs in the **client SDK** or the **backend SDK**, and
+why. Use this division of responsibility:
+
+- **Client SDK** (`@descope/web-js-sdk`, `@descope/react-sdk`, `@descope/nextjs-sdk` client
+  components, or the `<descope-wc>` web component) — everything the user's browser/app does:
+  rendering the login/sign-up UI (a Descope Flow replaces AuthKit's hosted or redirect login),
+  initiating authentication, holding the session on the client, refreshing the token, and reading
+  the current user for UI purposes. This replaces AuthKit's UI, the redirect cycle, and any
+  client-side session access. It uses only the public Project ID — never a Management Key.
+- **Backend SDK** (`@descope/node-sdk`, `descope` (Python), `github.com/descope/go-sdk`, etc.) —
+  everything the server does: validating the session JWT on every request (replacing WorkOS
+  server-side `withAuth()` / middleware), checking roles and permissions, and — with a Management
+  Key — all administrative operations done by ID (user and tenant CRUD, role/permission definitions,
+  SSO/SCIM configuration, ReBAC). This replaces WorkOS server-side validation and every WorkOS
+  Management API call.
+
+For each file or area, name the WorkOS call, the Descope SDK that replaces it, which side it runs on,
+and the reason (e.g. "session validation must stay server-side because the validation/Management key
+cannot ship to the browser"). When one WorkOS feature spans both sides — for example AuthKit login
+(now a client Flow) plus per-request `withAuth()` validation (now the backend SDK) — split it into
+its client half and its backend half so the reader sees exactly what moves where, and why each piece
+belongs on that side.
+
 ---
-
-/// Very specific 1 to 1 comparison to using descope client and backend sdk's
-
-make sure 
 
 #### Auth Touchpoints: What the Code Analysis Found
 
@@ -296,12 +320,12 @@ Open with the scope count (e.g., "11 files across 4 areas"). Group by area, not 
 Each group gets a sentence on what it does and what changes.
 
 **Session handling (3 files)** — These files read and validate the current user's login
-state. They'll be updated to use the Descope session SDK instead of WorkOS AuthKit.
+state. They'll be updated to use the Descope session SDK instead of WorkOS AuthKit. 
 
 
 | File               | What it does today                                                            | What changes                                                                                              |
 | ------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `lib/auth.ts:34`   | Returns WorkOS session via `withAuth()` with `user`, `organizationId`, `role` | Rewritten to return Descope `AuthenticationInfo`; a thin adapter layer preserves the shape callers expect |
+| `lib/auth.ts:34`   | Returns WorkOS session via `withAuth()` with `user`, `organizationId`, `role` | Rewritten to return Descope `authInfo`; a thin adapter layer preserves the shape callers expect |
 | `middleware.ts:12` | `authkitMiddleware()` blocks unauthenticated requests app-wide                | Updated to call Descope session validation; logic is identical, SDK call changes                          |
 
 
@@ -328,12 +352,15 @@ recommend SDK code when programmatic control is genuinely required. Example:
 
 > **Multi-tenancy (WorkOS Organizations → Descope Tenants)**
 > WorkOS Organizations group users by company and scope SSO, SCIM, roles, and domain policies.
-> Descope has the same concept, called Tenants. The main difference is how tenant membership
-> appears in the session token — WorkOS exposes a flat `organizationId`, while Descope uses a
-> nested `tenants` object that includes per-tenant roles (plus `dct` for the active tenant ID).
-> Any backend code that reads `organizationId` will need to be updated to read `token.dct` or
-> `token.tenants`. This is a predictable, mechanical change, but it ripples into SSO, SCIM, and
-> RBAC, so confirm the org→tenant mapping before starting.
+> Descope has the same concept, called Tenants. Most code that handles organizations is
+> management/admin code that passes a WorkOS `organizationId` to the API — that simply becomes a
+> Descope **tenant ID** passed to `descopeClient.management.tenant.*` / `management.user.*` calls
+> (load a tenant, create one, add/remove membership, scope roles). This is by-ID work, not token
+> parsing. The only place a tenant shows up as a claim is request-time session reads: WorkOS's flat
+> `organizationId` (from `withAuth()`) becomes Descope's nested `tenants` object (plus `dct` for the
+> active tenant), which you read off the validated session — ideally via SDK helpers like
+> `validateTenantRoles(authInfo, tenantId, [...])` rather than parsing claims by hand. Confirm the
+> org→tenant mapping first, since it ripples into SSO, SCIM, and RBAC.
 > **Effort: Medium (1–2 hours of code changes).** Confirm the data migration path for orgs first.
 
 Only include confirmed features.
@@ -474,7 +501,7 @@ Work through files in the order listed. Run a compile check after each group.
 - Rewrite session helper / `withAuth()` usage (30 min)
 - Swap AuthKit provider/middleware for Descope equivalents (15 min)
 - Update protected route files to use new session check (45 min)
-- Update org/tenant claim reads (`organizationId` → `token.dct`/`token.tenants`) (varies)
+- Repoint org handling to tenant IDs — management calls pass a `tenantId`; request-time session reads use `tenants`/`dct` (varies)
 - Update logout — two-step logout (15 min)
 - Compile check and fix any type errors before proceeding
 
@@ -786,11 +813,11 @@ to Descope session validation + the hosted/embedded Flow the same way.
 
 #### Go
 
-#### *WorkOS SDK: `workos-go` → Descope `github.com/descope/go-sdk`*
+#### *WorkOS SDK: `workos-go` → Descope Go SDK `github.com/descope/go-sdk`*
 
 - Remove the WorkOS Go SDK; add `descope/go-sdk`
 - Session validation: `descopeClient.Auth.ValidateSessionWithToken(ctx, token)` returns `(bool, *descope.Token, error)`
-- WorkOS `organizationId` → Descope `Token.Claims` (`dct` / `tenants`)
+- WorkOS `organizationId` → a Descope **tenant ID**: pass it to management calls (`descopeClient.Management.Tenant()` / user-tenant association); at request time read tenant context off the returned `*descope.Token` (`token.GetTenants()`, or the `dct` claim for the active tenant)
 
 #### Ruby
 
@@ -1016,14 +1043,14 @@ cannot express the requirement. Ask which auth methods are enabled before recomm
 
 ### Organizations → Descope Tenants
 
-- WorkOS `organizationId` (flat string) → Descope /// internal tenant id (nested object: `{ tenantId: { roles, permissions } }`)
+- WorkOS `organizationId` → a Descope **tenant ID** (the argument you pass to `management.tenant.*` / `management.user.*` calls). At request time the tenant also appears in the session as the nested `tenants` object (`{ tenantId: { roles, permissions } }`) plus `dct` for the active tenant.
 - WorkOS org-scoped login → Descope routes by email domain or tenant name or tenant id
 - Users are project-level in Descope; associated with tenants, not created per-tenant
 - Organization `metadata` → tenant `customAttributes` (pre-define in the Console schema)
 
 Confirm the one-Organization-to-one-Tenant mapping before writing code — it ripples into SSO, SCIM,
-RBAC, and domain routing. **Effort: Medium** (clean conceptually; org-claim reads may be spread
-across many files).
+RBAC, and domain routing. **Effort: Medium** (clean conceptually; most `organizationId` usage is
+management calls that take a tenant ID, with a smaller set of session reads that change shape).
 
 ### Enterprise SSO → Descope Tenant SSO
 
@@ -1097,7 +1124,7 @@ Ask which admin workflows are hosted by WorkOS today before choosing a replaceme
 WorkOS roles come in two scopes, and they map to Descope's two scopes:
 
 - **Environment-level role** (defined on the WorkOS environment, available across all organizations) → **Descope project-level role** (applies across all tenants).
-- **Organization-scoped role** (a WorkOS "custom role", defined for a specific organization) → **Descope tenant-level role** (under `token.tenants[tenantId].roles`).
+- **Organization-scoped role** (a WorkOS "custom role", defined for a specific organization) → **Descope tenant-level role**, created by passing a `tenantId` to `management.role.create(...)` (it surfaces per-tenant when you check roles on the session, e.g. `validateTenantRoles`).
 
 
 | WorkOS                                                    | Descope                                          |
@@ -1264,7 +1291,7 @@ as an OAuth provider, an OAuth client, or both. **Effort: Medium–High — flag
 
 ### Vault → Possibly Out of Scope
 
-WorkOS Vault (encrypting/storing/controlling access to sensitive data) may have no direct Descope
+WorkOS Vault and EKM (encrypting/storing/controlling access to sensitive data) may have no direct Descope
 identity equivalent. Flag it separately and ask whether it is part of the identity migration or a
 separate secrets/data-security effort. **Do not present it as an SDK swap.**
 
@@ -1284,11 +1311,14 @@ Descope session JWTs contain `sub`, `amr`, `drn`, `tenants`, `roles`, `permissio
 default. They do **not** contain `email`, `name`, or `picture`. WorkOS AuthKit tokens may expose
 some profile fields, so code that reads them directly will break after migration.
 
-`dct` (Descope Current Tenant) is a flat string holding the active tenant ID — the direct equivalent
-of WorkOS's `organizationId`. For apps where a user is always in a single tenant context, `token.dct`
-is simpler to read than iterating `token.tenants`. Use `token.tenants` when you need per-tenant roles
-or permissions (it is a keyed object: `{ [tenantId]: { roles, permissions } }`); use `token.dct`
-when you only need the tenant ID.
+`dct` and `tenants` only matter when you read a user's tenant context **from their session at
+request time** — not for tenant administration, which is done by tenant ID through
+`management.tenant.*` / `management.user.*`. When you do read the session, `dct` (Descope Current
+Tenant) is a flat string holding the active tenant ID — the direct equivalent of WorkOS's
+`organizationId` — and `tenants` is a keyed object (`{ [tenantId]: { roles, permissions } }`) for
+per-tenant roles/permissions. Prefer the SDK's role/permission helpers (e.g.
+`validateTenantRoles(authInfo, tenantId, [...])`) over reading these claims by hand; reach for `dct`
+when you only need the active tenant ID.
 
 **Action required:** Configure a JWT Template in the Descope Console to add `email`,
 `name`, and any other profile fields the app reads from the token.
@@ -1313,12 +1343,14 @@ Descope session tokens have no `aud` claim by default. Apps that rely on audienc
 must (1) configure a custom `aud` claim in JWT Templates and (2) pass `audience` to
 `validateSession()` on the backend.
 
-### Organization Claim Shape Differs
+### Organization Handling: Tenant IDs, Not Token Parsing
 
-WorkOS exposes a flat `organizationId` (and `connectionId` / `directoryId`). Descope uses `dct`
-(active tenant) and the nested `tenants` object. Any code reading `organizationId` needs to be
-updated — this is mechanical but can span many files, so grep for all org-claim reads and update
-them in one pass.
+Most code that references a WorkOS `organizationId` (and `connectionId` / `directoryId`) is
+management/admin code — it becomes a Descope **tenant ID** passed to `management.tenant.*` /
+`management.user.*` calls. Only request-time code that read the org off the WorkOS session changes
+shape: Descope exposes the active tenant as `dct` and membership as the nested `tenants` object,
+read off the validated session (ideally via SDK helpers). Grep for all `organizationId` reads and
+sort them into these two buckets — by-ID management calls vs. session reads — before updating.
 
 ### One Token, Not Provider-Specific Access Tokens
 
@@ -1407,7 +1439,8 @@ npm test   # or: pytest / go test ./... / etc.
 
 Auth-related test failures usually mean: a mock or fixture still uses WorkOS shapes, or a
 test validates JWT claims that are now missing (e.g., `email` without a JWT Template), or a test
-reads `organizationId` instead of `token.dct`.
+still uses `organizationId` where the code now passes a Descope tenant ID (management calls) or
+reads `dct`/`tenants` off the validated session.
 
 ### Phase 3: Smoke test the running app
 
