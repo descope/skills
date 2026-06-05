@@ -88,9 +88,6 @@ time and produces incorrect guidance.
 
 Do not proceed to Step 0.5 until the user has answered.
 
-
-////// comment down here ask kevin
-
 **First `AskUserQuestion` call (up to 4 questions):**
 
 1. **Backend language / framework** — Present the most likely options based on any cues
@@ -875,6 +872,16 @@ to Descope session validation + the hosted/embedded Flow the same way.
 
 ### AuthKit SDKs
 
+> **Read the session the framework-native way — never hand-parse the JWT on the client.** On
+> front-end pages and components, get auth state from the Descope hooks: `useSession()` for the
+> session token and auth status, `useUser()` for the user profile, and `useDescope()` for actions
+> like `logout()`. Do **not** manually decode the session token or pull claims out of it in client
+> code. Server-side session *validation* — `session()` in `@descope/nextjs-sdk/server`,
+> `validateSession()` in `@descope/node-sdk` (or the other backend SDKs) — belongs only in backend
+> routes, loaders, middleware, and API handlers, never in a rendered client component. This matters
+> most with the **React SDK**, where it's tempting to crack open the raw token in a component instead
+> of calling `useUser()` / `useSession()`.
+
 #### JavaScript
 
 *WorkOS SDK: `authkit-js` → Descope `@descope/web-js-sdk` + `@descope/web-component`*
@@ -889,6 +896,7 @@ to Descope session validation + the hosted/embedded Flow the same way.
 
 - `<AuthKitProvider>` → Descope `<AuthProvider projectId>`
 - `useAuth()` (user/session/loading) → `useSession()` + `useUser()` hooks
+- **Always read auth state through the hooks** — `useSession()` (token + `isAuthenticated`) and `useUser()` (profile), with `useDescope()` for actions. Never decode the session token by hand in a component, and never call backend `validateSession()` from client code; that runs only on the server.
 - `signIn()` / hosted redirect → embedded `<Descope flowId>` component, wiring `onSuccess`
 - Logout: `sdk.logout()` via `useDescope()` hook
 - No dedicated recipe yet — follow the Next.js client-side patterns and verify each method against docs.
@@ -930,10 +938,22 @@ to Descope session validation + the hosted/embedded Flow the same way.
 - Login via embedded Descope component; logout via `sdk.logout()` + cookie clear
 - No dedicated recipe yet — follow the Next.js / React patterns and verify.
 
-### /// not typically used : client sdk/backend sdk replacements most common Path A: OIDC Compatibility (lower risk, incremental)
+### Path A: OIDC Compatibility (lower risk, incremental)
 
 Descope exposes standard OIDC endpoints. If the app uses a **generic OIDC client library**
 pointed at WorkOS, it can point at Descope's OIDC issuer instead with minimal code changes.
+
+**First classify the current integration — the OIDC endpoints only matter for the hosted-page case.**
+Before considering Path A, determine how the app authenticates today:
+- **Hosted AuthKit page** (users are redirected to a WorkOS-hosted login URL through a generic
+  OIDC/OAuth client) → the Descope OIDC endpoints below are directly relevant; re-point the OIDC
+  client at Descope's issuer.
+- **Embedded AuthKit** (AuthKit's own SDK/components rendering login inside the app) **or custom code**
+  against the WorkOS SDK → the OIDC endpoints are largely irrelevant; this is a Descope-native SDK +
+  Flow migration (Path B), not an issuer swap.
+
+Don't recommend Path A until you've confirmed the app uses a standard OIDC/OAuth client against the
+hosted page.
 
 > Many WorkOS apps use AuthKit's own SDK rather than a generic OIDC client, in which case Path A may not apply cleanly. Confirm whether the app uses a standard OIDC client before recommending this path. Verify the Descope OIDC endpoint table below against current docs.
 
@@ -1088,6 +1108,27 @@ Use `AskUserQuestion` to ask **two** things here:
 (Verify exact method names against the Docs MCP.) Ask whether SSO is configured by internal
 engineers or by customer admins. **Effort: Medium** — setup recreated per tenant.
 
+**Runtime login calls — always use `sso.start` / `sso.exchange`, never the OAuth flow.** When code
+initiates an enterprise SSO login (the equivalent of WorkOS's `sso.getAuthorizationUrl()` +
+`sso.getProfileAndToken()`), call the Descope SDK's `sso.start(tenant, redirectUrl, ...)` to begin
+the flow and `sso.exchange(code)` to complete it. Use these **regardless of the IdP's underlying
+protocol** — even when the tenant's SSO is configured in Descope as OIDC/OAuth — because `sso.start`
+resolves the **tenant-level SSO configuration** (the correct IdP, domain-based routing, and
+connection settings) for you. Do **not** reach for the generic `oauth.start` / `oauth.exchange`
+functions for enterprise SSO: those drive project-level social/OAuth providers and will not apply a
+tenant's SSO config. Rule of thumb: tenant/enterprise SSO → `sso.*`; social or generic OAuth login →
+`oauth.*`.
+
+**Don't rebuild provider-specific SSO UI — let tenant config do the routing.** Especially when the
+app uses the **backend SDKs**, do not migrate or recreate any per-IdP login UI (separate "Sign in
+with Okta" / "Sign in with Azure AD" buttons, provider-picker screens, etc.), regardless of which
+SSO provider the WorkOS code names. In Descope the IdP is defined as **tenant SSO configuration**,
+and a single `sso.start` call resolves it automatically — either from the **user's email domain**
+(domain-based routing) or by passing the **tenant ID / slug** explicitly (e.g. hardcoded for a known
+tenant). So the login surface just collects an email (or targets a known tenant) and calls
+`sso.start`; Descope selects the correct IdP from config. Keep the UI generic and push all
+provider-specific details into Console/tenant configuration.
+
 ### Directory Sync / SCIM → Descope SCIM / Tenant Provisioning
 
 WorkOS Directory Sync maps to Descope SCIM provisioning. **Treat this as a continuing pipeline, not
@@ -1144,7 +1185,7 @@ role (the equivalent of a WorkOS environment-level role). Roles must exist in th
 assignment. Check whether each WorkOS role is environment- or organization-scoped and where checks
 happen (middleware, API routes, DB queries, frontend). **Effort: Medium.**
 
-### //// note: look into Fine-Grained Authorization (FGA) → Descope ReBAC / AuthZ
+### Fine-Grained Authorization (FGA) → Descope ReBAC / AuthZ
 
 Authorization model must be translated and validated. Schema translation example:
 
