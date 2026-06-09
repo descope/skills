@@ -691,7 +691,7 @@ yes, skip to verifying items 5–7 — these are easy to miss even for existing 
 ### 1. Create a project and get your Project ID
 
 - Sign in at [console.descope.com](https://console.descope.com)
-- Your **Project ID** appears in the top-left project selector and under **Project → Settings**. It starts with `P` (e.g. `P2abc123...`).
+- Your **Project ID** appears in the top-left project selector and under **Project → Generak**. It starts with `P` (e.g. `P2abc123...`).
 - For Next.js client-side code, this becomes `NEXT_PUBLIC_DESCOPE_PROJECT_ID`. For all server-side SDKs, it's `DESCOPE_PROJECT_ID`.
 
 ### 2. Get a Management Key (if needed)
@@ -700,14 +700,14 @@ Required for: user management API, role/permission management, tenant operations
 configuration, ReBAC (FGA), Outbound Apps. If the app does any server-side user, tenant, SSO,
 or SCIM management, they need this.
 
-- Console → **Company → Management Keys → Generate Key**
+- Console → **Company → Management Keys → + Management Key**
 - Store as `DESCOPE_MANAGEMENT_KEY`. Treat like a secret — never expose client-side.
 
 ### 3. Choose or create a Flow
 
 A Flow is the auth UI sequence. Reference it by Flow ID in the web component.
 
-- Console → **Authentication → Flows**
+- Console → **Flows**
 - The built-in **"sign-up-or-in"** flow handles email/password, OTP, and social login.
 Use it for most migrations.
 - To customise: duplicate "sign-up-or-in", rename it, then edit in the visual builder.
@@ -720,7 +720,7 @@ Use it for most migrations.
 - Console → **Authentication** → select methods (Email OTP, Magic Link, Social, SSO, Passkeys, etc.)
 - For social providers (Google, GitHub, etc.): configure OAuth credentials here, then add
 the provider step to your Flow.
-- For enterprise SSO (SAML/OIDC): Console → **SSO** → configure per tenant, or enable the SSO Setup Suite for tenant-admin self-serve. For correct SSO callback and ACS URLs (social OAuth, SAML ACS, what NOT to use), see `references/implementation-nuances.md` → Social login / SSO section.
+- For enterprise SSO (SAML/OIDC): To configure SSO for a specific tenant or to enable the SSO Setup Suite for tenant-admin self-serve, go to Console → **Tenants**, select the desired tenant, and click **Tenant Settings**. For correct SSO callback and ACS URLs (social OAuth, SAML ACS, what NOT to use), see `references/implementation-nuances.md` → Social login / SSO section.
 
 ### 5. Configure a JWT Template (almost always needed)
 
@@ -744,7 +744,8 @@ Console before the code that assigns them will work.
 WorkOS Organization `metadata` and User metadata map to Descope `customAttributes`.
 Pre-define them in the Console schema before setting them via the SDK.
 
-- Console → **Project → Custom Attributes**
+- **Tenant** custom attributes (the equivalent of WorkOS Organization `metadata`): Console → **Tenants → Custom Attributes** tab → **Create Attribute**
+- **User** custom attributes: Console → **Project → Custom Attributes**
 
 ### 8. Env var summary
 
