@@ -823,7 +823,7 @@ to Descope session validation + the hosted/embedded Flow the same way.
 
 - Remove the WorkOS Ruby SDK; add the Descope Ruby SDK
 - Validate the `DS` session token via the Descope Ruby SDK in your request lifecycle
-- No dedicated recipe in `implementation-nuances.md` yet — follow the Node.js / Python backend patterns and verify against the [Descope Ruby SDK](https://github.com/descope/ruby-sdk).
+- No dedicated recipe in `implementation-nuances.md` yet — follow the Node.js / Python backend patterns and verify against the [Descope Ruby SDK](https://github.com/descope/descope-ruby-sdk).
 
 #### Rust
 
