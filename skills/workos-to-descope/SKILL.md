@@ -933,7 +933,7 @@ to Descope session validation + the hosted/embedded Flow the same way.
 
 #### TanStack Start
 
-*/// Note: Kevin will explain WorkOS SDK:* `authkit-tanstack-start` *→ Descope `@descope/react-sdk` / `@descope/web-js-sdk` (no Descope TanStack SDK)*
+*WorkOS SDK: `authkit-tanstack-start` → Descope `@descope/react-sdk` / `@descope/web-js-sdk` (no Descope TanStack SDK)*
 
 - Server-route session helpers → TanStack server functions validating the Descope session token
 - Login via embedded Descope component; logout via `sdk.logout()` + cookie clear
