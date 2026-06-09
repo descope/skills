@@ -691,7 +691,7 @@ yes, skip to verifying items 5–7 — these are easy to miss even for existing 
 ### 1. Create a project and get your Project ID
 
 - Sign in at [console.descope.com](https://console.descope.com)
-- Your **Project ID** appears in the top-left project selector and under **Project → Generak**. It starts with `P` (e.g. `P2abc123...`).
+- Your **Project ID** appears in the top-left project selector and under **Project → General**. It starts with `P` (e.g. `P2abc123...`).
 - For Next.js client-side code, this becomes `NEXT_PUBLIC_DESCOPE_PROJECT_ID`. For all server-side SDKs, it's `DESCOPE_PROJECT_ID`.
 
 ### 2. Get a Management Key (if needed)
