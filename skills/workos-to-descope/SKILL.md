@@ -1006,8 +1006,6 @@ DESCOPE_MANAGEMENT_KEY=         # Console → Company → Management Keys (only 
 
 Run `grep -r "WORKOS"` to find all env var references — `.env.example`, Docker, CI, shell scripts.
 
-//// api key is saame as our mgmt key
-
 ### README / docs
 
 Search all `.md` files for WorkOS references. At minimum, update:
