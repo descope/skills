@@ -222,7 +222,7 @@ Descope [Tenants](https://docs.descope.com/b2b#multi-tenancy) are the equivalent
 
 Key differences:
 - WorkOS: `organizationId` is a flat string. Descope: `tenants` is a nested object (`{ "tenantId": { "roles": [...], "permissions": [...] } }`); `dct` is the flat active-tenant string (the direct `organizationId` equivalent).
-- WorkOS routes by organization-scoped login. Descope routes by email domain, tenant name, or tenant-specific login URLs ([ref](https://docs.descope.com/sso/multi-sso)).
+- WorkOS routes by organization-scoped login. Descope uses **tenant routing** (home realm discovery) in two main ways: **domain-based** — an email domain on the tenant (non-SSO) or an SSO domain on the tenant's SSO config (SSO); or **explicit tenant slug** — tenant name/ID hardcoded in source ([ref](https://docs.descope.com/sso/multi-sso)).
 - Descope supports tenant-level SSO enforcement (require SAML/OIDC for all users in a tenant) ([ref](https://docs.descope.com/management/tenant-management/tenant)).
 - Users are project-level entities in Descope; they're associated with tenants, not created per-tenant.
 - Organization `metadata` → tenant `customAttributes` (pre-define in the Console schema).

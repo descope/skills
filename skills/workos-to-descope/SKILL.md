@@ -1063,7 +1063,14 @@ cannot express the requirement. Ask which auth methods are enabled before recomm
 ### Organizations → Descope Tenants
 
 - WorkOS `organizationId` → a Descope **tenant ID** (the argument you pass to `management.tenant.*` / `management.user.*` calls). At request time the tenant also appears in the session as the nested `tenants` object (`{ tenantId: { roles, permissions } }`) plus `dct` for the active tenant.
-- WorkOS org-scoped login → Descope routes by email domain or tenant name or tenant id
+- WorkOS org-scoped login → Descope **tenant routing** (also called **home realm discovery**). Two
+  main approaches:
+  1. **Domain-based routing** — set an email domain on the tenant (when not using SSO) or an SSO
+     domain on the tenant's SSO configuration (when using SSO). Descope resolves the tenant/IdP from
+     the user's email domain at login.
+  2. **Explicit tenant slug** — pass a tenant name, ID, or slug hardcoded in the app (e.g.
+     per-customer login URL or `sso.start(tenantId, ...)` for a known tenant). Use when each customer
+     has a dedicated login path rather than a shared email-entry screen.
 - Users are project-level in Descope; associated with tenants, not created per-tenant
 - Organization `metadata` → tenant `customAttributes` (pre-define in the Console schema)
 
@@ -1122,9 +1129,10 @@ tenant's SSO config. Rule of thumb: tenant/enterprise SSO → `sso.*`; social or
 app uses the **backend SDKs**, do not migrate or recreate any per-IdP login UI (separate "Sign in
 with Okta" / "Sign in with Azure AD" buttons, provider-picker screens, etc.), regardless of which
 SSO provider the WorkOS code names. In Descope the IdP is defined as **tenant SSO configuration**,
-and a single `sso.start` call resolves it automatically — either from the **user's email domain**
-(domain-based routing) or by passing the **tenant ID / slug** explicitly (e.g. hardcoded for a known
-tenant). So the login surface just collects an email (or targets a known tenant) and calls
+and a single `sso.start` call resolves it automatically via **home realm discovery** — either
+**domain-based routing** (email domain or SSO domain on the tenant config) or an **explicit tenant
+slug** (tenant ID/name hardcoded in source). So the login surface just collects an email (or targets a
+known tenant) and calls
 `sso.start`; Descope selects the correct IdP from config. Keep the UI generic and push all
 provider-specific details into Console/tenant configuration.
 
@@ -1312,9 +1320,7 @@ payload handling. Identify which event types are business-critical. **Effort: Me
 
 ### Domain Verification / Custom Domains → Descope Custom Domains and Tenant Routing
 
-WorkOS domain verification and custom domains map to Descope custom domains and tenant/domain routing
-— especially important for enterprise SSO discovery (routing a user to the right tenant's SSO
-connection by email domain). CNAME setup + verify in Console, then pass `baseUrl` to the SDK if using
+WorkOS Domain Verification maps most closely to Descope’s tenant SSO domain verification, where the customer proves ownership of their email domain with a DNS TXT record. Descope Custom Domains are separate: they configure a CNAME such as auth.example.com so Descope authentication endpoints, cookies, OAuth callbacks, and related URLs can use your own domain.
 a custom auth domain. **Effort: Low–Medium.**
 
 ### Widgets → Descope Widgets
