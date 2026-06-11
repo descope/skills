@@ -14,7 +14,7 @@ description: >
 
 This skill guides self-service migrations from WorkOS to Descope. It runs in three parts:
 
-1. **MCP Check** — confirm whether the Descope Docs MCP is available and suggest installing it if not
+1. **MCP Check** — confirm whether the Descope MCP Server is available and suggest installing it if not
 2. **Migration Plan** — gather context via triage questions, analyze the codebase's auth touchpoints, and produce a human-readable `MIGRATION-PLAN.md` for the user to review
 3. **Execution** — if the user confirms they want to proceed, execute the plan
 
@@ -39,33 +39,33 @@ WorkOS migrations to be more B2B-enterprise heavy than a typical consumer-auth m
 
 **Ask, don't assume.** At any design decision point — embed Flows vs. OIDC compatibility, Flow vs. custom code, Widget vs. custom page, MFA inline vs. separate enrollment, programmatic SSO vs. SSO Setup Suite, one-Organization-to-one-Tenant mapping — use `AskUserQuestion` rather than proceeding with an assumption. The cost of a wrong assumption compounds across 20+ files, and the WorkOS Organization → Descope Tenant mapping in particular ripples into SSO, SCIM, RBAC, and domain routing. Uncertainty about architecture or intent is always worth a question.
 
-**MCP over memory.** When the Docs MCP is available (confirmed in Part 1), use `ask-question-about-descope` to verify every SDK method name, option shape, and return type before writing it. Do not fall back to "verify the exact method name in the SDK type declarations" as a hedge — just verify it directly.
+**MCP over memory.** When the Descope MCP Server is available (confirmed in Part 1), use `docs_ask_question` to verify every SDK method name, option shape, and return type before writing it. Do not fall back to "verify the exact method name in the SDK type declarations" as a hedge — just verify it directly.
 
 ---
 
 ## Part 1: MCP Check (BLOCKING)
 
-Before doing anything else, check whether the Descope Docs MCP is available by calling
-`search-descope-docs` with a simple query (e.g., "session validation").
+Before doing anything else, check whether the Descope MCP Server is available by calling
+`docs_search` with a simple query (e.g., "session validation").
 
 **If the tool is available:** proceed to Part 2 immediately.
 
 **If the tool is not available**, show this message and use `AskUserQuestion` to ask whether
 they want to install it first:
 
-> **Descope Docs MCP is not installed.**
+> **Descope MCP is not installed.**
 >
-> This skill uses the Descope Docs MCP to look up current API signatures, SDK methods, and
+> This skill uses the Descope MCP server to look up current API signatures, SDK methods, and
 > feature availability during migration. Without it, guidance is based on static training data,
 > which may be stale and can produce SDK calls that don't exist.
 >
-> You can install it in a few minutes at **[https://docs-mcp.descope.com/](https://docs-mcp.descope.com/)** (server URL:
-> `https://docs-mcp.descope.com/mcp`). It significantly improves the accuracy of the
+> You can install it in a few minutes at **[https://docs.descope.com/mcp/mcp-server](https://docs.descope.com/mcp/mcp-server)** (server URL:
+> `https://mcp.descope.com`). It significantly improves the accuracy of the
 > migration output — especially for SDK lookups and flow-specific configuration.
 >
 > **Would you like to install the MCP before we continue, or proceed without it?**
 
-- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `search-descope-docs` again before proceeding.
+- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `docs_search` again before proceeding.
 - If they choose to proceed without it: continue, but flag any SDK-specific answers as "based on last known documentation — verify against the current SDK."
 
 Do not proceed to Part 2 until this step is resolved.
@@ -226,7 +226,7 @@ For each hit, record:
 Read `package.json` (or equivalent) for the exact framework version — this affects async
 behavior (Next.js 15 vs 14) and SDK compatibility.
 
-If the Descope Docs MCP is available, use `search-descope-docs` or `ask-question-about-descope`
+If the Descope Docs MCP is available, use `docs_search` or `docs_ask_question`
 to verify current SDK method names for anything you plan to reference in the plan.
 
 ---
@@ -636,9 +636,9 @@ Run before generating any import, wrapper type, or helper. Skipping produces cod
 compiles but fails at runtime.
 
 **1. Verify SDK exports before writing any import.**
-When the Docs MCP is available, use `ask-question-about-descope` to confirm the exact method name, option shape, and return type before writing any SDK call. This is faster and more reliable than reading type declarations. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
+When the Descope MCP server is available, use `docs_ask_question` to confirm the exact method name, option shape, and return type before writing any SDK call. This is faster and more reliable than reading type declarations. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
 
-When the Docs MCP is unavailable: resolve the package's type declarations (`node_modules/<pkg>/dist/types/` or its `package.json` `types` field) and confirm the exact exported name and signature. For Go, run `go doc`. For Python, check the SDK stubs.
+When the Descope MCP server is unavailable: resolve the package's type declarations (`node_modules/<pkg>/dist/types/` or its `package.json` `types` field) and confirm the exact exported name and signature. For Go, run `go doc`. For Python, check the SDK stubs.
 
 **Prefer local `node_modules/` over GitHub** when reading type declarations. Installed packages reflect the exact version in use. If the Descope package isn't installed yet, install it first, then read local type declarations. Only fall back to GitHub if the package can't be installed in the current environment.
 
@@ -778,7 +778,7 @@ WorkOS publishes exactly two SDK families (per the [WorkOS SDKs page](https://wo
 
 The recipes below cover exactly these SDKs — one section each — annotated with the matching Descope target. Do not infer other frameworks (e.g. Express, Flask, FastAPI); a WorkOS app using those is using the underlying language Backend SDK (`workos-node`, `workos-python`, etc.), so map it via that SDK's section.
 
-> The framework recipes below are stubs listing the WorkOS idioms that need mapping. Confirm the exact WorkOS SDK surface for the user's stack and the matching Descope SDK calls via the Docs MCP or local type declarations before generating any code. Do not ship code from these stubs without verification.
+> The framework recipes below are stubs listing the WorkOS idioms that need mapping. Confirm the exact WorkOS SDK surface for the user's stack and the matching Descope SDK calls via the Descope MCP or local type declarations before generating any code. Do not ship code from these stubs without verification.
 
 Read `references/implementation-nuances.md` in two passes before writing any code:
 
@@ -1038,7 +1038,7 @@ For each WorkOS feature confirmed in triage, write a short paragraph: what it ac
 best Descope approach for that goal, what's different, and what action is required. Reason about
 intent, not just the API surface — the best approach may be a Flow, Widget, SSO Setup Suite, or
 Console configuration rather than a direct SDK equivalent. Only recommend SDK/API code when
-programmatic control is genuinely required, and verify every method name against the Docs MCP
+programmatic control is genuinely required, and verify every method name against the Descope MCP server
 before writing it. Include only confirmed features.
 
 ### AuthKit → Descope Flows + JWT Templates
@@ -1104,7 +1104,7 @@ Use `AskUserQuestion` to ask **two** things here:
 | Per-Organization connection | Per-tenant SSO (Console → SSO or Management SDK)  |
 
 
-(Verify exact method names against the Docs MCP.) Ask whether SSO is configured by internal
+(Verify exact method names against the Descope MCP server.) Ask whether SSO is configured by internal
 engineers or by customer admins. **Effort: Medium** — setup recreated per tenant.
 
 **Runtime login calls — always use `sso.start` / `sso.exchange`, never the OAuth flow.** When code
