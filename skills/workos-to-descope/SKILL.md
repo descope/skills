@@ -9,6 +9,7 @@ description: >
   Admin Portal, RBAC, FGA, Audit Logs, Radar, Pipes) in the context of Descope. Works for any
   language or framework with a Descope SDK. Always use this skill before producing migration
   guidance — do not rely on memory alone.
+---
 
 # WorkOS → Descope Migration Skill
 
