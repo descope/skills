@@ -104,6 +104,7 @@ Manage Descope projects as infrastructure-as-code using the official [Terraform 
 
 </details>
 
+<details>
 <summary><b>auth0-to-descope</b> — Migrate applications from Auth0 to Descope</summary>
 
 Guides self-service migrations from Auth0 to Descope across any language or framework. Analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
@@ -159,6 +160,36 @@ Guides self-service migrations from Okta Customer Identity Service (CIS) to Desc
 **Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
 
 </details>
+
+<details>
+<summary><b>workos-to-descope</b> — Migrate applications from WorkOS to Descope</summary>
+
+Guides self-service migrations from WorkOS to Descope across any language or framework. WorkOS is a B2B/enterprise-readiness platform — not just auth — so the skill first identifies which WorkOS features are in use, maps each to Descope, analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from WorkOS to Descope"
+- "Replace WorkOS with Descope"
+- "Our app uses @workos-inc/node / @workos-inc/authkit-nextjs / AuthKit — switch to Descope"
+- "How do WorkOS Organizations / Enterprise SSO / Directory Sync / Admin Portal map to Descope?"
+- "We're moving off WorkOS"
+
+**Covers:**
+- SDK replacement for all major frameworks (Next.js, React, Express, Python, Go, Ruby, etc.)
+- WorkOS feature mappings: AuthKit → Descope Flows, Organizations → Tenants, Enterprise SSO → Tenant SSO, Directory Sync/SCIM → Descope SCIM, Admin Portal → SSO Setup Suite / Widgets, RBAC, FGA → ReBAC/AuthZ, Audit Logs, Radar, Pipes → Outbound Apps
+- Tenant routing / home realm discovery (domain-based vs. explicit tenant slug)
+- Descope Flow, Widget, and SSO Setup Suite setup (console-first approach)
+- OIDC compatibility path for incremental migration
+- Session validation patterns and WorkOS-specific gotchas (JWT claims, sealed sessions, SCIM lifecycle)
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow, Widget, and Console configuration guidance
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
 
 <details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
