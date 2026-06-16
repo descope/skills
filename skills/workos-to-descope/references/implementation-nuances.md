@@ -186,7 +186,7 @@ WorkOS enterprise SSO connections (SAML/OIDC, per Organization) map to Descope's
 
 **Runtime SSO login — always use `sso.start` / `sso.exchange`.** When code initiates an enterprise SSO login (the equivalent of WorkOS's `sso.getAuthorizationUrl()` + `sso.getProfileAndToken()`), call the Descope SDK's `sso.start(tenant, redirectUrl, ...)` and `sso.exchange(code)`. Use these **regardless of the IdP's underlying protocol** — `sso.start` resolves the tenant-level SSO configuration (correct IdP, domain-based routing, connection settings). Do **not** use the generic `oauth.start` / `oauth.exchange` for enterprise SSO; those drive project-level social/OAuth providers. Rule of thumb: tenant/enterprise SSO → `sso.*`; social or generic OAuth login → `oauth.*`.
 
-**Don't rebuild per-provider SSO UI.** In Descope the IdP is defined as **tenant SSO configuration**, and a single `sso.start` call resolves it from the user's email domain or an explicit tenant ID/slug. Keep the login surface generic (collect an email or target a known tenant) and push provider-specific details into Console/tenant configuration — don't migrate separate "Sign in with Okta" / "Sign in with Azure AD" buttons.
+**Don't rebuild per-provider SSO UI.** In Descope the IdP is defined as **tenant SSO configuration**, and a single `sso.start` call resolves it from the user's email domain or an explicit tenant ID/slug. Keep the login surface generic (collect an email or target a known tenant) and push provider-specific details into Console/tenant configuration — don't migrate separate "Sign in with Okta" / "Sign in with Microsoft Entra ID" buttons.
 
 **SSO callback and ACS URLs:**
 - Social OAuth callback (Google, GitHub, etc.): `https://api.descope.com/v1/oauth/callback`
