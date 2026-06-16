@@ -1083,13 +1083,13 @@ management calls that take a tenant ID, with a smaller set of session reads that
 
 **Preferred approach — SSO Setup Suite:** before migrating any management-SDK SSO calls, ask whether
 the no-code SSO Setup Suite removes the need for that code. It guides tenant admins through per-tenant
-SAML/OIDC setup with IdP-specific instructions (Okta, Azure AD, Google Workspace, etc.) — no
+SAML/OIDC setup with IdP-specific instructions (Okta, Microsoft Entra ID (formerly Azure AD), Google Workspace, etc.) — no
 engineering involvement for new tenant onboarding.
 
 **Multiple SSO configurations per tenant.** Descope supports more than one SSO/IdP configuration on a
 single tenant: each tenant has a **Default SSO Configuration** plus optional **additional named SSO
 configurations** (Console or API/SDK). At login, Descope selects the right IdP by **domain-based
-routing** (e.g. `@acme.com` → Acme's Okta, `@globex.com` → Globex's Azure AD), a **tenant-specific
+routing** (e.g. `@acme.com` → Acme's Okta, `@globex.com` → Globex's Microsoft Entra ID), a **tenant-specific
 login URL**, an explicit SSO configuration ID, or Flow logic. SCIM provisioning can be scoped per SSO
 configuration, and each configuration can have its own SSO Setup Suite link. See
 `references/flows-and-widgets.md` and [Descope Multi-SSO](https://docs.descope.com/sso/multi-sso).
@@ -1128,7 +1128,7 @@ tenant's SSO config. Rule of thumb: tenant/enterprise SSO → `sso.*`; social or
 
 **Don't rebuild provider-specific SSO UI — let tenant config do the routing.** Especially when the
 app uses the **backend SDKs**, do not migrate or recreate any per-IdP login UI (separate "Sign in
-with Okta" / "Sign in with Azure AD" buttons, provider-picker screens, etc.), regardless of which
+with Okta" / "Sign in with Microsoft Entra ID" buttons, provider-picker screens, etc.), regardless of which
 SSO provider the WorkOS code names. In Descope the IdP is defined as **tenant SSO configuration**,
 and a single `sso.start` call resolves it automatically via **home realm discovery** — either
 **domain-based routing** (email domain or SSO domain on the tenant config) or an **explicit tenant
