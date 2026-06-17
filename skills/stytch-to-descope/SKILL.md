@@ -1628,6 +1628,54 @@ Stytch: `STYTCH_PROJECT_ID`, `STYTCH_SECRET`, and a public token (`STYTCH_PUBLIC
 value as `DESCOPE_PROJECT_ID` — the `NEXT_PUBLIC_` prefix exposes it to client components in
 Next.js and similar frameworks), and `DESCOPE_MANAGEMENT_KEY` only when using management APIs.
 
+### Split-origin SPA + API: do NOT rely on the SDK's session cookies
+
+The single biggest runtime trap for a separate-frontend + separate-backend sample (SPA on one
+port/origin, API on another). The Descope backend SDKs that set session cookies hardcode
+`Secure: true`, default to `SameSite=Strict`, and (in Go) only emit the `DS` session cookie when
+`SessionJWTViaCookie` is enabled. When the frontend and backend are different origins over plain
+HTTP in local dev — and especially when login arrives via a **cross-site redirect** (the magic-link
+email → backend `/authenticate`) — the browser **withholds those cookies**, so the very next API
+call fails with `"no valid session found"`. This affects every user; it is not user-specific.
+
+**Fix:** manage the `DS`/`DSR` cookies yourself. Call the auth methods (`MagicLink().Verify`,
+`OAuth().ExchangeToken`, `SelectTenantWithToken`, etc.) with a **`nil` ResponseWriter** so the SDK
+doesn't set its own cookies, then set `DS` and `DSR` from the returned `AuthenticationInfo` tokens
+with dev-friendly attributes: `SameSite=Lax`, `Secure=false` (HTTP localhost), `HttpOnly`, `Path=/`,
+no `Domain`. Read them back with the SDK's request-based validation (it looks up `DS`/`DSR` by name).
+In production behind HTTPS, set `Secure=true` (and `SameSite=None` only if truly cross-site). This
+mirrors what most Stytch samples already did with manual cookie management — preserve that pattern.
+
+### Exporting from Stytch: test vs live API host
+
+Stytch has two API hosts and the key prefix decides which: `project-test-…` / `secret-test-…` keys
+work only against **`https://test.stytch.com`**; `project-live-…` keys work only against
+**`https://api.stytch.com`**. Hitting the wrong host returns `project_not_found` (404) even though
+auth succeeds. When pulling orgs/members for migration, pick the host that matches the key prefix.
+
+### Use `Management.User().Load*` (not `Auth.MyTenants`) to list a user's tenants
+
+`Auth.MyTenants` requires exactly one of a `dct` flag or an explicit `ids` list and errors with
+`E011004` ("should get only 1 of dct / ids") if you pass neither — it cannot enumerate "all of the
+user's tenants." To list every tenant a user belongs to (with names + roles), validate the session
+to get the user ID, then call `Management.User().LoadByUserID(userId)` and read `UserTenants`.
+
+### Magic-link testing gotchas
+
+Magic-link tokens are single-use and short-lived. `E062504` ("Token expired … or already used")
+almost always means: a stale link from an earlier email, a corporate **email scanner that
+pre-clicked** the link, or a **page reload of `/authenticate`** re-submitting a consumed token.
+Always test with a fresh link, clicked once, to an inbox you control — placeholder `@example.com`
+migrated users can't receive links. And the account you log in with must actually belong to a
+tenant, or the org list will be (correctly) empty.
+
+### Don't double-write the HTTP response
+
+Calling `w.WriteHeader(...)` and then a JSON responder that also writes a status produces
+`http: superfluous response.WriteHeader call`. Let one place own the status. For SDK methods that
+write a redirect to the `ResponseWriter` (e.g. `OAuth().SignUpOrIn`), on error just log — don't then
+emit a second body.
+
 ---
 
 ## Step 5: Automated Testing

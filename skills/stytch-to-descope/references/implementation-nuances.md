@@ -84,6 +84,33 @@ These names are configurable. The [End action in Descope Flows](https://docs.des
 
 The `sessionTokenViaCookie` parameter in [`AuthProvider`](https://docs.descope.com/client-sdk/descope-components#cookie-configuration-options) controls whether the session token is set as a cookie at all (vs. managed in-memory by the SDK).
 
+**Split-origin (separate SPA + API) gotcha — verified.** When the frontend and backend are
+different origins (e.g. SPA on `:3001`, Go/Node API on `:3000`) and the backend SDK sets the session
+cookies, those cookies are often silently dropped by the browser, producing `"no valid session
+found"` on the first authenticated request — for every user, not just one. Root cause in the Go SDK's
+`createCookie`: cookies are emitted with `Secure: true` (hardcoded), `SameSite` defaulting to
+**Strict**, and the session (`DS`) cookie is only set when `SessionJWTViaCookie` is enabled
+(`client.Config.SessionJWTViaCookie`, default off — "leave it for the calling function"). Over plain
+HTTP, and especially when login arrives via a **cross-site redirect** (magic-link email → backend
+callback), Strict+Secure cookies are withheld.
+
+The robust fix for this architecture is to **manage `DS`/`DSR` yourself** instead of letting the SDK
+set them — the same manual-cookie approach most Stytch backend samples already use:
+
+```go
+// Pass nil ResponseWriter so the SDK does NOT set its own (Strict/Secure) cookies;
+// take the tokens off the returned AuthenticationInfo and set your own.
+authInfo, err := descopeClient.Auth.MagicLink().Verify(ctx, token, nil)        // or OAuth().ExchangeToken(ctx, code, nil)
+// set DS = authInfo.SessionToken.JWT and DSR = authInfo.RefreshToken.JWT with:
+//   Path:"/", HttpOnly:true, SameSite: http.SameSiteLaxMode, Secure:false (HTTP localhost), no Domain
+// Tenant switching: SelectTenantWithToken(ctx, tenantID, <DSR cookie value>) → set new DS/DSR.
+// Validation still works via ValidateSessionWithRequest(r) (it reads DS/DSR by name).
+// Logout: LogoutWithToken(<DSR>, nil) then expire the DS/DSR cookies (MaxAge -1).
+```
+
+Use `descope.SessionCookieName` (`DS`) and `descope.RefreshCookieName` (`DSR`) as the cookie names so
+the SDK's request-based validators find them. In production behind HTTPS, set `Secure=true`.
+
 ### User claims differ
 
 The default Descope session JWT ([structure ref](https://docs.descope.com/authorization/session-management#descope-session-jwt-structure)) contains `sub`, `amr`, `drn`, `tenants`, `roles`, and `permissions`. It does **not** include `email`, `name`, or `picture` unless you add them via [JWT Templates](https://docs.descope.com/management/jwt-templates) or [Flow actions > Custom Claims](https://docs.descope.com/flows/actions/custom-claims). Stytch exposes these profile fields on the `member`/`user` object (and may carry them as custom claims in the `session_jwt`), so code that reads them off the token will break after migration.
@@ -326,6 +353,28 @@ Descope (all variants):
 Stytch users don't automatically carry over. For production apps with existing users, this is a critical migration step.
 
 **Export from Stytch first.** See Stytch's [Exporting from Stytch](https://stytch.com/docs/resources/migrations/exporting-from-stytch#consumer-auth) guide: Consumer projects use the [Search users](https://stytch.com/docs/api-reference/consumer/api/users/search-users) API (or the [stytch-node-export-users](https://github.com/stytchauth/stytch-node-export-users) utility for CSV/JSON export); B2B projects use [Search Organizations](https://stytch.com/docs/api-reference/b2b/api/organizations/search-organizations) and [Search Members](https://stytch.com/docs/api-reference/b2b/api/members/search-members). For password hashes or biometric public keys, contact [support@stytch.com](mailto:support@stytch.com) — Stytch does not expose hashed passwords through self-serve export.
+
+**Pick the right Stytch API host (verified gotcha).** Stytch has two hosts and the key prefix
+decides which: `project-test-…` / `secret-test-…` keys work only against **`https://test.stytch.com`**,
+and `project-live-…` keys work only against **`https://api.stytch.com`**. Using the wrong host
+returns `project_not_found` (HTTP 404) even though Basic auth succeeds, which is easy to misread as
+"bad credentials." Example B2B export call (test keys):
+
+```bash
+curl -u "$STYTCH_PROJECT_ID:$STYTCH_SECRET" -X POST \
+  https://test.stytch.com/v1/b2b/organizations/search        -d '{"limit":100}'
+curl -u "$STYTCH_PROJECT_ID:$STYTCH_SECRET" -X POST \
+  https://test.stytch.com/v1/b2b/organizations/members/search -d '{"organization_ids":[...]}'
+```
+
+**Migrating via the Descope MCP.** The Descope MCP can create the destination tenants/users directly
+(no script needed): `whoami` may report an empty `project_id`, so call `selectProject` to the target
+Project ID (confirm it matches the app's `DESCOPE_PROJECT_ID`) before any operation; writes require
+`session(action="elevate")` first; and create **roles → tenants → users** in that order so user
+records can reference roles/tenants by name/ID. Preserving the Stytch `organization_id` as the
+Descope tenant ID (via `CreateTenant`'s `id` field) keeps a clean 1:1 mapping. Note that
+batch-created users come back `status: "invited"` until first login — patch `status` to `"enabled"`
+if you need them active immediately.
 
 Descope has a general [migration guide](https://docs.descope.com/migrate) with two approaches:
 - **Full migration:** Import the Stytch export into Descope using the [Create User API](https://docs.descope.com/api/management/users/create-user) or [Batch Create User API](https://docs.descope.com/api/management/users/batch-create-users). See the [user format JSON guide](https://docs.descope.com/migrate/custom/user-format-json) for the expected shape. Descope can import bcrypt, Argon2, PBKDF2, Firebase, Django, PHPass, and MD5 password hashes — confirm what Stytch provides before committing to a password-carryover plan. If hashes aren't available, plan a password reset on first login or use the JIT approach below.
@@ -690,6 +739,19 @@ Cookie name changed from `auth-token` (custom) to `DS` (Descope standard). `getR
 - Encore's `//encore:authhandler` expects `(auth.UID, error)`. Descope's JWT `sub` claim maps to `auth.UID`.
 - `encore.cue` config: Stytch `project_id` + `secret` → Descope `ProjectID` only.
 - `go.mod`: [`stytch-go`](https://github.com/stytchauth/stytch-go) → [`descope/go-sdk`](https://github.com/descope/go-sdk).
+- **Listing a user's tenants:** `Auth.MyTenants(ctx, r, dct, ids)` requires exactly one of `dct`/`ids`
+  and errors `E011004` if you pass neither — it can't enumerate "all of a user's tenants." To list
+  them (B2B org/tenant picker), validate the session for the user ID, then
+  `Management.User().LoadByUserID(ctx, token.ID)` and read `UserTenants` (`TenantID`, `TenantName`,
+  `Roles`). Stytch `organization_id` → Descope tenant ID throughout.
+- **B2B Stytch session-exchange model → tenant selection:** Stytch's intermediate-session/full-session
+  exchange (`Discovery.IntermediateSessions.Exchange`, `Sessions.Exchange`) both collapse to
+  `Auth.SelectTenantWithToken(ctx, tenantID, refreshToken)`, which stamps the chosen tenant onto the
+  one Descope session (the `dct` claim). There is no separate intermediate-session token/cookie.
+- **Separate SPA + this API:** if the frontend is a different origin, do not let the SDK set session
+  cookies — manage `DS`/`DSR` yourself (see the "Split-origin … gotcha" under *Cookie names* above).
+- `go doc <pkg>.<Type>` is the fastest way to confirm Go SDK signatures/field names before writing
+  calls (e.g. `client.Config`, `descope.Token`, `descope.UserResponseAssociatedTenant`).
 
 **Limitation:**
 - The Go SDK's exported type names (`client.DescopeClient`, `descope.Token`) aren't documented in Descope's official docs. The [Go quickstart](https://docs.descope.com/getting-started/go) shows usage patterns, not Go type signatures. Types in this migration are inferred from [Go SDK README](https://github.com/descope/go-sdk#readme) examples; verify against `go doc` output.
