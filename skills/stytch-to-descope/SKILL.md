@@ -24,7 +24,7 @@ Stytch is not only an authentication provider — it is a broader identity platf
 
 **Primary references** (both in this skill's directory):
 
-- `references/implementation-nuances.md` — verified migration patterns for each framework, WorkOS feature-to-Descope mappings, and known gotchas
+- `references/implementation-nuances.md` — verified migration patterns for each framework, Stytch feature-to-Descope mappings, and known gotchas
 - `references/flows-and-widgets.md` — Descope terminology/lingo, Flow structure and templates, Widgets, SSO Setup Suite, Console-vs-code decision guide
 
 ---
@@ -121,7 +121,7 @@ After both calls, summarize findings and flag high-complexity items before proce
 
 ---
 
-### Step 0.5: Engineer Review Checkpoint (BLOCKING — requires `AskUserQuestion`)
+## Step 0.5: Engineer Review Checkpoint (BLOCKING — requires `AskUserQuestion`)
 
 These questions surface blockers the framework doesn't expose. Ask even the ones you think
 you know. Use `AskUserQuestion` before proceeding to codebase analysis.
@@ -131,43 +131,61 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 
 **Access and credentials**
 
-- Do they have access to the Descope Console and a Project ID? (If not, see Step 1.5.)
-- Do they need a Management Key? (Required for user CRUD, RBAC, ReBAC, tenant/SSO/SCIM configuration, Outbound Apps.)
+* Do they have access to the Descope Console and a Project ID? (If not, see Step 1.5.)
+* Do they need a Management Key? Required for user CRUD, tenant management, RBAC, SSO/SCIM configuration, access keys, Inbound Apps, Outbound Apps, and other management operations.
+* Do they have access to the Stytch Dashboard/API keys needed to inspect or export the current configuration, including Consumer Auth, B2B Organizations/Members, SSO, SCIM, RBAC, Connected Apps, Fraud & Risk, and Admin Portal settings?
 
 **Codebase scope**
 
-- Are there places in the app that read claims directly from the session token (e.g. `user.email`, `claims.organization_id`, `role`/`permissions`)? These need a JWT Template configured before they'll work.
-- Does the app read WorkOS `organizationId`, `connectionId`, or `directoryId` in many places? The WorkOS Organization → Descope Tenant remap ripples through SSO, SCIM, RBAC, and membership checks — confirm the org model before writing code.
-- Are there multiple services or microservices validating WorkOS tokens/sessions? Each needs to be updated to validate Descope JWTs.
+* Is this a Stytch Consumer Auth app, a Stytch Multi-tenant/B2B Auth app, or a hybrid app using both? This determines whether the migration centers on Users only or on Organizations/Members → Tenants/Users.
+* Are there places in the app that read claims or session fields directly from Stytch tokens or session responses, such as `user_id`, `member_id`, `organization_id`, `organization_slug`, `roles`, `permissions`, `trusted_metadata`, `untrusted_metadata`, or custom claims? These need a Descope JWT Template or Flow Custom Claims configured before equivalent reads will work.
+* Does the app read Stytch `organization_id`, `member_id`, `sso_connection_id`, `scim_group_id`, Connected App client IDs, or RBAC `role_id` / `resource_id` / `action` values in many places? The Stytch Organization → Descope Tenant remap ripples through SSO, SCIM, RBAC, JIT provisioning, Admin Portal replacement, Connected Apps, and membership checks — confirm the organization model before writing code.
+* Are there multiple services or microservices validating Stytch session tokens, session JWTs, access tokens, or Connected Apps tokens? Each service needs to be updated to validate the correct Descope-issued JWTs or OAuth/OIDC tokens.
+* Does the application use Stytch frontend SDK helpers, backend API calls, direct REST calls, Stytch UI components, or all of the above? This determines whether the migration is mostly Flow/UI replacement, backend SDK replacement, or both.
+* Does the app depend on Stytch webhooks to keep its own database in sync? Search for webhook handlers before changing user, organization, member, SCIM, RBAC, fraud, or Connected Apps behavior.
 
 **Deployment and risk**
 
-- Do they have multiple environments (dev / staging / prod)? Each needs its own Descope project and Project ID.
-- Is there a maintenance window, or does this need to be zero-downtime?
+* Do they have multiple environments (dev / staging / prod)? Each needs its own Descope project and Project ID, with matching redirect URLs, auth domains, SSO/SCIM configuration, Connected Apps, and environment-specific secrets.
+* Is there a maintenance window, or does this need to be zero-downtime?
+* Are any external customers, enterprise IdPs, SCIM directories, OAuth clients, MCP clients, or machine-to-machine clients already integrated with the Stytch production project? If yes, plan customer-facing cutover steps, not just code changes.
+* Are login URLs, callback URLs, custom auth domains, email domains, OAuth issuer URLs, or JWKS URLs contractually or technically expected to stay stable? If yes, flag early because they affect SSO, sessions, Connected Apps, and token validation.
 
-**User and organization migration** (if they indicated existing users/orgs in Step 0)
+**User, organization, and member migration** (if they indicated existing users/orgs in Step 0)
 
-- How many users and organizations? This determines export approach and whether a phased cutover is warranted.
-- Do they use passwords in AuthKit? Plan how password credentials carry over (export/import vs. reset vs. passwordless). Verify the current WorkOS user-export capability and the Descope import path before committing to an approach.
-- Big-bang cutover or phased? Map each WorkOS Organization to a Descope Tenant first; user membership and tenant-scoped roles depend on it.
-- **SCIM is a lifecycle system, not a one-time import.** If Directory Sync is enabled, enterprise directories will keep pushing create/update/suspend/delete events after cutover. A single user import is not enough — every SCIM/directory workflow must be re-pointed at Descope before cutover, or provisioning silently breaks.
-- Are they aware that active WorkOS sessions will be invalidated on cutover unless a session-bridging approach is used? Plan for a forced re-login or phased rollout.
+* How many users, Organizations, and Members exist? This determines export approach and whether a phased cutover is warranted.
+* Are they using Stytch Consumer Auth users, Stytch B2B Members, or both? Consumer users and B2B Members have different object shapes and should not be collapsed without confirming the target model.
+* Do Stytch Members belong to multiple Organizations? If yes, preserve tenant membership and role assignment per organization when mapping to Descope Tenants.
+* Do they use passwords in Stytch? Plan how password credentials carry over: import if supported, force reset, staged password migration, or replacement with passwordless methods. Verify the current Stytch export capability and Descope import path before committing to an approach.
+* Which Stytch authentication methods are in use: OAuth/social login, OTP, magic links, passwords, passkeys/WebAuthn, mobile biometrics, TOTP, MFA, crypto wallets, or custom auth factors? Confirm migration feasibility for each method before writing implementation instructions.
+* Big-bang cutover or phased? Map each Stytch Organization to a Descope Tenant first; user/member migration, tenant membership, SSO, SCIM, JIT provisioning, and tenant-scoped roles depend on it.
+* **SCIM is a lifecycle system, not a one-time import.** If Stytch SCIM is enabled, enterprise directories will keep pushing create/update/deactivate/group events after cutover. A single user import is not enough — every SCIM workflow must be re-pointed at Descope before cutover, or provisioning silently breaks.
+* Are they aware that active Stytch sessions will be invalidated on cutover unless a session-bridging approach is used? Plan for forced re-login, phased rollout, or a temporary compatibility layer.
+* Does the app store Stytch IDs in its own database? If yes, plan an ID mapping table for Stytch `user_id`, `member_id`, `organization_id`, `role_id`, Connected App client IDs, and any other persisted identifiers.
 
 **Gaps to flag immediately** (don't ask — flag these proactively based on Step 0 answers)
 
-- If they're using **Vault** or **Feature Flags**: these may have no direct Descope identity equivalent. Flag separately; do not pretend they are Descope SDK swaps. Ask whether they're in scope.
-- If they're using **MCP Auth / Connect**: flag for deeper review before any implementation — likely maps to Descope Inbound Apps / OAuth app patterns, but needs dedicated mapping.
-- If they're using **Audit Logs**: set up Descope's Audit Webhook Connector before cutover to avoid gaps in compliance/event logging. Missing this can break compliance visibility even though the app still runs.
-- If they're using **Pipes / connected accounts**: connected third-party tokens may power integrations or background jobs. Identify provider connections and whether users must reconnect accounts.
+* If they're using **Fraud & Risk / Device Fingerprinting**: flag for security-flow review. Stytch verdicts, device IDs, trusted device logic, IP-geo restrictions, new-device notifications, and abuse-prevention decisions may need to be recreated with Descope Fingerprinting, Flow conditions, connectors, audit events, or app-side policy.
+* If they're using **Protected Auth**: flag that this is not a direct SDK toggle migration. Protected Auth behavior should be redesigned as Descope Flow-based risk handling: allow, challenge, block, or notify based on risk signals and policy.
+* If they're using **Connected Apps**: flag for deeper OAuth/OIDC review before implementation. Inventory clients, redirect URIs, public vs. confidential clients, PKCE, scopes, consent records, access token lifetimes, refresh token behavior, issuer/JWKS dependencies, and resource-server validation. This usually maps to Descope Inbound Apps, but it must be designed carefully.
+* If they're using **AI agent / MCP authentication** through Stytch Connected Apps: flag for dedicated review. This may map to Descope Inbound Apps, Agentic Identity Hub, MCP server authorization, DCR/CIMD, resource scopes, or tenant-aware policies.
+* If they're using **Machine-to-Machine authentication**: identify all M2M clients, secrets, scopes, token audiences, and rotation requirements. This may map to Descope Access Keys, client credentials, or Inbound Apps depending on how the tokens are consumed.
+* If they're using **Trusted Auth Tokens** or external JWT exchange: flag as high complexity. Confirm issuers, JWKS URLs, audiences, subject mapping, claim mapping, JIT behavior, and whether the exchange creates a user session or only API access.
+* If they're using **SCIM**: set up Descope SCIM and customer IdP cutover before production migration. Missing this can break provisioning/deprovisioning even though interactive login may still appear to work.
+* If they're using **webhooks or event logs**: identify business-critical handlers and configure Descope webhooks, audit connectors, or event streaming before cutover to avoid gaps in compliance, sync, or customer-visible activity.
+* If the app depends on **third-party provider tokens** obtained during OAuth/social login: determine whether those tokens are only used for login or also used to call provider APIs. If they power integrations or background jobs, evaluate Descope Outbound Apps or app-side token storage; do not assume normal login migration preserves provider API access.
 
 **Console/Flow/Widget opportunities** (flag before codebase analysis, then ask):
 
-- If the app uses the **WorkOS Admin Portal** or generates portal links: ask whether the SSO Setup Suite + Tenant Profile Widget replaces that workflow instead of rebuilding it as custom code. Do not default to building custom admin setup screens.
-- If the app has a profile edit page or user management UI: ask whether a Descope Widget covers the use case.
-- If the app has a separate MFA enrollment page: ask whether MFA should be integrated into the main sign-in Flow as a step or subflow instead (almost always cleaner in Descope).
-- If any server-side code initiates SSO, generates emails, or runs logic during the auth journey: ask whether that logic can be a Flow step or Connector instead of server code.
+* If the app uses the **Stytch Admin Portal UI** or Stytch Admin Portal components for member management, organization settings, SSO setup, or SCIM setup: ask whether Descope SSO Setup Suite and Admin Widgets can replace that workflow instead of rebuilding it as custom code. Do not default to building custom admin setup screens.
+* If the app has a profile edit page, member management page, organization settings page, or tenant-admin UI: ask whether a Descope Widget covers the use case.
+* If the app has a separate MFA enrollment page: ask whether MFA should be integrated into the main sign-in Flow as a step or subflow instead.
+* If any server-side code initiates SSO, generates emails, runs custom checks, calls fraud APIs, or makes decisions during the auth journey: ask whether that logic can become a Descope Flow step, condition, or Connector instead of server code.
+* If the app uses custom Stytch UI built with frontend SDKs: ask whether Descope Flows can replace the custom UI or whether the customer requires a headless SDK migration.
+* If the app uses Stytch Connected Apps and hosts its own OAuth authorization endpoint UI: ask whether Descope Inbound Apps can own more of the OAuth/OIDC authorization-server behavior, consent, token issuance, and client configuration.
+* If the app has risk-based auth, remembered-device behavior, new-device notifications, or custom fraud challenges: ask whether these should be modeled as Flow branches using Descope risk signals and messaging/connectors.
 
-Summarize any blockers and Console/Flow opportunities before proceeding to codebase analysis.
+Summarize any blockers and Console/Flow/Widget opportunities before proceeding to codebase analysis.
 
 ---
 
@@ -427,7 +445,7 @@ it's needed, and roughly how long it takes. Group into "Required before any test
 **Required before any testing:**
 
 - **Create a Descope project** — Takes 2 minutes. Produces a Project ID that replaces
-all WorkOS credentials in the app's environment variables.
+the STYTCH_PROJECT_ID in the app's environment variables.
 - **Create an authentication flow** — Descope uses a visual "flow" to define the login
 experience (what methods are offered, in what order). The built-in `sign-up-or-in` flow
 works for most apps and requires no customization to start.
@@ -478,8 +496,8 @@ Prose strategy first, then steps. Start with: "X existing users across Y organiz
 End with a brief checklist of the migration steps at the level a PM can track:
 
 - Export users and organizations from Stytch
-- Map each WorkOS Organization to a Descope Tenant
-- Re-point SCIM/Directory Sync at Descope (if Directory Sync is in use)
+- Map each Stytch Organization to a Descope Tenant
+- Re-point SCIM\ at Descope (if Stytch SCIM is in use)
 - Do a dry run of the import against the Descope dev project
 - Review dry-run output for errors
 - Run live migration against staging, then production
@@ -528,9 +546,10 @@ Then labeled phases, each with a time estimate:
 Can be done by any team member with Descope console access, in parallel with other work.
 
 - Create Descope project, copy Project ID
+- Configure Approved Domains (domain only — e.g. `localhost:3000`, not `http://localhost:3000/authenticate`)
 - Create authentication flow (use the built-in `sign-up-or-in` to start)
 - Configure user profile token template
-- Create tenants for each WorkOS Organization (list actual orgs found)
+- Create tenants for each Stytch Organization (list actual orgs found)
 - Create roles: (list actual roles found)
 - Configure SSO connections per tenant or enable the SSO Setup Suite (if SSO in use)
 - Configure social login providers: (list actual providers found)
@@ -614,7 +633,7 @@ _Last updated: [timestamp of last completed step]_
 - Existing users: [Yes — N users / No — greenfield]
 - Existing organizations: [Yes — N orgs → tenants / No]
 - Password migration needed: [Yes / No]
-- WorkOS features in use: [comma-separated list]
+- Stytch features in use: [comma-separated list]
 - Multiple environments: [Yes: dev/staging/prod / No]
 - Zero-downtime required: [Yes / No]
 
@@ -629,8 +648,9 @@ _All files that need to change. Update status after each step._
 
 ## Console Setup Checklist
 - [ ] Descope project created — Project ID: (fill in when done)
+- [ ] Approved Domains configured (domain only — e.g. `localhost:3000`, not `http://localhost:3000/authenticate`)
 - [ ] JWT template configured
-- [ ] Tenants created for each WorkOS Organization: (list)
+- [ ] Tenants created for each Stytch Organization: (list)
 - [ ] Roles created: (list roles)
 - [ ] SSO connections / SSO Setup Suite configured: (list)
 - [ ] Social providers configured: (list providers)
@@ -711,7 +731,7 @@ for all call sites of the changed function and update them in the same pass. The
 span 10–20 files.
 
 **5. Verify published package versions before writing to `package.json` or running `npm install`.**
-Don't reuse WorkOS's version number or rely on training data for versions. Before writing any
+Don't reuse Stytch's version number or rely on training data for versions. Before writing any
 install command:
 
 ```bash
@@ -729,7 +749,7 @@ Several steps require Descope Console setup that can't be done in code. The app 
 without them but won't work at runtime.
 
 Use `AskUserQuestion` to ask whether they already have a Project ID and working Flow. If
-yes, skip to verifying items 5–7 — these are easy to miss even for existing projects.
+yes, skip to verifying items 5–8 — these are easy to miss even for existing projects.
 
 ### 1. Create a project and get your Project ID
 
@@ -765,16 +785,30 @@ Use it for most migrations.
 the provider step to your Flow.
 - For enterprise SSO (SAML/OIDC): To configure SSO for a specific tenant or to enable the SSO Setup Suite for tenant-admin self-serve, go to Console → **Tenants**, select the desired tenant, and click **Tenant Settings**. For correct SSO callback and ACS URLs (social OAuth, SAML ACS, what NOT to use), see `references/implementation-nuances.md` → Social login / SSO section.
 
-### 5. Configure a JWT Template (almost always needed)
+### 5. Configure Approved Domains (local dev and production)
 
-WorkOS AuthKit tokens may include profile fields; Descope tokens do not by default.
+Console → **Project Settings → Security → Approved Domains**.
+
+Descope validates redirect URLs against this domain list — **not** full redirect URIs like Stytch.
+Enter **domain only**: no `http://`/`https://`, no path.
+
+- Local dev: `localhost:3000` (include port)
+- Production: `myapp.com` or `app.myapp.com`
+
+**Do not** carry over Stytch callback URLs like `http://localhost:3000/authenticate`. Descope
+embedded Flows complete auth client-side; there is no `/authenticate` route to whitelist. See
+`references/implementation-nuances.md` → Approved Domains gotcha.
+
+### 6. Configure a JWT Template (almost always needed)
+
+Stytch tokens may include profile fields; Descope tokens do not by default.
 
 - Console → **Project → JWT Templates**
 - Add claims: `{"email": "{{user.email}}", "name": "{{user.name}}", "picture": "{{user.picture}}"}`
 - Apply the template to your project. Without this step, any code reading `token.email`
 will get `undefined` after migration.
 
-### 6. Create roles in the Console (if using RBAC)
+### 7. Create roles in the Console (if using RBAC)
 
 Descope roles are referenced by **name**, not by ID. They must be created manually in the
 Console before the code that assigns them will work.
@@ -782,15 +816,20 @@ Console before the code that assigns them will work.
 - Console → **Authorization → RBAC → + Role**
 - Create each role the app references (e.g. `admin`, `member`)
 
-### 7. Define custom attributes (if using tenant/user metadata)
+### 8. Define custom attributes (if using Stytch metadata)
 
-WorkOS Organization `metadata` and User metadata map to Descope `customAttributes`.
-Pre-define them in the Console schema before setting them via the SDK.
+Stytch metadata maps to Descope customAttributes, but the models are slightly different. Stytch
+stores arbitrary JSON in metadata fields, while Descope custom attributes should be pre-defined in the
+Console schema before setting them via the SDK.
 
-- **Tenant** custom attributes (the equivalent of WorkOS Organization `metadata`): Console → **Tenants → Custom Attributes** tab → **Create Attribute**
-- **User** custom attributes: Console → **Project → Custom Attributes**
+Tenant custom attributes: map Stytch Organization trusted_metadata to Descope tenant
+customAttributes. Configure these in Console → Tenants → Custom Attributes tab → Create
+Attribute. 
+User custom attributes: map Stytch Consumer User trusted_metadata and safe B2B Member
+trusted_metadata to Descope user custom attributes. Configure these in Console → Project →
+Custom Attributes.
 
-### 8. Env var summary
+### 9. Env var summary
 
 
 | Variable                         | Where to get it                     | Used by                                     |
@@ -800,7 +839,7 @@ Pre-define them in the Console schema before setting them via the SDK.
 | `DESCOPE_MANAGEMENT_KEY`         | Console → Company → Management Keys | Management SDK, SSO/SCIM, Outbound Apps API |
 
 
-### 9. Consider Widgets for management UI
+### 10. Consider Widgets for management UI
 
 Before migrating custom profile pages, user management pages, role assignment UI, or admin
 SSO/SCIM setup pages, ask whether a Descope Widget or the SSO Setup Suite covers the use case.
@@ -962,7 +1001,7 @@ log any non-obvious decisions made (adapter types kept, async cascade scope, etc
 
 ## Step 2.5: Non-Code File Updates
 
-Scan for WorkOS references in non-code files after updating source files.
+Scan for Stytch references in non-code files after updating source files.
 
 ### `.env.example` / `.env.template` / `.env.sample`
 
@@ -1573,6 +1612,13 @@ all call sites of any utility you make async and update them in the same pass.
 
 If Directory Sync is in use, re-point the SCIM pipeline at Descope before cutover. A one-time user
 import leaves provisioning broken the moment the directory pushes its next change.
+
+### Approved Domains Are Domain-Only (Not Stytch Callback URLs)
+
+Stytch apps register full callback URLs (e.g. `http://localhost:3000/authenticate`). Descope uses
+**Approved Domains** (Console → Project Settings → Security) — domain only, no protocol, no path.
+For local dev: `localhost:3000`, **not** `http://localhost:3000/authenticate`. Descope embedded
+Flows complete auth client-side; there is no `/authenticate` route to whitelist.
 
 ### Env Var Reduction
 

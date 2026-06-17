@@ -34,6 +34,7 @@
 - [One session token, not two](#stytch-session-tokens--one-descope-session-token)
 - [Logout requires two steps](#logout-requires-two-steps)
 - [One env var instead of several](#one-env-var-instead-of-several)
+- [Approved Domains: domain only, no protocol or path](#approved-domains-domain-only-no-protocol-or-path)
 
 **Framework Sections**
 - [Express.js](#expressjs)
@@ -133,6 +134,19 @@ Stytch needs `STYTCH_PROJECT_ID` and `STYTCH_SECRET` on the backend, plus a publ
 Descope needs `DESCOPE_PROJECT_ID` (or `NEXT_PUBLIC_DESCOPE_PROJECT_ID` for Next.js client-side). No client secret for frontend flows. The web component authenticates against Descope's API using the project ID. Backend SDKs [fetch the public key](https://docs.descope.com/authorization/session-management/session-validation/backend/offline-jwt-validation#finding-your-public-key) from Descope's JWKS endpoint (`https://api.descope.com/v2/keys/<project_id>`) using the same project ID. No secrets to rotate for the auth flow.
 
 For management operations (user CRUD, role management, ReBAC), add `DESCOPE_MANAGEMENT_KEY`.
+
+### Approved Domains: domain only, no protocol or path
+
+Stytch apps often register full callback URLs — e.g. `http://localhost:3000/authenticate` for OAuth or magic-link token exchange. During migration, agents routinely tell users to add the same URL to Descope. That format does not work.
+
+Descope validates redirect URLs against **Approved Domains** (Console → Project Settings → Security → Approved Domains), not a list of full redirect URIs. Per [project settings docs](https://docs.descope.com/management/project-settings#approved-domains), web domains are **domain only — no protocol, no path**:
+
+- **Correct**: `localhost:3000`, `myapp.com`, `staging.myapp.com`
+- **Wrong**: `http://localhost:3000/authenticate`, `https://localhost:3000`, `http://localhost:3000`
+
+For local development, include the port (`localhost:3000`) but omit `http://`/`https://` and any path like `/authenticate`. Descope embedded Flows complete auth client-side — there is no Stytch-style `/authenticate` callback to whitelist. If OAuth via SDK/API passes a `redirectURL`, only the URL's host (and port, for localhost) must match an approved domain; paths do not get their own entries.
+
+**Symptom:** OAuth or redirect-based flows fail with domain/redirect validation errors after adding what looks like a correct Stytch callback URL.
 
 **— Feature Mapping: Stytch → Descope —**
 
