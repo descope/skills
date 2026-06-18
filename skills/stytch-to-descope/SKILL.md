@@ -230,11 +230,6 @@ grep -rni "\.sessions\|\.b2b\|\.b2c_client\|\.otps\|\.magicLinks\|\.magic_links\
   --include="*.swift" \
   --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=build \
   . 2>/dev/null
-  --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
-  --include="*.py" --include="*.go" --include="*.rb" --include="*.java" --include="*.kt" \
-  --include="*.swift" \
-  --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=build \
-  . 2>/dev/null
 
 # Find frontend / mobile session hooks and providers
 grep -rn "StytchProvider\|StytchB2BProvider\|Products\|StytchB2B\|StytchLogin\|StytchHeadlessClient\|useStytch\|useStytchUser\|useStytchSession\|createStytchUIClient\|StytchConsumerSDK\|StytchClient\|StytchUI\|@stytch/nextjs\|@stytch/react\|@stytch/vanilla-js\|@stytch/react-native" \
