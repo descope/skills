@@ -37,8 +37,6 @@
 - [Approved Domains: domain only, no protocol or path](#approved-domains-domain-only-no-protocol-or-path)
 
 **Framework Sections**
-- [Express.js](#expressjs)
-- [Flask / Python](#flask--python)
 - [Next.js (standalone)](#nextjs-standalone)
 - [Next.js (B2B): Migration Bug Catalog](#nextjs-b2b-migration-bug-catalog)
 - [Next.js (with separate Express API server)](#nextjs-with-separate-express-api-server)
@@ -474,46 +472,6 @@ After migrating, verify:
 - If using RBAC: roles/permissions appear in validated JWT claims
 - If using FGA/ReBAC: authorization checks pass for permitted resources and fail for unpermitted ones
 - If using Outbound Apps: third-party tokens are retrievable after user connects
-
----
-
-## Express.js
-
-
-**Changes:**
-- Removed the [`stytch`](https://github.com/stytchauth/stytch-node) (stytch-node) session-authentication code. Added [`@descope/node-sdk`](https://github.com/descope/node-sdk) and `cookie-parser`.
-- Replaced custom middleware calling `client.sessions.authenticateJwt()` with ~20 lines that validate the `DS` cookie via [`validateSession()`](https://docs.descope.com/getting-started/nodejs#implement-session-validation).
-- Added `/login` route rendering an EJS page with [`<descope-wc>`](https://docs.descope.com/client-sdk/descope-components#descope-component).
-- Logout changed from a route calling Stytch `sessions.revoke()` to a POST calling [`descopeClient.logout()`](https://docs.descope.com/authorization/session-management/session-validation/backend#logout-current-session-using-backend-sdk) + cookie clearing.
-- `requiresAuth()` is a custom 3-line function.
-
-**Notes:**
-- Descope needs no server-side OAuth/callback config since there's no server-side OAuth flow.
-- Stytch's authenticated-session response (`member` / `session` objects) becomes Descope's `authInfo.token` after [`validateSession()`](https://docs.descope.com/authorization/session-management/session-validation/backend#validate-session), which holds decoded JWT claims of the session token.
-
-**Limitation:**
-- The Descope web component requires JavaScript (as does Stytch's embedded UI).
-
----
-
-## Flask / Python
-
-
-**Changes:**
-- Removed the [`stytch`](https://github.com/stytchauth/stytch-python) (stytch-python) auth/session usage; added [`descope`](https://github.com/descope/python-sdk).
-- Removed Stytch OAuth/magic-link start + authenticate calls and any redirect-based flow code.
-- Removed the token/callback route. No code exchange needed.
-- `/login` renders a template with the [Descope web component](https://docs.descope.com/client-sdk/descope-components#descope-component) instead of the Stytch UI/headless flow.
-- `/logout` changed from Stytch session revocation to [`descope_client.logout(refresh_token)`](https://docs.descope.com/authorization/session-management/session-validation/backend#logout-current-session-using-backend-sdk) + cookie deletion.
-- Home route reads `DS` cookie from `request.cookies`, validates with [`descope_client.validate_session()`](https://docs.descope.com/getting-started/python#implement-session-validation).
-
-**Notes:**
-- If the app stored Stytch session state in Flask's server-side `session`, Descope doesn't use it — state lives in client-side cookies. You can drop `session` from Flask imports; `APP_SECRET_KEY` becomes optional.
-- `validate_session` returns a dict-like object. JWT standard claims (`sub`, `name`, `email`) are present. Custom claims from [Descope's JWT Templates](https://docs.descope.com/management/jwt-templates) also appear here.
-- The `descope` Python SDK requires Python 3.7+.
-
-**Limitation:**
-- Descope's Python SDK docs don't detail `validate_session()`'s return type beyond "jwt_response." It's a dict with JWT claims in practice, but official type annotations lag behind. Ref: [Descope Python SDK](https://github.com/descope/python-sdk), [Python quickstart](https://docs.descope.com/getting-started/python).
 
 ---
 
