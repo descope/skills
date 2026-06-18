@@ -903,7 +903,7 @@ SDK: `descopeClient.management.role.create(name, description, permissionNames, t
 
 ### Enterprise SSO → Descope Tenant SSO
 
-**Preferred approach — SSO Setup Suite:** Before migrating management SDK SSO calls, ask whether the SSO Setup Suite removes the need for that code. The SSO Setup Suite is a no-code Console wizard that guides tenant admins through per-tenant SAML/OIDC configuration with step-by-step IdP-specific instructions (Okta, Azure AD, Google Workspace, etc.) — no engineering involvement needed for new tenant SSO onboarding.
+**Preferred approach — SSO Setup Suite:** Before migrating management SDK SSO calls, ask whether the SSO Setup Suite removes the need for that code. The SSO Setup Suite is a no-code Console wizard that guides tenant admins through per-tenant SAML/OIDC configuration with step-by-step IdP-specific instructions (Okta, Microsoft Entra ID (formerly Azure AD), Google Workspace, etc.) — no engineering involvement needed for new tenant SSO onboarding.
 
 Use `AskUserQuestion` to ask: does this app need **programmatic** SSO configuration (CI/CD provisioning, API-driven tenant onboarding), or do tenant admins configure SSO themselves through a settings page? If the latter, the SSO Setup Suite + Tenant Profile Widget may eliminate the need for `sso.configureSAMLByTenant()` / `configureOIDCByTenant()` calls entirely.
 

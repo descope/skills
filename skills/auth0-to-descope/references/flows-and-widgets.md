@@ -164,7 +164,7 @@ Ask before writing code: *"Does a Widget cover this use case?"*
 
 The SSO Setup Suite is a no-code Console wizard for SAML and OIDC SSO configuration.
 It guides tenant admins through per-tenant SSO setup with step-by-step instructions
-specific to common IdPs (Okta, Azure AD, Google Workspace, etc.).
+specific to common IdPs (Okta, Microsoft Entra ID, Google Workspace, etc.).
 
 ### When to recommend it
 
