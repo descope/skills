@@ -1,7 +1,7 @@
 {
   "name": "descope-skills",
-  "description": "Descope authentication skills: integration, Auth0/Okta migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
-  "version": "1.1.8",
+  "description": "Descope authentication skills: integration, Auth0/Okta migration, WorkOS migration, Stytch migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
+  "version": "1.1.9",
   "author": {
     "name": "Descope",
     "email": "support@descope.com"
