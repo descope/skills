@@ -20,7 +20,7 @@ This skill guides self-service migrations from Stytch to Descope. It runs in thr
 
 Do not collapse these parts or skip ahead. The plan must be reviewed before code changes begin.
 
-Stytch is not only an authentication provider — it is a broader identity platform spanning consumer authentication, multi-tenant/B2B authentication, organizations and members, enterprise SSO, SCIM/directory sync, RBAC, JIT provisioning, MFA, session management, Admin Portal flows, fraud and risk protection, device fingerprinting, Protected Auth, machine-to-machine authentication, trusted auth tokens, and Connected Apps for OAuth/OIDC-based integrations and AI-agent access. A good migration first identifies which Stytch product surfaces are in use, then maps each one to the closest target feature or migration pattern. Expect Stytch migrations to vary more widely than a purely B2B auth migration, since a Stytch implementation may include consumer passwordless auth, enterprise-readiness features, fraud/risk infrastructure, and OAuth/OIDC connected-app workflows.
+Stytch is not only an authentication provider — it is a broader identity platform spanning consumer authentication, multi-tenant/B2B authentication, organizations and members, enterprise SSO, SCIM, RBAC, JIT provisioning, MFA, session management, Admin Portal flows, fraud and risk protection, device fingerprinting, Protected Auth, machine-to-machine authentication, trusted auth tokens, and Connected Apps for OAuth/OIDC-based integrations and AI-agent access. A good migration first identifies which Stytch product surfaces are in use, then maps each one to the closest target feature or migration pattern. Expect Stytch migrations to vary more widely than a purely B2B auth migration, since a Stytch implementation may include consumer passwordless auth, enterprise-readiness features, fraud/risk infrastructure, and OAuth/OIDC connected-app workflows.
 
 **Primary references** (both in this skill's directory):
 
@@ -103,21 +103,22 @@ Do not proceed to Step 0.5 until the user has answered.
 * **Multi-tenant / B2B Authentication** — whether the Stytch B2B model is used; how Organizations and Members are modeled; whether members can belong to multiple organizations; whether org discovery, org-specific login, or organization switching/session exchange is used.
 * **Organizations and Members** — organization metadata, member metadata, membership lifecycle, invitations, member search/update flows, deactivation behavior, and whether organization-specific auth policies are configured.
 * **Enterprise SSO** — whether SAML, OIDC, or both are used; which identity providers are connected; whether setup is handled internally or by customer admins; whether SSO is organization-specific, multi-organization, or standalone; whether role assignment or JIT provisioning depends on SSO claims.
-* **SCIM / Directory Sync** — which workforce directories are connected; whether member provisioning, deprovisioning, group sync, group-to-role mapping, session revocation, or webhook handlers depend on SCIM behavior. Flag as high complexity.
+* **SCIM** — which workforce directories are connected; whether member provisioning, deprovisioning, group sync, group-to-role mapping, session revocation, or webhook handlers depend on SCIM behavior. Flag as high complexity.
 * **RBAC** — how Stytch resources, actions, permissions, and roles are defined; whether roles are consumer-level or organization/member-level; where permission checks happen in code; whether roles or permissions are included in session tokens; whether SSO or SCIM maps groups/claims to roles.
 * **JIT Provisioning** — which provisioning sources are allowed; whether users/members are automatically added to organizations after SSO, email-domain matching, discovery, invitations, or trusted token flows.
 * **MFA and Step-up Authentication** — which second factors are used, such as SMS OTP, email OTP, TOTP, passkeys, WebAuthn, or other factors; whether MFA is globally required, organization-specific, risk-based, or used only for sensitive actions.
 * **Sessions and Tokens** — how session tokens, session JWTs, intermediate sessions, custom claims, cookies, expiration, refresh, revocation, and frontend/backend session validation are implemented.
 * **Admin Portal UI** — which customer-admin workflows are handled by Stytch today, such as member management, organization settings, SSO setup, SCIM setup, or RBAC management; whether the application generates Admin Portal links or embeds Stytch-provided admin flows.
 * **Fraud & Risk / Device Fingerprinting (including Protected Auth)** — whether Device Fingerprinting is used for bot detection, credential stuffing protection, account takeover prevention, toll fraud prevention, free-trial abuse, remembered devices, trusted/unrecognized device detection, IP-geo restrictions, new-device notifications, or to enable **Protected Auth** mechanisms (which can block, challenge, add friction, or monitor suspicious attempts). Flag as high complexity if Stytch verdicts or Protected Auth flows influence authentication decisions or require custom enforcement logic.
-* **Connected Apps** — whether the application uses Stytch to act as an OAuth/OIDC authorization server; which first-party, third-party, public, or confidential clients exist; which authorization code, PKCE, consent, token, refresh token, revocation, custom scope, or RBAC-backed scope flows are implemented. Flag as high complexity.
+* **Connected Apps** — whether the application uses Stytch to act as an OAuth/OIDC authorization server; which first-party, third-party, public, or confidential clients exist; which authorization code, PKCE, consent, token, refresh token, revocation, custom scope, or RBAC-backed scope flows are implemented. Flag as high complexity. **First-party → Descope Federated Apps; third-party → Descope Inbound Apps** (public vs. confidential applies only to Inbound Apps).
 * **AI Agent / MCP Authentication** — whether Connected Apps are used for AI agents, MCP clients, CLI tools, external integrations, or agentic access to application data; review scopes, consent, dynamic client registration, token lifetimes, and organization-level controls before implementation. Flag for deeper review.
 * **Machine-to-Machine Authentication** — whether M2M clients, client credentials, client secrets, JWT access tokens, scopes, custom claims, or secret rotation are used for service-to-service authentication.
-* **Trusted Auth Tokens / External Identity Bridging** — whether external JWTs are exchanged for Stytch sessions; which external IdPs, custom auth factors, claim mappings, JIT provisioning behavior, or role assignments depend on this flow. Flag as high complexity.
+* **Trusted Auth Tokens** — Stytch Trusted Auth Tokens let the application exchange an externally issued signed JWT for a Stytch
+session. Stytch validates the JWT against a Trusted Auth Token Profile configured with issuer (`iss`), audience (`aud`), public keys or JWKS URL, and claim mappings. Flag as high complexity.
 * **Webhooks, Event Logs, and Event Streaming** — which Stytch events are consumed by the application; whether event logs are shown to customers, streamed to external systems, used for compliance, or used to trigger internal user/org synchronization.
 * The user can add others via **“Other.”**
 
-After both calls, summarize findings and flag high-complexity items before proceeding to Step 0.5. The main high-complexity Stytch areas are typically **SCIM/Directory Sync, Enterprise SSO with JIT provisioning, RBAC tied to SSO or SCIM, Fraud & Risk/Device Fingerprinting, Protected Auth, Connected Apps, AI Agent/MCP authentication, Machine-to-Machine authentication, and Trusted Auth Tokens**.
+After both calls, summarize findings and flag high-complexity items before proceeding to Step 0.5. The main high-complexity Stytch areas are typically **SCIM, Enterprise SSO with JIT provisioning, RBAC tied to SSO or SCIM, Fraud & Risk/Device Fingerprinting, Protected Auth, Connected Apps, AI Agent/MCP authentication, Machine-to-Machine authentication, and Trusted Auth Tokens**.
 
 ---
 
@@ -167,13 +168,12 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 
 * If they're using **Fraud & Risk / Device Fingerprinting**: flag for security-flow review. Stytch verdicts, device IDs, trusted device logic, IP-geo restrictions, new-device notifications, and abuse-prevention decisions may need to be recreated with Descope Fingerprinting, Flow conditions, connectors, audit events, or app-side policy.
 * If they're using **Protected Auth**: flag that this is not a direct SDK toggle migration. Protected Auth behavior should be redesigned as Descope Flow-based risk handling: allow, challenge, block, or notify based on risk signals and policy.
-* If they're using **Connected Apps**: flag for deeper OAuth/OIDC review before implementation. Inventory clients, redirect URIs, public vs. confidential clients, PKCE, scopes, consent records, access token lifetimes, refresh token behavior, issuer/JWKS dependencies, and resource-server validation. This usually maps to Descope Inbound Apps, but it must be designed carefully.
+* If they're using **Connected Apps**: flag for deeper OAuth/OIDC review before implementation. Inventory clients, redirect URIs, public vs. confidential clients, PKCE, scopes, consent records, access token lifetimes, refresh token behavior, issuer/JWKS dependencies, and resource-server validation. **First-party Stytch clients map to Descope Federated Apps; third-party clients map to Descope Inbound Apps** (public vs. confidential applies only to Inbound Apps).
 * If they're using **AI agent / MCP authentication** through Stytch Connected Apps: flag for dedicated review. This may map to Descope Inbound Apps, Agentic Identity Hub, MCP server authorization, DCR/CIMD, resource scopes, or tenant-aware policies.
-* If they're using **Machine-to-Machine authentication**: identify all M2M clients, secrets, scopes, token audiences, and rotation requirements. This may map to Descope Access Keys, client credentials, or Inbound Apps depending on how the tokens are consumed.
-* If they're using **Trusted Auth Tokens** or external JWT exchange: flag as high complexity. Confirm issuers, JWKS URLs, audiences, subject mapping, claim mapping, JIT behavior, and whether the exchange creates a user session or only API access.
+* If they're using **Machine-to-Machine authentication**: identify all M2M clients, secrets, scopes, token audiences, and rotation requirements. Default to **Resources + Inbound Apps + Policies**; use Access Keys only for simple internal JWT exchange without OAuth scope/`aud` enforcement.
+* If they're using **Trusted Auth Tokens** or external JWT exchange: flag as high complexity. Confirm issuers, JWKS URLs, audiences, subject mapping, claim mapping, JIT behavior, and whether the exchange creates a user session or only API access. In Descope, this maps most closely to **Inbound Apps with the JWT Bearer grant**
 * If they're using **SCIM**: set up Descope SCIM and customer IdP cutover before production migration. Missing this can break provisioning/deprovisioning even though interactive login may still appear to work.
 * If they're using **webhooks or event logs**: identify business-critical handlers and configure Descope webhooks, audit connectors, or event streaming before cutover to avoid gaps in compliance, sync, or customer-visible activity.
-* If the app depends on **third-party provider tokens** obtained during OAuth/social login: determine whether those tokens are only used for login or also used to call provider APIs. If they power integrations or background jobs, evaluate Descope Outbound Apps or app-side token storage; do not assume normal login migration preserves provider API access.
 
 **Console/Flow/Widget opportunities** (flag before codebase analysis, then ask):
 
@@ -513,7 +513,7 @@ Format each as a named callout:
 > **Risk: SCIM is a lifecycle system, not just a user import**
 > Stytch's SCIM may create, update, suspend, and delete users or group memberships continuously.
 > A one-time import is not enough if enterprise directories keep syncing after cutover.
-> **Action:** Identify every SCIM/directory workflow and re-point it at Descope before cutover.
+> **Action:** Identify every SCIM workflow and re-point it at Descope before cutover.
 
 > **Risk: Admin Portal UI should not automatically become custom code**
 > If the app uses the Stytch Admin Portal UI, the Descope equivalent may be the SSO Setup Suite or a
@@ -1168,25 +1168,24 @@ The exact SDK method names differ by language/framework, so verify against the D
 before writing implementation code. Rule of thumb: tenant/enterprise SSO should use Descope's
 tenant-level SSO configuration; social login should use OAuth/social auth methods. **Effort: Medium**
 
-### SCIM / Directory Sync → Descope SCIM / Tenant Provisioning
+### SCIM → Descope SCIM / Tenant Provisioning
 
-Stytch SCIM / Directory Sync maps to Descope SCIM provisioning. **Treat this as a continuing
+Stytch SCIM maps to Descope SCIM provisioning. **Treat this as a continuing
 provisioning pipeline, not a one-time import** — enterprise directories keep pushing create, update,
-group, and deprovisioning events after cutover. Every customer directory must be re-pointed from
-Stytch to Descope before cutover, or provisioning will silently break.
+group, and deprovisioning events after cutover.
 
-| Stytch SCIM / Directory Sync             | Descope                                                |
+| Stytch SCIM                              | Descope                                                |
 | ---------------------------------------- | ------------------------------------------------------ |
 | SCIM endpoint per Organization           | Descope SCIM endpoint / token per tenant               |
-| Directory user create/update/deactivate  | Tenant user provisioning lifecycle                     |
-| Directory groups                         | External groups / group-to-role mapping                |
+| User create/update/deactivate  | Tenant user provisioning lifecycle                     |
+| Groups                         | External groups / group-to-role mapping                |
 | SCIM group-to-role assignment            | SCIM or SSO group mapping to Descope roles             |
-| Directory deprovisioning                 | User deactivation / tenant access removal behavior     |
+| Deprovisioning                 | User deactivation / tenant access removal behavior     |
 | SCIM tokens                              | Tenant-scoped SCIM-compatible access keys              |
 | SCIM webhooks / downstream sync handlers | Descope events, audit logs, webhooks, or app sync code |
 
 Identify every connected directory, which IdPs are used, whether groups are synced, whether groups map
-to roles, and what happens when a user is removed from a directory group. Pay special attention to
+to roles, and what happens when a user is removed from a group. Pay special attention to
 whether Stytch deprovisioning revoked sessions immediately, removed membership, changed roles, or only
 updated status. **Effort: Medium–High** — lifecycle, groups, deprovisioning, and role mapping can be
 subtle.
@@ -1197,12 +1196,17 @@ Stytch Admin Portal provides customer-admin workflows for managing enterprise co
 SSO, SCIM, organization settings, members, and related admin tasks. Do not default to rebuilding these
 screens as custom code.
 
-* Stytch Admin Portal link generation → SSO Setup Suite link or Descope Admin Widget link
-* SSO setup screens → SSO Setup Suite
-* SCIM setup screens → SSO Setup Suite SCIM setup or tenant SCIM configuration
-* Member management screens → Tenant Profile Widget / Admin Widgets, if applicable
-* Organization settings screens → Tenant Profile Widget / custom admin UI backed by Descope tenant APIs
-* RBAC/role management screens → Descope Console, Admin Widgets, or custom UI depending on requirements
+| Stytch Admin Portal area | Descope replacement |
+| ------------------------ | ------------------- |
+| `AdminPortalMemberManagement` | User Management Widget |
+| Member search/update/invite | User Management Widget or Management SDK/API |
+| Member role assignment | User Management Widget; Role Management Widget if tenant admins manage roles |
+| `AdminPortalOrgSettings` | Tenant Profile Widget for tenant name, custom attributes, domains, and SSO enforcement |
+| Organization auth method/JIT settings | Flow logic, tenant settings/custom attributes, or custom Management SDK/API UI |
+| `AdminPortalSSO` | SSO Setup Suite |
+| `AdminPortalSCIM` | SSO Setup Suite SCIM configuration |
+| Custom member management UI | Prefer User Management Widget; otherwise Management SDK/API |
+| Custom organization management UI | Prefer Tenant Profile Widget; otherwise Management SDK/API |
 
 Ask which Stytch Admin Portal workflows are actually used today. If a Descope Widget or SSO Setup
 Suite covers the workflow, prefer that over custom migration code. **Effort: Medium** — may remove
@@ -1210,22 +1214,27 @@ custom code, but generated portal-link workflows need replacement.
 
 ### RBAC → Descope RBAC
 
+// Does Stytch do RBAC at a tenant level as well?
 
 Stytch RBAC is a structured role-based model built from Resources, Actions, Permissions, and Roles.
 A Stytch Permission is the combination of a `resource_id` and an `action` — for example,
 `documents:read` or `employees:update` — and Roles are collections of those permissions assigned to
 Members. Stytch evaluates these permissions using its RBAC policy, either through frontend SDK helpers
 such as resource/action authorization checks or backend session/JWT authentication calls that include
-an `organization_id`, `resource_id`, and `action`. Descope RBAC is flatter. Descope has Roles and Permissions, 
+an `organization_id`, `resource_id`, and `action`. Descope has Roles and Permissions, 
 but permissions are strings rather than first-class Resource + Action objects. When migrating Stytch RBAC to Descope RBAC,  
 encode each Stytch `resource_id + action` pair as a Descope permission string using a consistent naming convention such
 as `resource.action` or `resource:action`.
 
-In Descope, roles and permissions can be created and assigned at both the project and tenant levels.
-For most Stytch migrations, start by mapping Stytch role definitions to Descope project-level roles,
-then assign those roles to users in the relevant tenant context. Only create Descope tenant-level role
-definitions when the source application has tenant-specific role definitions or tenant-specific
-permission sets, rather than merely tenant-specific role assignments.
+In Descope, roles and permissions can be created and assigned at both the project and tenant
+levels. Stytch works differently: its RBAC Policy is defined once at the project level (a single,
+shared set of role and resource definitions), and roles are then assigned to individual members
+within their organization's context — there is no per-organization policy that can diverge from
+the project-wide one. Stytch's only org-scoped mechanism is implicit assignment, which auto-grants
+a project-defined role to members based on their email domain within a given organization; this is
+still tenant-specific *assignment*, not a tenant-specific *definition*. For most Stytch migrations,
+start by mapping Stytch role definitions to Descope project-level roles, then assign those roles to
+users in the relevant tenant context. 
 
 | Stytch                           | Descope                                        |
 | -------------------------------- | ---------------------------------------------- |
@@ -1254,28 +1263,42 @@ depends on relationships between entities) or stays in the application database.
 See `references/implementation-nuances.md` → **Authorization beyond RBAC → Descope ReBAC** for the
 decision guide, an example schema, the recommended-approach table, and effort estimate.
 
-### JIT Provisioning → Descope JIT Provisioning / Tenant Association
+## JIT Provisioning → Descope JIT Provisioning / Tenant Association
 
-Stytch supports JIT provisioning for adding users or Members to Organizations based on login context,
-email domains, SSO, or other allowed provisioning sources. Descope supports tenant association,
-domain-based routing, SSO-driven provisioning, SCIM, and Flow-based tenant/user logic.
+Stytch supports Organization-level JIT provisioning for automatically adding Members to Organizations
+based on specific authentication context. The main Stytch JIT paths are email-domain JIT, SSO
+Connection JIT, and OAuth-tenant JIT. Trusted Auth Tokens also have a separate JIT option that can
+allow externally issued JWTs to create new Members or Organizations. Invitations are a separate member
+onboarding path and should not be treated as JIT.
 
-**Important:** decide whether the source of truth is JIT, SCIM, or pre-created membership. Mixing all
-three without clear precedence can produce duplicate accounts, unexpected tenant access, or confusing
-role assignment behavior.
+Descope supports tenant association, self-provisioning domains, domain-based SSO routing, SSO-driven
+JIT provisioning, SCIM, and Flow-based tenant/user logic. When migrating, preserve the provisioning
+model that is actually configured in Stytch instead of assuming the customer should choose only one
+approach.
 
-| Stytch                              | Descope                                       |
-| ----------------------------------- | --------------------------------------------- |
-| Email-domain JIT provisioning       | Tenant self-provisioning domains / Flow logic |
-| SSO JIT provisioning                | SSO JIT provisioning / tenant association     |
-| Organization allowed domains        | Tenant domains / self-provisioning domains    |
-| Member created on first login       | User association with tenant during login     |
-| JIT role assignment from SSO claims | SSO group/attribute mapping to roles          |
-| JIT plus SCIM                       | Explicit SCIM-vs-JIT design decision          |
+**Important:** decide which source of truth controls membership and role assignment for each tenant:
+JIT, SCIM, explicit invitations, manual admin membership, Trusted Auth Tokens, or app-side onboarding.
+SCIM and JIT are not mutually exclusive, but mixing provisioning sources without clear precedence can
+produce duplicate accounts, unexpected tenant access, missed deprovisioning, or confusing role
+assignment behavior. Ask which provisioning paths are enabled in Stytch for each Organization
 
-Ask which provisioning sources are enabled in Stytch and what happens if a user signs in before SCIM
-has provisioned them. **Effort: Medium** — low if only email-domain JIT is used, higher if SSO/SCIM
-role assignment also depends on JIT.
+| Stytch                                    | Descope                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| Email-domain JIT provisioning             | Tenant self-provisioning domains / Flow logic                       |
+| `email_allowed_domains`                   | Tenant domains / self-provisioning domains                          |
+| SSO Connection JIT provisioning           | SSO JIT provisioning / tenant association                           |
+| `sso_jit_provisioning`                    | Tenant SSO provisioning behavior                                    |
+| OAuth-tenant JIT provisioning             | Custom Flow / Connector / app-side tenant logic                     |
+| Allowed GitHub, Slack, or HubSpot tenants | Custom tenant association logic if still required                   |
+| Member created on first login             | User associated with tenant during login                            |
+| JIT role assignment from SSO claims       | SSO group/attribute mapping to roles                                |
+| Trusted Auth Token JIT                    | JWT Bearer   |
+| Email invitations                         | Separate invite/admin onboarding flow, not JIT                      |
+| JIT plus SCIM                             | Preserve both if both are configured                                |
+
+**Effort: Medium** — low if only email-domain JIT is used, higher if SSO/SCIM role assignment,
+Trusted Auth Tokens, OAuth-tenant membership, or custom onboarding logic also depends on JIT.
+
 
 ### MFA and Step-up Authentication → Descope MFA / Flow Conditions
 
@@ -1322,61 +1345,69 @@ Search the codebase for direct reads of Stytch session fields, token claims, org
 exchange calls, and middleware that assumes Stytch-specific token shapes. **Effort: Medium** — token
 differences often affect middleware, API routes, and frontend hydration.
 
-### Fraud & Risk / Device Fingerprinting → Descope Fingerprinting + Flow Security
+### Fraud & Risk / Device Fingerprinting → Descope Flow + Connectors
 
-Stytch Fraud & Risk centers on Device Fingerprinting, verdicts, decisioning, bot prevention,
-credential stuffing defense, account takeover prevention, toll fraud reduction, new-device detection,
-remembered devices, IP-geo restrictions, and abuse prevention. Descope supports built-in
-fingerprinting and risk signals that can be used inside Flows, and can be combined with CAPTCHA or
-fraud connectors when needed.
+Stytch embeds **Fraud & Risk** and **Protected Auth** in SDK auth calls (fingerprint telemetry,
+allow/challenge/block verdicts). Descope has no equivalent SDK toggle — recreate the behavior as
+**Flow steps + Conditions**, and **prefer an external security connector** over mapping Stytch's
+built-in fingerprinting feature-by-feature.
 
-**Mechanism difference:** Stytch Device Fingerprinting and **Protected Auth** (a frontend/mobile SDK
-layer that automatically attaches fingerprint telemetry to login/signup calls and enforces allow,
-challenge, block, or monitor-only outcomes) can be embedded directly in Stytch SDK auth calls. In
-Descope, there is no equivalent SDK toggle — recreate both with Flow-based risk handling: collect
-risk signals, branch on the result, and decide whether to allow, challenge, block, or notify.
+| Stytch use case | Descope approach |
+| --- | --- |
+| Bot / device fingerprinting | [Arkose Bot Manager](https://www.descope.com/blog/post/arkose-labs-connector), [Google reCAPTCHA Enterprise](https://docs.descope.com/connectors), or [Fingerprint](https://docs.descope.com/connectors) connector step |
+| Breached credentials | [Have I Been Pwned](https://docs.descope.com/connectors) connector |
+| IP / geo / abuse signals | [AbuseIPDB](https://docs.descope.com/connectors) connector or Flow condition |
+| Verdict-driven allow/challenge/block | Branch on `connectors.<key>` — allow, MFA/CAPTCHA, block, or notify |
 
-| Stytch Fraud & Risk            | Descope                                                  |
-| ------------------------------ | -------------------------------------------------------- |
-| Device Fingerprinting          | Descope Fingerprinting                                   |
-| Protected Auth on SDK calls    | Fingerprint / risk step in the Flow + conditional branch |
-| Fingerprint verdict            | `riskInfo` signals / Flow conditional logic              |
-| Bot detection                  | `riskInfo.botDetected`, risk score, Bot Trap, CAPTCHA    |
-| Credential stuffing protection | Flow risk branch + MFA/CAPTCHA/block behavior            |
-| Account takeover risk          | Risk-based MFA / step-up / notification                  |
-| Toll fraud prevention          | OTP/channel restrictions + risk checks + connector logic |
-| New device notification        | Trusted/unrecognized device logic + messaging connector  |
-| IP-geo restrictions            | Flow condition / connector / app-side policy             |
-| Custom decisioning             | Flow conditions, connectors, or backend policy checks    |
+Browse the full catalog at [docs.descope.com/connectors](https://docs.descope.com/connectors). Ask
+whether Stytch verdicts are monitoring-only or actually gate login; if they block or challenge users
+in production, treat this as a Flow redesign. **Effort: Medium–High** only when verdicts affect
+production login outcomes.
 
-Ask whether Stytch Fraud & Risk or Protected Auth is only monitoring or actually making access
-decisions. If it blocks or challenges users, treat the migration as a security-flow redesign, not a
-configuration copy. **Effort: Medium–High** — especially if verdicts affect production login outcomes.
-
-### Connected Apps → Descope Inbound Apps
+### Connected Apps → Federated Apps + Inbound Apps
 
 Stytch Connected Apps enables a Stytch-powered application to act as an OAuth/OIDC Authorization
 Server for first-party apps, third-party integrations, desktop apps, CLI tools, AI agents, MCP
-clients, and other clients that need scoped access to user data. Descope maps this most closely to
-**Inbound Apps**, where Descope acts as the OAuth/OIDC authorization server and issues scoped tokens
-to external clients.
+clients, and other clients that need scoped access to user data.
 
-| Stytch Connected Apps           | Descope Inbound Apps                                      |
-| ------------------------------- | --------------------------------------------------------- |
-| OAuth/OIDC Authorization Server | Descope Inbound Apps authorization server                 |
-| First-party client              | First-party Inbound App / known client                    |
-| Third-party client              | Third-party Inbound App                                   |
-| Public client + PKCE            | Public Inbound App / PKCE-capable flow                    |
-| Confidential client             | Confidential Inbound App with client secret               |
-| Authorization Code flow         | Inbound App Authorization Code flow                       |
-| Refresh tokens                  | Inbound App refresh token support                         |
-| ID tokens                       | OIDC ID tokens                                            |
-| Access tokens                   | Descope-issued scoped access tokens                       |
-| Consent screen                  | Inbound App consent / consent management                  |
-| Custom scopes                   | Resources and scopes                                      |
-| RBAC-backed scopes              | Role/scope/resource mapping review                        |
-| Token revocation                | Inbound App token revocation                              |
-| Dynamic Client Registration     | DCR / Agentic Identity Hub client registration, if needed |
+**Do not map every Stytch Connected Apps client to Descope Inbound Apps.** Stytch distinguishes
+first-party from third-party clients; Descope splits the equivalent workloads across two
+[identity-federation](https://docs.descope.com/identity-federation) features:
+
+| Stytch Connected Apps client | Descope equivalent   | Purpose                                                                                                                                                  |
+| ---------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **First-party client**       | **Federated Apps**   | SSO across apps you own — Descope acts as the IdP so users authenticate once and access multiple connected applications without signing in again to each |
+| **Third-party client**       | **Inbound Apps**     | OAuth/OIDC authorization server — external clients obtain scoped tokens to access your Resources, with consent and permission management                 |
+
+**Public vs. confidential applies only to Inbound Apps** (Stytch third-party clients). Confidential
+clients are server-side apps that can securely store a client secret; public clients (SPAs, mobile
+apps, CLI tools) cannot store secrets and must use PKCE.
+
+#### First-party clients → Federated Apps
+
+| Stytch Connected Apps (first-party) | Descope Federated Apps                                      |
+| ----------------------------------- | ----------------------------------------------------------- |
+| First-party OAuth/OIDC client       | Federated App (SAML or OIDC SSO connection)                 |
+| Known first-party app               | Federated App registration and callback URL                 |
+| SSO across owned applications       | Descope as IdP; users sign in once across connected apps    |
+| Session / ID token for owned apps   | Federated App OIDC token or SSO session                     |
+
+#### Third-party clients → Inbound Apps
+
+| Stytch Connected Apps (third-party) | Descope Inbound Apps                                      |
+| ----------------------------------- | --------------------------------------------------------- |
+| OAuth/OIDC Authorization Server     | Inbound Apps authorization server (`/oauth2/v1/apps/*`)   |
+| Public client + PKCE                | Public Inbound App / PKCE-capable flow                    |
+| Confidential client                 | Confidential Inbound App with client secret               |
+| Authorization Code flow             | Inbound App Authorization Code flow                       |
+| Refresh tokens                      | Inbound App refresh token support (confidential clients use client secret; public clients do not) |
+| ID tokens                           | OIDC ID tokens                                            |
+| Access tokens                       | Descope-issued scoped access tokens                       |
+| Consent screen                      | Inbound App consent / consent management                  |
+| Custom scopes                       | Resources and scopes                                      |
+| RBAC-backed scopes                  | Role/scope/resource mapping review                        |
+| Token revocation                    | Inbound App token revocation                              |
+| Dynamic Client Registration         | DCR / Agentic Identity Hub client registration, if needed |
 
 This is a high-complexity migration if real external clients depend on the current Stytch issuer,
 JWKS, token claims, scopes, refresh token lifetimes, consent records, or callback URLs. Inventory every
@@ -1395,7 +1426,7 @@ organization-level controls.
 
 | Stytch AI / MCP pattern          | Descope                                      |
 | -------------------------------- | -------------------------------------------- |
-| Connected App for AI agent       | Inbound App / Agentic Identity Hub client    |
+| Connected App for AI agent       | Agentic Identity Hub client    |
 | MCP client authorization         | MCP Server authorization / Inbound App       |
 | Dynamic Client Registration      | DCR / CIMD / known client registration       |
 | Agent scopes                     | Resource scopes / policies                   |
@@ -1407,54 +1438,30 @@ Ask whether Stytch is acting as the OAuth provider for agents, whether the app e
 whether external agents already store refresh tokens. **Effort: Medium–High — flag for dedicated
 review.**
 
-### Machine-to-Machine Authentication → Descope Access Keys / Client Credentials
+### Machine-to-Machine Authentication → Resources + Inbound Apps + Policies
 
-Stytch M2M authentication uses M2M clients, client credentials, access tokens, scopes, custom claims,
-and secret rotation for service-to-service authentication. In Descope, map this to Access Keys or
-client credentials patterns depending on whether the service needs Descope-issued JWTs for your own
-APIs or OAuth-style scoped access through an Inbound App.
+Stytch M2M authentication uses M2M clients, client credentials, access tokens, scopes, custom
+claims, and secret rotation for service-to-service authentication.
 
-| Stytch M2M                | Descope                                                  |
-| ------------------------- | -------------------------------------------------------- |
-| M2M client                | Access Key or Inbound App confidential client            |
-| Client ID / client secret | Access Key or OAuth client credentials                   |
-| Client credentials flow   | Descope client credentials flow / Inbound App flow       |
-| JWT access token          | Descope-issued JWT                                       |
-| M2M scopes                | Access key claims, roles/permissions, or resource scopes |
-| Custom claims             | Access key custom claims / JWT Templates                 |
-| Secret rotation           | Access key rotation / client secret rotation             |
+**Default mapping:** For most Stytch M2M use cases, use **[Resources](https://docs.descope.com/identity-federation/resources) + [Inbound Apps](https://docs.descope.com/identity-federation/inbound-apps) + [Policies](https://docs.descope.com/identity-federation/policies)** — not Access Keys. Stytch defines scopes on the application itself; in Descope each protected API is a **Resource** (its identifier becomes the token `aud`) with an OAuth scope catalog, an **Inbound App** is the confidential OAuth client, and a **Policy** grants that client specific scopes on that Resource via the `client_credentials` grant (no consent screen).
 
-Ask which services use M2M credentials, which APIs they call, what scopes they require, and whether
-tokens are validated by internal services or external resource servers. **Effort: Medium** — often
-straightforward, but production services require careful secret rotation and rollout.
+1. Create a **Resource** per protected API with scopes (optionally mapped to RBAC roles).
+2. Register a **confidential Inbound App** for each M2M service.
+3. Create a **Policy** allowing that client M2M access (`client_credentials`) to the Resource scopes it needs.
 
+| Stytch M2M                | Descope (default)                                      |
+| ------------------------- | ------------------------------------------------------ |
+| M2M client                | Confidential Inbound App                               |
+| Client ID / client secret | Inbound App client ID + secret                         |
+| Client credentials flow   | Inbound App `client_credentials` grant via Policy      |
+| M2M scopes                | Resource scopes granted by Policy                      |
+| Token audience            | Resource identifier (`aud`)                            |
+| Custom claims             | JWT Template on Inbound App                            |
+| Secret rotation           | Inbound App client secret rotation                     |
 
-### Third-party Provider Tokens / Connected External Accounts → Descope Outbound Apps
+Use **[Access Keys](https://docs.descope.com/management/m2m-access-keys)** only when the service needs a Descope-issued JWT without OAuth scope or audience enforcement — a simpler internal service-auth pattern, not a scoped API access model.
 
-Stytch OAuth/social login is primarily for authentication, but some applications also depend on
-provider access tokens to call third-party APIs such as Google, Microsoft, GitHub, Slack, HubSpot, or
-other services. If the Stytch implementation stores or uses third-party provider tokens beyond login,
-evaluate Descope **Outbound Apps**.
-
-Do not confuse this with Connected Apps:
-
-* **Connected Apps / Inbound Apps**: external clients call your application using tokens your app
-  issues.
-* **Outbound Apps**: your application stores/uses tokens for external providers on behalf of users or
-  tenants.
-
-| Stytch / App behavior                       | Descope                                            |
-| ------------------------------------------- | -------------------------------------------------- |
-| User connects Google/Microsoft/etc. account | Outbound App user connection                       |
-| Tenant connects external provider account   | Outbound App tenant connection                     |
-| App stores provider access/refresh tokens   | Descope token vault for Outbound Apps              |
-| Backend calls third-party API               | Fetch Outbound App token server-side               |
-| AI agent uses external provider token       | Outbound App token made available to backend/agent |
-
-Ask which providers are connected, where tokens are used, whether users must reconnect accounts, and
-whether tokens can legally/technically be migrated. **Effort: Medium** if providers are few; high if
-external integrations are core product functionality.
-
+Ask which services use M2M credentials, which APIs they call, what scopes and audiences they enforce, and whether downstream APIs validate `scope` and `aud`. **Effort: Medium** — often straightforward with Resources + Policies, but production services require careful secret rotation and rollout.
 
 ### Webhooks / Events / Event Logs → Descope Webhooks / Connectors / Audit Events
 
@@ -1503,7 +1510,7 @@ identity migration or a separate application/platform migration.
 After mapping confirmed Stytch features, summarize findings and flag high-complexity items before
 proceeding to Step 0.5. The main high-complexity Stytch areas are:
 
-* **SCIM / Directory Sync** — lifecycle, group sync, deprovisioning, role mapping, IdP cutover.
+* **SCIM** — lifecycle, group sync, deprovisioning, role mapping, IdP cutover.
 * **Enterprise SSO with JIT provisioning** — routing, tenant mapping, domain behavior, SSO claim
   mapping.
 * **RBAC tied to SSO or SCIM** — group-to-role mapping and token/permission enforcement.
@@ -1519,8 +1526,6 @@ proceeding to Step 0.5. The main high-complexity Stytch areas are:
 * **Provider token storage / external account connections** — possible Outbound Apps migration.
 * **Webhooks/Event Streaming** — event names, payloads, signing, retries, downstream sync.
 * **Custom domains and OAuth/OIDC issuer URLs** — DNS, cookies, callbacks, token validation impact.
-
-
 
 
 ## Step 4: Critical Gotchas (Always Cover These)
@@ -1605,8 +1610,7 @@ all call sites of any utility you make async and update them in the same pass.
 
 ### SCIM Is a Lifecycle, Not a One-Time Import
 
-If Directory Sync is in use, re-point the SCIM pipeline at Descope before cutover. A one-time user
-import leaves provisioning broken the moment the directory pushes its next change.
+If SCIM is in use, re-point the SCIM pipeline at Descope before cutover.
 
 ### Approved Domains Are Domain-Only (Not Stytch Callback URLs)
 
@@ -1815,7 +1819,10 @@ cases for several frameworks.
 - Descope OIDC Endpoints: [https://docs.descope.com/getting-started/oidc-endpoints](https://docs.descope.com/getting-started/oidc-endpoints)
 - Descope Flows: [https://docs.descope.com/flows](https://docs.descope.com/flows)
 - JWT Templates: [https://docs.descope.com/management/jwt-templates](https://docs.descope.com/management/jwt-templates)
-- Access Keys (M2M): [https://docs.descope.com/management/m2m-access-keys](https://docs.descope.com/management/m2m-access-keys)
+- Resources: [https://docs.descope.com/identity-federation/resources](https://docs.descope.com/identity-federation/resources)
+- Policies: [https://docs.descope.com/identity-federation/policies](https://docs.descope.com/identity-federation/policies)
+- Inbound Apps: [https://docs.descope.com/identity-federation/inbound-apps](https://docs.descope.com/identity-federation/inbound-apps)
+- Access Keys (M2M — simple cases only): [https://docs.descope.com/management/m2m-access-keys](https://docs.descope.com/management/m2m-access-keys)
 - Messaging Templates: [https://docs.descope.com/management/messaging-templates](https://docs.descope.com/management/messaging-templates)
 - Audit Webhook: [https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook](https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook)
 - Custom Domains: [https://docs.descope.com/how-to-deploy-to-production/custom-domain](https://docs.descope.com/how-to-deploy-to-production/custom-domain)
