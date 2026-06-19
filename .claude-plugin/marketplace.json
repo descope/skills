@@ -8,7 +8,7 @@
     {
       "name": "descope-skills",
       "source": "./",
-      "description": "Descope authentication skills: integration, Auth0/Okta migration, WorkOS migration, Stytch migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
+      "description": "Descope authentication skills: integration, Auth0/Okta/WorkOS/Stytch migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
       "repository": "https://github.com/descope/skills.git",
       "author": {
         "name": "Descope",
