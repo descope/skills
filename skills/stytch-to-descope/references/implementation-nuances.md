@@ -350,7 +350,10 @@ Descope (all variants):
 
 Stytch users don't automatically carry over. For production apps with existing users, this is a critical migration step.
 
-**Export from Stytch first.** See Stytch's [Exporting from Stytch](https://stytch.com/docs/resources/migrations/exporting-from-stytch#consumer-auth) guide: Consumer projects use the [Search users](https://stytch.com/docs/api-reference/consumer/api/users/search-users) API (or the [stytch-node-export-users](https://github.com/stytchauth/stytch-node-export-users) utility for CSV/JSON export); B2B projects use [Search Organizations](https://stytch.com/docs/api-reference/b2b/api/organizations/search-organizations) and [Search Members](https://stytch.com/docs/api-reference/b2b/api/members/search-members). Profile fields and metadata export through these APIs; password hashes do not (see below).
+**Export from Stytch first.** See Stytch's [Exporting from Stytch](https://stytch.com/docs/resources/migrations/exporting-from-stytch#consumer-auth) guide: Consumer projects use the [Search users](https://stytch.com/docs/api-reference/consumer/api/users/search-users) API (or the [stytch-node-export-users](https://github.com/stytchauth/stytch-node-export-users) utility for CSV/JSON export); B2B projects use [Search Organizations](https://stytch.com/docs/api-reference/b2b/api/organizations/search-organizations) and [Search Members](https://stytch.com/docs/api-reference/b2b/api/members/search-members). Profile fields and metadata export through these APIs; password hashes do not (see below). 
+
+Stytch has two API hosts and the key prefix decides which: `project-test-…` / `secret-test-…` keys work only against **`https://test.stytch.com`**; `project-live-…` keys work only against **`https://api.stytch.com`**. Hitting the wrong host returns `project_not_found` (404) even though auth succeeds. When pulling orgs/members for migration, pick the host that matches the key prefix.
+
 
 **Password export requires a Stytch support ticket (verified gotcha).** Hashed passwords and biometric public keys are not available through self-serve export — contact [support@stytch.com](mailto:support@stytch.com). This is typically the migration bottleneck with variable turnaround time. **Do not proceed with Descope password import until Stytch delivers the hash export.** Plan the cutover timeline and fallback (password reset on first login, JIT migration) around this wait.
 
@@ -454,7 +457,7 @@ Descope handles these through [Flows](https://docs.descope.com/flows) and securi
 | Breached-password detection | [Have I Been Pwned integration](https://docs.descope.com/connectors) — blocks credentials found in known breaches |
 | IP / geo restrictions | Flow step using [AbuseIPDB connector](https://docs.descope.com/connectors) or IP-based conditional logic |
 
-Stytch attaches verdicts to SDK auth calls. Descope's is composable — you add detection steps to your Flow and configure the response (block, challenge with MFA, allow with logging). Recreate Stytch's verdict-driven decisions as Flow branches.
+Stytch attaches verdicts to SDK auth calls. Descope's is composable — you add detection steps to your Flow and configure the response (block, challenge with MFA, allow with logging). Recreate Stytch's verdict-driven decisions as Flow branches. **Prefer an external security connector** over mapping Stytch's built-in fingerprinting feature-by-feature. See the full catalog at [docs.descope.com/connectors](https://docs.descope.com/connectors), including [fraud](https://docs.descope.com/connectors/connector-configuration-guides/fraud) and [kyc](https://docs.descope.com/connectors/connector-configuration-guides/kyc) configuration guides.
 
 ### Testing checklist (applies to all samples)
 
