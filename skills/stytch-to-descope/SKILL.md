@@ -1214,8 +1214,6 @@ custom code, but generated portal-link workflows need replacement.
 
 ### RBAC → Descope RBAC
 
-// Does Stytch do RBAC at a tenant level as well?
-
 Stytch RBAC is a structured role-based model built from Resources, Actions, Permissions, and Roles.
 A Stytch Permission is the combination of a `resource_id` and an `action` — for example,
 `documents:read` or `employees:update` — and Roles are collections of those permissions assigned to
@@ -1359,7 +1357,7 @@ built-in fingerprinting feature-by-feature.
 | IP / geo / abuse signals | [AbuseIPDB](https://docs.descope.com/connectors) connector or Flow condition |
 | Verdict-driven allow/challenge/block | Branch on `connectors.<key>` — allow, MFA/CAPTCHA, block, or notify |
 
-Browse the full catalog at [docs.descope.com/connectors](https://docs.descope.com/connectors). Ask
+Browse the full catalog at [docs.descope.com/connectors](https://docs.descope.com/connectors), specifically [https://docs.descope.com/connectors/connector-configuration-guides/fraud](https://docs.descope.com/connectors/connector-configuration-guides/fraud) and [https://docs.descope.com/connectors/connector-configuration-guides/kyc](https://docs.descope.com/connectors/connector-configuration-guides/kyc). Ask
 whether Stytch verdicts are monitoring-only or actually gate login; if they block or challenge users
 in production, treat this as a Flow redesign. **Effort: Medium–High** only when verdicts affect
 production login outcomes.
