@@ -190,6 +190,34 @@ Guides self-service migrations from WorkOS to Descope across any language or fra
 
 </details>
 
+<details>
+<summary><b>stytch-to-descope</b> — Migrate applications from Stytch to Descope</summary>
+
+Guides self-service migrations from Stytch to Descope across any language or framework. Stytch is an identity platform spanning consumer auth, B2B organizations, enterprise SSO, fraud/risk, and Connected Apps, so the skill first identifies which Stytch product surfaces are in use, maps each to Descope, analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Stytch to Descope"
+- "Replace Stytch with Descope"
+- "Our app uses stytch / @stytch/nextjs / Stytch UI / Stytch SSO / Connected Apps / SCIM — switch to Descope"
+- "How do Stytch Organizations / Enterprise SSO / SCIM / Connected Apps / Admin Portal map to Descope?"
+- "We're moving off Stytch"
+
+**Covers:**
+- SDK replacement for all major frameworks (Next.js, React, Python, Go, Ruby, etc.)
+- Stytch feature mappings: Consumer/B2B Auth → Descope Flows, Stytch UI → Flows/Widgets, Organizations/Members → Tenants/Users, Enterprise SSO → Tenant SSO, SCIM → Descope SCIM, Admin Portal → SSO Setup Suite / Widgets, RBAC → Descope RBAC, Connected Apps (first-party → Federated Apps, third-party → Inbound Apps), M2M → Access Keys, Fraud & Risk / Protected Auth → Flow-based security connectors, Trusted Auth Tokens, webhooks → Audit Webhook
+- Descope Flow, Widget, and SSO Setup Suite setup (console-first approach)
+- User/org export from Stytch and password hash migration
+- Session validation patterns and Stytch-specific gotchas (session_token vs. session_jwt, organization_id claims, Approved Domains)
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow, Widget, and Console configuration guidance
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
 
 <details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
