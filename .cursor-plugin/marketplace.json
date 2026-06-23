@@ -1,0 +1,25 @@
+{
+  "name": "descope-skills",
+  "owner": {
+    "name": "Descope",
+    "email": "support@descope.com"
+  },
+  "metadata": {
+    "description": "Descope authentication, authorization, migration, and security skills for Cursor",
+    "version": "1.1.9"
+  },
+  "plugins": [
+    {
+      "name": "descope-skills",
+      "source": "./",
+      "description": "Descope authentication skills: integration, Auth0/Okta/WorkOS/Stytch migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
+      "repository": "https://github.com/descope/skills.git",
+      "author": {
+        "name": "Descope",
+        "email": "support@descope.com"
+      },
+      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "oauth", "sso", "passkey", "mfa", "fga", "authorization", "security", "byos", "ci-cd", "deployment"],
+      "category": "authentication"
+    }
+  ]
+}

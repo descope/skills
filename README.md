@@ -297,6 +297,21 @@ Add the marketplace and install the plugin:
 
 </details>
 
+<details>
+<summary><b>Using Cursor</b></summary>
+
+Install from the Cursor Marketplace. In Cursor, run:
+
+```
+/add-plugin descope-skills
+```
+
+Or open the Marketplace panel (or visit [cursor.com/marketplace](https://cursor.com/marketplace)), search for **Descope**, and install.
+
+The repo ships a Cursor plugin manifest (`.cursor-plugin/`), so it installs as a single `descope-skills` plugin that bundles every skill under `skills/`.
+
+</details>
+
 ## Usage
 
 Skills are automatically loaded by compatible AI agents once installed. Simply describe what you need:
