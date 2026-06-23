@@ -9,7 +9,7 @@ is usually faster and safer than writing code.
 
 ## Contents
 
-- [Terminology: Auth0 → Descope Lingo](#terminology-auth0--descope-lingo)
+- [Terminology: Okta CIS → Descope Lingo](#terminology-okta-cis--descope-lingo)
 - [Flows: Structure and What They Replace](#flows-structure-and-what-they-replace)
 - [Widgets: Post-Login Management UI](#widgets-post-login-management-ui)
 - [SSO Setup Suite](#sso-setup-suite)
@@ -17,37 +17,54 @@ is usually faster and safer than writing code.
 
 ---
 
-## Terminology: Auth0 → Descope Lingo
+## Terminology: Okta CIS → Descope Lingo
 
 ### Critical naming inversion
 
-The most common migration mistake: Auth0 and Descope use the word "tenant" to mean different things.
+Okta and Descope use different words for overlapping concepts. The table below is the
+authoritative reference — always check here before using an Okta term in a Descope context.
 
-| Auth0 term | Descope term | Notes |
+Sources:
+- Authenticators: [developer.okta.com/docs/guides/authenticators-overview](https://developer.okta.com/docs/guides/authenticators-overview/main/)
+- Policies: [developer.okta.com/docs/concepts/policies](https://developer.okta.com/docs/concepts/policies/)
+- Authorization Servers: [developer.okta.com/docs/concepts/auth-servers](https://developer.okta.com/docs/concepts/auth-servers/)
+- Identity Providers: [help.okta.com/oie/topics/security/identity_providers](https://help.okta.com/oie/en-us/content/topics/security/identity_providers.htm)
+- Log Streams: [help.okta.com/oie/topics/Reports/log-streaming](https://help.okta.com/oie/en-us/Content/Topics/Reports/log-streaming/about-log-streams.htm)
+
+| Okta CIS term | Descope term | Notes |
 |---|---|---|
-| **Tenant** (your Auth0 account) | **Project** | Top-level unit. Has auth methods, Flows, users, and settings. Multiple environments → multiple Projects. |
-| **Organization** (your B2B customer) | **Tenant** | "For B2B apps, a tenant is your customer." Direct equivalent of Auth0 Organization. |
-| Application | **Federated Application** (OIDC/SAML clients) or just **Project** (direct SDK integration) | Use Federated Application when you need OIDC/SAML; use Project directly for SDK-based integration. |
-| Action / Rule / Hook | **Flow + Scriptlet + Connector** | Flows replace the entire Auth0 pipeline. Actions become Flow steps; custom code becomes Scriptlets; external calls become Connectors. |
-| M2M Client / Client Credentials | **Access Key** | Presented to exchange for a short-lived JWT. Supports expiration, permitted IPs, tenant/role scoping. |
-| Universal Login Page | **Auth Hosting** (hosted) or embedded **`<descope-wc>` / `<Descope>` component** | Flows define the auth experience in both cases. |
-| Social Connection (Google, GitHub…) | **OAuth Provider** | Configured under Authentication Methods in Console. |
-| Enterprise Connection (SAML/OIDC per-org) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
-| Branding | **Styles** | Logo, colors, fonts in Console → Styles. Inherited by all Flow Screens. |
-| Auth0 Marketplace integration | **Connector** | Added as a step inside a Flow. Response available in flow context as `connectors.<contextKey>`. |
-| Roles / Permissions | **Roles / Permissions** | Same concepts. Project-level and tenant-level. Stored as strings in JWT. |
-| Management API (M2M token) | **Management SDK + Management Key** | Same capabilities, different auth (Management Key vs. M2M token). |
+| **Okta org** (your Okta account) | **Project** | Top-level unit. Multiple environments → multiple Projects. |
+| **Customer / B2B org** | **Tenant** | Descope tenant = your B2B customer. Direct equivalent. |
+| **Okta Sign-In Widget** (`@okta/okta-signin-widget`) | **Descope Flow component** | Drop-in embedded replacement. Swap `new OktaSignIn(...)` for `<Descope flowId="sign-up-or-in" />`. No redirect needed. |
+| **Hosted Sign-In Page** (Okta-hosted redirect) | **Auth Hosting Application** | Descope's hosted login page. Same redirect pattern; customize via Flow Screens and Styles. |
+| **Application** (Web, SPA, Native) | **Federated App** or **Inbound App** | Federated = OIDC/SAML federation only; Inbound = OAuth with scope enforcement. Use Inbound when the backend validates scopes. |
+| **Sign-On Policy** (per-app) | **Flow** | Visual auth pipeline; replaces Okta's per-app policy rule chain. |
+| **Authenticator Enrollment Policy** | **Flow** (MFA step or subflow) | Inline enrollment replaces Okta's separate enrollment journey. |
+| **Global Session Policy** | **Project session config** | Lifetime and refresh settings in Console → Project Settings → Session Management. |
+| **Authenticator** (Passkeys/FIDO2, TOTP, Okta Verify, Password, SMS, Phone, Security Question) | **Auth Method** | Configured in Console → Authentication. One auth method per authenticator type. |
+| **Token Inline Hook** | **Flow Scriptlet** or **Generic HTTP Connector** | Custom logic during auth. Scriptlet = inline JS; Connector = external HTTP call. |
+| **Group** | **Role** (flat or tenant-scoped) | Project-level or per-tenant RBAC. |
+| **Log Stream → Splunk Cloud** | **Splunk Audit Connector** | OOTB Descope connector. |
+| **Log Stream → Amazon EventBridge** | **Audit Webhook Connector** | Custom HTTP sink. (Datadog is NOT a direct Okta Log Stream destination — integrates indirectly.) |
+| **Authorization Server** (custom or org-level) | **Resource** | Descope's new Resources feature. Audience is immutable in both. |
+| **Service App / API Services** (M2M) | **Access Key** | Client credentials flow → Access Key exchange. |
+| **Identity Provider** (external SAML/OIDC per-org) | **Tenant SSO** | Per-tenant. Use SSO Setup Suite for self-service setup. |
+| **Custom Claims** (Expression Language on Authorization Server) | **JWT Template** | On Inbound App or project level — NOT on the Resource in Descope. |
+| **Resource policy** (scope-based access control) | **Inbound App authorization rules** | Scope-based access logic lives at the Inbound App, not the Resource. |
+| **Okta Marketplace integration** | **Connector** | HTTP call step in a Flow. Response stored as `connectors.<contextKey>`. |
 
 ### Other Descope-specific terms
 
-- **Project** — the top-level unit. Think Auth0 tenant.
-- **Flow** — visual auth pipeline. Replaces Auth0 Actions/Rules/Hooks + Universal Login.
+- **Project** — the top-level unit. Think Okta org.
+- **Flow** — visual auth pipeline. Replaces Okta Sign-On Policies + authentication UI.
 - **Screen** — one UI page within a Flow. Designed in Screen Builder.
 - **Scriptlet** — inline JS step in a Flow (Lodash + CryptoJS included). Escape hatch for custom logic.
 - **Connector** — HTTP call step in a Flow. Response stored in flow context.
 - **Subflow** — one Flow embedded inside another. Context passes through; does not terminate the parent.
 - **Descoper** — a person with Console access. Managed in Company Settings → Descopers with custom roles.
-- **Auth Hosting Application** — the hosted login UI (equivalent to Auth0 Universal Login domain).
+- **Auth Hosting Application** — the hosted login UI (equivalent to Okta's hosted sign-in page).
+- **Inbound App** — an OAuth client with scope enforcement; use when the backend validates scopes.
+- **Federated App** — an OIDC/SAML relying party; use when Okta is used purely for authentication.
 
 ---
 
@@ -57,19 +74,21 @@ A Descope Flow is a visual, no-code authentication pipeline built in the Console
 authentication process — not a hook on top of it. Flows can be changed without redeploying
 the application.
 
-### What Flows replace from Auth0
+### What Flows replace from Okta CIS
 
-| Auth0 | Descope Flow equivalent |
+| Okta CIS | Descope Flow equivalent |
 |---|---|
-| Actions / Rules / Hooks (post-login logic, claims, role assignment) | Flow steps (Actions, Scriptlets, Custom Claims) |
-| Universal Login page UI | Flow Screens |
+| **Okta Sign-In Widget** (embedded `@okta/okta-signin-widget`) | **Descope Flow component** (`<Descope flowId="..." />`) — same embed, no redirect |
+| Sign-On Policy (per-app auth rule chain) | Flow steps (conditions, auth methods, Connectors) |
+| Authenticator Enrollment Policy (MFA enrollment logic) | MFA step in main sign-in Flow, or MFA subflow |
+| Global Session Policy (session duration, re-auth) | Flow → End action settings + Project session config |
+| Hosted sign-in page UI | Flow Screens + Auth Hosting Application |
 | Email verification sequence | Email verification Flow step |
 | Password reset sequence | Password reset Flow (template available) |
-| MFA enrollment (Guardian ticket URL redirect) | MFA step in main sign-in Flow, or MFA subflow |
 | Invitation emails | Invitation Flow (template available) |
 | Step-up authentication | Step-up Flow (template: `step-up`; adds `su` claim to JWT) |
 | Progressive profiling | Progressive profiling Flow (template available) |
-| Attack protection (bot detection, brute force) | Connector steps (Arkose, reCAPTCHA, Fingerprint, HaveIBeenPwned, AbuseIPDB) |
+| Token Inline Hook (custom claim injection, external call) | Flow Scriptlet (inline logic) or Generic HTTP Connector |
 
 ### Building blocks
 
@@ -103,14 +122,16 @@ use case. Most common patterns are available out of the box.
 
 ### MFA enrollment specifically
 
-Many Auth0 apps have a separate MFA enrollment page because Auth0 Guardian works via a server-generated redirect URL. That pattern has no Descope equivalent.
+Okta's Authenticator Enrollment Policies trigger a separate enrollment journey when a required
+factor is missing. That separate journey has no direct Descope equivalent.
 
 **The Descope approach:**
-- Add an MFA step to the main sign-up/sign-in Flow — enrollment happens inline during the auth journey
-- Or embed MFA as a **subflow** — triggered by a condition (e.g., user is admin, or risk score is high)
-- Or use the **step-up** flow template to gate sensitive operations
+- Add a second auth method step after the primary step in the sign-in Flow — there is no single "MFA step" button; MFA is two sequential auth method steps. If the user hasn't enrolled in the second method, the Flow prompts enrollment inline.
+- Or embed the MFA sequence as a **subflow** — triggered by a Condition (e.g., user role is admin, or a risk signal is present)
+- Or use the **step-up** Flow template to gate sensitive operations after initial sign-in
 
-Before migrating a standalone MFA enrollment page, ask whether MFA can be integrated into the main Flow instead. This is almost always the cleaner approach in Descope.
+Before migrating a standalone MFA enrollment flow, ask whether MFA can be integrated into the
+main sign-in Flow. This is almost always the cleaner approach in Descope.
 
 ---
 
@@ -168,11 +189,16 @@ specific to common IdPs (Okta, Microsoft Entra ID, Google Workspace, etc.).
 
 ### When to recommend it
 
-Surface this before migrating any SSO-related Management SDK calls:
+Surface this before writing any SSO provisioning code. The signal to look for is programmatic
+SSO setup in the existing Okta integration — i.e., your engineers currently call Okta's Identity
+Provider API (`POST /api/v1/idps`) to create per-tenant SAML or OIDC connections, and the
+migration plan includes equivalent Descope SDK calls like `management.sso.configureSAMLByTenant()`
+or `configureOIDCByTenant()`.
 
-- App uses `managementClient.connections.create({ strategy: "samlp" | "oidc" })`
-- Migration plan includes `management.sso.configureSAMLByTenant()` or `configureOIDCByTenant()`
-- App has a custom SSO settings page where tenant admins configure their IdP
+Key indicators:
+- Engineers currently provision new tenant SSO connections in Okta (not tenant admins)
+- There is a backend service or script that calls `POST /api/v1/idps` to create IdPs
+- There is a custom SSO settings page where tenant admins configure their IdP via your app's backend
 
 **The question to ask:**
 > "Does this app need programmatic SSO configuration (CI/CD provisioning, API-driven setup), or do tenant admins configure SSO themselves through a settings page? If the latter, the SSO Setup Suite + Tenant Profile Widget may remove the need for that SDK code entirely."
@@ -198,8 +224,8 @@ Surface this before migrating any SSO-related Management SDK calls:
 | Per-tenant SSO configuration | SSO (or SSO Setup Suite) |
 | Social OAuth providers | Authentication → Social |
 | Email/SMS templates | Authentication method settings → Templates |
-| Session token lifetime and refresh settings | Project → Session Management |
-| Custom JWT claims (profile fields, roles in token) | Authorization → JWT Templates |
+| Session token lifetime and refresh settings | Project Settings → Session Management |
+| Custom JWT claims (profile fields, roles in token) | Project Settings → JWT Templates |
 | Custom tenant/user attributes | Project → Custom Attributes |
 | Connectors (Slack, Salesforce, HTTP webhooks, etc.) | Connectors |
 | Access Keys (M2M) | Access Keys |
@@ -223,5 +249,5 @@ Engineers integrate once (SDK setup + session validation middleware). All subseq
 evolution — new auth methods, MFA step changes, UI updates, connector integrations, new
 social providers — happens in the Console without code deployments.
 
-When a migration replaces Auth0 code with equivalent Descope SDK calls, that's correct.
-When it replaces Auth0 code with Console configuration, that's better.
+When a migration replaces Okta code with equivalent Descope SDK calls, that's correct.
+When it replaces Okta code with Console configuration, that's better.

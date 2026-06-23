@@ -9,7 +9,7 @@ is usually faster and safer than writing code.
 
 ## Contents
 
-- [Terminology: Auth0 → Descope Lingo](#terminology-auth0--descope-lingo)
+- [Terminology: Stytch → Descope Lingo](#terminology-stytch--descope-lingo)
 - [Flows: Structure and What They Replace](#flows-structure-and-what-they-replace)
 - [Widgets: Post-Login Management UI](#widgets-post-login-management-ui)
 - [SSO Setup Suite](#sso-setup-suite)
@@ -17,37 +17,38 @@ is usually faster and safer than writing code.
 
 ---
 
-## Terminology: Auth0 → Descope Lingo
+## Terminology: Stytch → Descope Lingo
 
-### Critical naming inversion
+### The key mapping: Organization → Tenant
 
-The most common migration mistake: Auth0 and Descope use the word "tenant" to mean different things.
+Unlike some migrations, there is **no "tenant" naming collision** between Stytch and Descope —
+both call the top-level account a **Project**. The mapping that matters most is the B2B customer:
+a Stytch **Organization** becomes a Descope **Tenant**, and a Stytch **Member** becomes a Descope
+**User** associated with that tenant.
 
-| Auth0 term | Descope term | Notes |
+| Stytch term | Descope term | Notes |
 |---|---|---|
-| **Tenant** (your Auth0 account) | **Project** | Top-level unit. Has auth methods, Flows, users, and settings. Multiple environments → multiple Projects. |
-| **Organization** (your B2B customer) | **Tenant** | "For B2B apps, a tenant is your customer." Direct equivalent of Auth0 Organization. |
-| Application | **Federated Application** (OIDC/SAML clients) or just **Project** (direct SDK integration) | Use Federated Application when you need OIDC/SAML; use Project directly for SDK-based integration. |
-| Action / Rule / Hook | **Flow + Scriptlet + Connector** | Flows replace the entire Auth0 pipeline. Actions become Flow steps; custom code becomes Scriptlets; external calls become Connectors. |
-| M2M Client / Client Credentials | **Access Key** | Presented to exchange for a short-lived JWT. Supports expiration, permitted IPs, tenant/role scoping. |
-| Universal Login Page | **Auth Hosting** (hosted) or embedded **`<descope-wc>` / `<Descope>` component** | Flows define the auth experience in both cases. |
-| Social Connection (Google, GitHub…) | **OAuth Provider** | Configured under Authentication Methods in Console. |
-| Enterprise Connection (SAML/OIDC per-org) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
-| Branding | **Styles** | Logo, colors, fonts in Console → Styles. Inherited by all Flow Screens. |
-| Auth0 Marketplace integration | **Connector** | Added as a step inside a Flow. Response available in flow context as `connectors.<contextKey>`. |
-| Roles / Permissions | **Roles / Permissions** | Same concepts. Project-level and tenant-level. Stored as strings in JWT. |
-| Management API (M2M token) | **Management SDK + Management Key** | Same capabilities, different auth (Management Key vs. M2M token). |
+| **Project** (with Test/Live environments) | **Project** | Top-level unit. Has auth methods, Flows, users, and settings. In Descope each environment is a separate Project (vs. Stytch's Test/Live split within one project). |
+| **Organization** (your B2B customer) | **Tenant** | "For B2B apps, a tenant is your customer." Direct equivalent of a Stytch Organization. |
+| Direct SDK integration / **Connected App** (OAuth client) | **Project** (direct SDK integration) or **Federated / Inbound Application** (OIDC/SAML clients) | Use the Project directly for SDK-based integration; use a Federated/Inbound Application when Stytch Connected Apps act as OAuth/OIDC clients. |
+| **M2M Client / Client Credentials** | **Access Key** | Presented to exchange for a short-lived JWT. Supports expiration, permitted IPs, tenant/role scoping. |
+| **Prebuilt UI components** (Stytch UI, embedded) | **Auth Hosting** (hosted) or embedded **`<descope-wc>` / `<Descope>` component** | Stytch's UI is embedded in your app; Descope Flows define the auth experience whether hosted or embedded. |
+| **OAuth / social login** (Google, GitHub…) | **OAuth Provider** | Configured under Authentication Methods in Console. |
+| **SSO Connection** (SAML/OIDC per-Organization) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
+| **UI appearance / customization** | **Styles** | Logo, colors, fonts in Console → Styles. Inherited by all Flow Screens. |
+| **RBAC (Roles / Permissions)** | **Roles / Permissions** | Same concepts. Project-level and tenant-level. Stored as strings in JWT. |
+| **Backend API** (project ID + secret) | **Management SDK + Management Key** | Same capabilities, different auth (Management Key vs. Stytch project secret). |
 
 ### Other Descope-specific terms
 
-- **Project** — the top-level unit. Think Auth0 tenant.
-- **Flow** — visual auth pipeline. Replaces Auth0 Actions/Rules/Hooks + Universal Login.
+- **Project** — the top-level unit. Think Stytch Project (with its Test/Live environments).
+- **Flow** — visual auth pipeline. Replaces Stytch's embedded UI plus the auth orchestration you'd otherwise write around the Stytch SDK.
 - **Screen** — one UI page within a Flow. Designed in Screen Builder.
 - **Scriptlet** — inline JS step in a Flow (Lodash + CryptoJS included). Escape hatch for custom logic.
 - **Connector** — HTTP call step in a Flow. Response stored in flow context.
 - **Subflow** — one Flow embedded inside another. Context passes through; does not terminate the parent.
 - **Descoper** — a person with Console access. Managed in Company Settings → Descopers with custom roles.
-- **Auth Hosting Application** — the hosted login UI (equivalent to Auth0 Universal Login domain).
+- **Auth Hosting Application** — the Descope-hosted login UI (Stytch's UI, by contrast, is embedded in your app).
 
 ---
 
@@ -57,19 +58,18 @@ A Descope Flow is a visual, no-code authentication pipeline built in the Console
 authentication process — not a hook on top of it. Flows can be changed without redeploying
 the application.
 
-### What Flows replace from Auth0
+### What Flows replace from Stytch
 
-| Auth0 | Descope Flow equivalent |
+| Stytch | Descope Flow equivalent |
 |---|---|
-| Actions / Rules / Hooks (post-login logic, claims, role assignment) | Flow steps (Actions, Scriptlets, Custom Claims) |
-| Universal Login page UI | Flow Screens |
-| Email verification sequence | Email verification Flow step |
-| Password reset sequence | Password reset Flow (template available) |
-| MFA enrollment (Guardian ticket URL redirect) | MFA step in main sign-in Flow, or MFA subflow |
-| Invitation emails | Invitation Flow (template available) |
+| Custom session claims / post-authentication logic (written around the Stytch SDK) | Flow steps (Actions, Scriptlets, Custom Claims) |
+| Stytch prebuilt UI components | Flow Screens |
+| Email verification (magic link / email OTP) | Email verification Flow step |
+| Password reset | Password reset Flow (template available) |
+| MFA enrollment (TOTP, SMS OTP) | MFA step in main sign-in Flow, or MFA subflow |
+| Member invitation emails | Invitation Flow (template available) |
 | Step-up authentication | Step-up Flow (template: `step-up`; adds `su` claim to JWT) |
-| Progressive profiling | Progressive profiling Flow (template available) |
-| Attack protection (bot detection, brute force) | Connector steps (Arkose, reCAPTCHA, Fingerprint, HaveIBeenPwned, AbuseIPDB) |
+| Fraud & Risk / Device Fingerprinting (bot detection, brute force) | Connector steps (Arkose, reCAPTCHA, Fingerprint, HaveIBeenPwned, AbuseIPDB) |
 
 ### Building blocks
 
@@ -103,7 +103,7 @@ use case. Most common patterns are available out of the box.
 
 ### MFA enrollment specifically
 
-Many Auth0 apps have a separate MFA enrollment page because Auth0 Guardian works via a server-generated redirect URL. That pattern has no Descope equivalent.
+Many Stytch apps build a separate MFA enrollment page wired to the Stytch MFA endpoints (TOTP, SMS OTP). In Descope, enrollment happens inline in the Flow instead — there is no separate enrollment page to maintain.
 
 **The Descope approach:**
 - Add an MFA step to the main sign-up/sign-in Flow — enrollment happens inline during the auth journey
@@ -164,13 +164,13 @@ Ask before writing code: *"Does a Widget cover this use case?"*
 
 The SSO Setup Suite is a no-code Console wizard for SAML and OIDC SSO configuration.
 It guides tenant admins through per-tenant SSO setup with step-by-step instructions
-specific to common IdPs (Okta, Microsoft Entra ID, Google Workspace, etc.).
+specific to common IdPs (Okta, Microsoft Entra ID (formerly known as Azure AD), Google Workspace, etc.).
 
 ### When to recommend it
 
 Surface this before migrating any SSO-related Management SDK calls:
 
-- App uses `managementClient.connections.create({ strategy: "samlp" | "oidc" })`
+- App uses Stytch's SSO connection APIs (`sso.saml.createConnection()` / `sso.oidc.createConnection()`)
 - Migration plan includes `management.sso.configureSAMLByTenant()` or `configureOIDCByTenant()`
 - App has a custom SSO settings page where tenant admins configure their IdP
 
@@ -223,5 +223,5 @@ Engineers integrate once (SDK setup + session validation middleware). All subseq
 evolution — new auth methods, MFA step changes, UI updates, connector integrations, new
 social providers — happens in the Console without code deployments.
 
-When a migration replaces Auth0 code with equivalent Descope SDK calls, that's correct.
-When it replaces Auth0 code with Console configuration, that's better.
+When a migration replaces Stytch code with equivalent Descope SDK calls, that's correct.
+When it replaces Stytch code with Console configuration, that's better.

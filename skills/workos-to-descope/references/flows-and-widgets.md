@@ -9,7 +9,7 @@ is usually faster and safer than writing code.
 
 ## Contents
 
-- [Terminology: Auth0 → Descope Lingo](#terminology-auth0--descope-lingo)
+- [Terminology: WorkOS → Descope Lingo](#terminology-workos--descope-lingo)
 - [Flows: Structure and What They Replace](#flows-structure-and-what-they-replace)
 - [Widgets: Post-Login Management UI](#widgets-post-login-management-ui)
 - [SSO Setup Suite](#sso-setup-suite)
@@ -17,37 +17,44 @@ is usually faster and safer than writing code.
 
 ---
 
-## Terminology: Auth0 → Descope Lingo
+## Terminology: WorkOS → Descope Lingo
 
-### Critical naming inversion
+### Critical naming mapping
 
-The most common migration mistake: Auth0 and Descope use the word "tenant" to mean different things.
+The most common migration mistake: assuming WorkOS terms map one-to-one onto identically named
+Descope terms. They don't. WorkOS's **Organization** (your B2B customer) becomes a Descope
+**Tenant** — Descope has no object called "Organization." And a WorkOS **Environment** maps to a
+Descope **Project**.
 
-| Auth0 term | Descope term | Notes |
+| WorkOS term | Descope term | Notes |
 |---|---|---|
-| **Tenant** (your Auth0 account) | **Project** | Top-level unit. Has auth methods, Flows, users, and settings. Multiple environments → multiple Projects. |
-| **Organization** (your B2B customer) | **Tenant** | "For B2B apps, a tenant is your customer." Direct equivalent of Auth0 Organization. |
-| Application | **Federated Application** (OIDC/SAML clients) or just **Project** (direct SDK integration) | Use Federated Application when you need OIDC/SAML; use Project directly for SDK-based integration. |
-| Action / Rule / Hook | **Flow + Scriptlet + Connector** | Flows replace the entire Auth0 pipeline. Actions become Flow steps; custom code becomes Scriptlets; external calls become Connectors. |
-| M2M Client / Client Credentials | **Access Key** | Presented to exchange for a short-lived JWT. Supports expiration, permitted IPs, tenant/role scoping. |
-| Universal Login Page | **Auth Hosting** (hosted) or embedded **`<descope-wc>` / `<Descope>` component** | Flows define the auth experience in both cases. |
-| Social Connection (Google, GitHub…) | **OAuth Provider** | Configured under Authentication Methods in Console. |
-| Enterprise Connection (SAML/OIDC per-org) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
+| **Environment** (dev / staging / prod) | **Project** | Top-level unit. Each WorkOS environment → its own Descope Project with its own Project ID. |
+| **Organization** (your B2B customer) | **Tenant** | Direct equivalent. WorkOS Organizations group users and scope SSO, SCIM, roles, and domains per customer; Descope Tenants do the same. |
+| Client ID + API key | **Project ID** (+ **Management Key** for server-side admin) | WorkOS uses a public client ID and a secret API key; Descope uses a public Project ID and an optional Management Key. |
+| AuthKit (hosted or embedded login UI) | **Auth Hosting** (hosted) or embedded **`<descope-wc>` / `<Descope>` component** | Flows define the auth experience in both cases. |
+| Social / OAuth login | **OAuth Provider** | Configured under Authentication Methods in Console. |
+| Enterprise SSO Connection (SAML/OIDC, per Organization) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
+| Directory Sync (SCIM, per Organization) | **SCIM / Tenant provisioning** | Per-tenant directory provisioning lifecycle. |
+| Admin Portal | **SSO Setup Suite + Widgets** | Hosted self-serve admin UI for SSO, SCIM, and domain setup. |
+| Radar (bot/fraud detection) | **Fingerprinting + Flow security Connectors** | Detection signals (`riskInfo`) consumed inside Flows; CAPTCHA/fraud Connectors for challenges. |
+| AuthKit MFA (TOTP / SMS, dashboard-configured) | **MFA Flow step** / **step-up** template | MFA runs inline in the Flow rather than as a separate page. |
 | Branding | **Styles** | Logo, colors, fonts in Console → Styles. Inherited by all Flow Screens. |
-| Auth0 Marketplace integration | **Connector** | Added as a step inside a Flow. Response available in flow context as `connectors.<contextKey>`. |
 | Roles / Permissions | **Roles / Permissions** | Same concepts. Project-level and tenant-level. Stored as strings in JWT. |
-| Management API (M2M token) | **Management SDK + Management Key** | Same capabilities, different auth (Management Key vs. M2M token). |
+| Management API (API key) | **Management SDK + Management Key** | Same capabilities, different auth (Management Key vs. WorkOS API key). |
+| M2M / API authentication | **Access Key** | Presented to exchange for a short-lived JWT. Supports expiration, permitted IPs, tenant/role scoping. |
+| Audit Logs | **Audit / Audit Widget** | Per-tenant audit events. |
+| WorkOS integration / webhook | **Connector** | Added as a step inside a Flow. Response available in flow context as `connectors.<contextKey>`. |
 
 ### Other Descope-specific terms
 
-- **Project** — the top-level unit. Think Auth0 tenant.
-- **Flow** — visual auth pipeline. Replaces Auth0 Actions/Rules/Hooks + Universal Login.
+- **Project** — the top-level unit. Think WorkOS environment.
+- **Flow** — visual auth pipeline. Replaces AuthKit's hosted/embedded login UI and any custom post-login logic.
 - **Screen** — one UI page within a Flow. Designed in Screen Builder.
 - **Scriptlet** — inline JS step in a Flow (Lodash + CryptoJS included). Escape hatch for custom logic.
 - **Connector** — HTTP call step in a Flow. Response stored in flow context.
 - **Subflow** — one Flow embedded inside another. Context passes through; does not terminate the parent.
 - **Descoper** — a person with Console access. Managed in Company Settings → Descopers with custom roles.
-- **Auth Hosting Application** — the hosted login UI (equivalent to Auth0 Universal Login domain).
+- **Auth Hosting Application** — the hosted login UI (equivalent to AuthKit's hosted login domain).
 
 ---
 
@@ -57,19 +64,19 @@ A Descope Flow is a visual, no-code authentication pipeline built in the Console
 authentication process — not a hook on top of it. Flows can be changed without redeploying
 the application.
 
-### What Flows replace from Auth0
+### What Flows replace from WorkOS
 
-| Auth0 | Descope Flow equivalent |
+| WorkOS | Descope Flow equivalent |
 |---|---|
-| Actions / Rules / Hooks (post-login logic, claims, role assignment) | Flow steps (Actions, Scriptlets, Custom Claims) |
-| Universal Login page UI | Flow Screens |
-| Email verification sequence | Email verification Flow step |
-| Password reset sequence | Password reset Flow (template available) |
-| MFA enrollment (Guardian ticket URL redirect) | MFA step in main sign-in Flow, or MFA subflow |
-| Invitation emails | Invitation Flow (template available) |
+| AuthKit hosted/embedded login UI | Flow Screens |
+| AuthKit redirect + callback login cycle | Embedded Flow component (no server redirect needed) |
+| Email verification (AuthKit) | Email verification Flow step |
+| Password reset (AuthKit) | Password reset Flow (template available) |
+| Magic Auth | Magic link Flow step |
+| AuthKit MFA (TOTP / SMS) | MFA step in main sign-in Flow, or MFA subflow |
+| Custom post-login logic in callback handlers (claims, role assignment) | Flow steps (Actions, Scriptlets, Custom Claims) |
 | Step-up authentication | Step-up Flow (template: `step-up`; adds `su` claim to JWT) |
-| Progressive profiling | Progressive profiling Flow (template available) |
-| Attack protection (bot detection, brute force) | Connector steps (Arkose, reCAPTCHA, Fingerprint, HaveIBeenPwned, AbuseIPDB) |
+| Radar (bot detection, brute force) | Connector steps (Arkose, reCAPTCHA, Fingerprint, HaveIBeenPwned, AbuseIPDB) + Flow conditions on `riskInfo` |
 
 ### Building blocks
 
@@ -103,14 +110,18 @@ use case. Most common patterns are available out of the box.
 
 ### MFA enrollment specifically
 
-Many Auth0 apps have a separate MFA enrollment page because Auth0 Guardian works via a server-generated redirect URL. That pattern has no Descope equivalent.
+WorkOS AuthKit handles MFA (TOTP and SMS) inline within its hosted/embedded login flow, enabled
+from the WorkOS dashboard — so there's usually no standalone enrollment page to migrate. Descope
+follows the same inline model, so keep MFA inside the auth journey rather than rebuilding a
+separate page.
 
 **The Descope approach:**
 - Add an MFA step to the main sign-up/sign-in Flow — enrollment happens inline during the auth journey
 - Or embed MFA as a **subflow** — triggered by a condition (e.g., user is admin, or risk score is high)
 - Or use the **step-up** flow template to gate sensitive operations
 
-Before migrating a standalone MFA enrollment page, ask whether MFA can be integrated into the main Flow instead. This is almost always the cleaner approach in Descope.
+If the WorkOS app does have a custom standalone MFA page, ask whether MFA can be integrated into the
+main Flow instead. This is almost always the cleaner approach in Descope.
 
 ---
 
@@ -170,9 +181,10 @@ specific to common IdPs (Okta, Microsoft Entra ID, Google Workspace, etc.).
 
 Surface this before migrating any SSO-related Management SDK calls:
 
-- App uses `managementClient.connections.create({ strategy: "samlp" | "oidc" })`
+- App configures WorkOS SSO connections per Organization (via the WorkOS dashboard or the `workos.sso` API)
 - Migration plan includes `management.sso.configureSAMLByTenant()` or `configureOIDCByTenant()`
 - App has a custom SSO settings page where tenant admins configure their IdP
+- App uses the WorkOS **Admin Portal** for customer-admin SSO/SCIM setup
 
 **The question to ask:**
 > "Does this app need programmatic SSO configuration (CI/CD provisioning, API-driven setup), or do tenant admins configure SSO themselves through a settings page? If the latter, the SSO Setup Suite + Tenant Profile Widget may remove the need for that SDK code entirely."
@@ -200,7 +212,8 @@ Surface this before migrating any SSO-related Management SDK calls:
 | Email/SMS templates | Authentication method settings → Templates |
 | Session token lifetime and refresh settings | Project → Session Management |
 | Custom JWT claims (profile fields, roles in token) | Authorization → JWT Templates |
-| Custom tenant/user attributes | Project → Custom Attributes |
+| Custom user attributes | Project → Custom Attributes |
+| Custom tenant attributes | Tenants → Custom Attributes |
 | Connectors (Slack, Salesforce, HTTP webhooks, etc.) | Connectors |
 | Access Keys (M2M) | Access Keys |
 | Descopers (Console access control) | Company Settings → Descopers |
@@ -223,5 +236,5 @@ Engineers integrate once (SDK setup + session validation middleware). All subseq
 evolution — new auth methods, MFA step changes, UI updates, connector integrations, new
 social providers — happens in the Console without code deployments.
 
-When a migration replaces Auth0 code with equivalent Descope SDK calls, that's correct.
-When it replaces Auth0 code with Console configuration, that's better.
+When a migration replaces WorkOS code with equivalent Descope SDK calls, that's correct.
+When it replaces WorkOS code with Console configuration, that's better.
