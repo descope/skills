@@ -367,13 +367,13 @@ End with a brief checklist of the migration steps at the level a PM can track:
 
 ---
 
-#### Risks and Things to Decide
+#### Trade-offs and considerations
 
 Things that could affect timeline, user experience, or scope. Write each in plain English
 with three parts: **what it is**, **what breaks if it's ignored**, and **what to do**.
 Format each as a named callout:
 
-> **Risk: User profile data won't appear after login until a token template is configured**
+> **Consideration: User profile data won't appear after login until a token template is configured**
 > Descope session tokens don't include name, email, or profile photo by default. Any part of
 > the app that displays user information — profile pages, nav bars, greeting text — will show
 > blank values after migration until the token template is set up in the Descope console. This
@@ -381,14 +381,14 @@ Format each as a named callout:
 > **Action:** Configure the token template in the Descope console before running any tests.
 > Estimated time: 10 minutes.
 
-> **Risk: Password migration requires an Auth0 support request**
+> **Consideration: Password migration requires an Auth0 support request**
 > If the app supports password-based login, users' hashed passwords must be exported from
 > Auth0 and imported into Descope. Auth0 only releases these via a support ticket, which can
 > take several days to fulfill.
 > **Action:** Open the support ticket now, in parallel with development work. Without it,
 > password users will need to reset their passwords after cutover.
 
-Include only applicable risks.
+Include only applicable trade-offs and considerations.
 
 ---
 
@@ -445,7 +445,7 @@ After writing `MIGRATION-PLAN.md`, **stop and tell the user:**
 
 > `MIGRATION-PLAN.md` has been written to your working directory. It maps every auth
 > touchpoint found, lists what needs Console setup before the first test, and calls out
-> risks that could affect the timeline.
+> trade-offs and considerations that could affect the timeline.
 >
 > Take a look before we start making changes. When you're ready to proceed, say so.
 
