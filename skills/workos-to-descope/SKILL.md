@@ -438,39 +438,39 @@ End with a brief checklist of the migration steps at the level a PM can track:
 
 ---
 
-#### Risks and Things to Decide
+#### Trade-offs and considerations
 
 Things that could affect timeline, user experience, or scope. Write each in plain English
 with three parts: **what it is**, **what breaks if it's ignored**, and **what to do**.
 Format each as a named callout:
 
-> **Risk: Organization-to-tenant mapping affects almost every B2B feature**
+> **Consideration: Organization-to-tenant mapping affects almost every B2B feature**
 > WorkOS Organizations should usually map to Descope Tenants. If this mapping is wrong, SSO, SCIM,
 > roles, permissions, domain routing, and user membership checks may all break.
 > **Action:** Confirm the organization model before writing migration code.
 
-> **Risk: SCIM is a lifecycle system, not just a user import**
+> **Consideration: SCIM is a lifecycle system, not just a user import**
 > Directory Sync may create, update, suspend, and delete users or group memberships continuously.
 > A one-time import is not enough if enterprise directories keep syncing after cutover.
 > **Action:** Identify every SCIM/directory workflow and re-point it at Descope before cutover.
 
-> **Risk: Admin Portal workflows should not automatically become custom code**
+> **Consideration: Admin Portal workflows should not automatically become custom code**
 > If the app uses the WorkOS Admin Portal, the Descope equivalent may be the SSO Setup Suite or a
 > Widget rather than a custom settings page.
 > **Action:** Ask whether tenant admins currently self-configure SSO/SCIM/domain verification.
 
-> **Risk: Audit logs can silently disappear**
+> **Consideration: Audit logs can silently disappear**
 > The app may keep working after migration even if audit logging is broken — creating compliance
 > and enterprise-customer issues.
 > **Action:** Set up Descope audit/event forwarding before production cutover.
 
-> **Risk: User profile data won't appear after login until a token template is configured**
+> **Consideration: User profile data won't appear after login until a token template is configured**
 > Descope session tokens don't include name, email, or profile photo by default. Any UI that
 > displays user information will show blank values after migration until the token template is set
 > up in the Descope console. This is a one-time configuration step, not a code change.
 > **Action:** Configure the token template before running any tests. Estimated time: 10 minutes.
 
-Include only applicable risks.
+Include only applicable trade-offs and considerations.
 
 ---
 
@@ -532,7 +532,7 @@ After writing `MIGRATION-PLAN.md`, **stop and tell the user:**
 
 > `MIGRATION-PLAN.md` has been written to your working directory. It maps every auth
 > touchpoint found, lists what needs Console setup before the first test, and calls out
-> risks that could affect the timeline.
+> trade-offs and considerations that could affect the timeline.
 >
 > Take a look before we start making changes. When you're ready to proceed, say so.
 
