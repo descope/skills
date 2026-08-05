@@ -494,11 +494,11 @@ End with a brief PM-trackable checklist:
 
 ---
 
-#### Risks and Things to Decide
+#### Trade-offs and considerations
 
 Write each in plain English with three parts: **what it is**, **what breaks if it's ignored**, **what to do**.
 
-> **Risk: scp → scope claim rename (code change, always required)**
+> **Consideration: scp → scope claim rename (code change, always required)**
 > This is a JWT claim name change, separate from the Inbound vs. Federated App decision.
 > Okta access tokens carry scopes in `scp` (JSON array). Descope uses `scope` (space-separated
 > string or array). Any backend code reading `token.scp`, `claims["scp"]`, or `req.auth.scp`
@@ -508,31 +508,31 @@ Write each in plain English with three parts: **what it is**, **what breaks if i
 > and handle both string and array formats. This is separate from configuring Inbound Apps
 > (which is about *whether* scopes are enforced, not the claim name).
 
-> **Risk: User profile data won't appear after login until a JWT Template is configured**
+> **Consideration: User profile data won't appear after login until a JWT Template is configured**
 > Descope session tokens don't include `email` or `name` by default. Any UI that shows user
 > profile information will show blank values after migration.
 > **Action:** Configure the JWT Template in the Console before running any tests. (~10 minutes.)
 
-> **Risk: Password migration is blocked by Okta policy**
+> **Consideration: Password migration is blocked by Okta policy**
 > Okta does not release password hashes. Password users will need to reset their passwords after
 > cutover.
 > **Action:** Decide on a migration strategy (reset campaign, first-login flow step, or switch
 > to passwordless) before setting a cutover date.
 
-> **Risk: Passkeys and TOTP credentials cannot be migrated**
+> **Consideration: Passkeys and TOTP credentials cannot be migrated**
 > Okta does not expose passkey credentials or TOTP seeds. Users who enrolled these authenticators
 > in Okta must re-provision them after cutover — there is no way to migrate them silently.
 > **Action:** Add a re-enrollment step to the sign-in Flow conditioned on `freshlyMigrated: true`
 > and set user expectations before the cutover date.
 
-> **Risk: Inbound Apps vs. Federated Apps misclassification**
+> **Consideration: Inbound Apps vs. Federated Apps misclassification**
 > If the backend validates `scp` claims from Okta access tokens and Federated Apps are configured
 > instead of Inbound Apps, the backend receives tokens with no `scope` claim and all scope
 > checks fail — likely silently.
 > **Action:** Confirm before Console setup whether any backend service validates token scopes.
 > If yes, configure Inbound Apps with scope definitions matching the Okta Authorization Server.
 
-Include only applicable risks.
+Include only applicable trade-offs and considerations.
 
 ---
 
@@ -600,7 +600,7 @@ After writing `MIGRATION-PLAN.md`, **stop and tell the user:**
 
 > `MIGRATION-PLAN.md` has been written to your working directory. It maps every auth
 > touchpoint found, lists what needs Console setup before the first test, and calls out
-> risks that could affect the timeline.
+> trade-offs and considerations that could affect the timeline.
 >
 > Take a look before we start making changes. When you're ready to proceed, say so.
 
