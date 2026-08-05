@@ -53,7 +53,8 @@ calls, cookies, or authorization logic, and should be migrated as such.
 
 Prioritize Swift/iOS and Kotlin/Android SDK evidence when it exists. These native SDKs are often
 the most important Ping client footprint in CIAM migrations, especially when PingOne Protect or
-device profiling collects risk context from mobile devices.
+device profiling collects risk context from mobile devices. For PingOne API discovery route
+skeletons, use `pingone-detection-patterns.md`.
 
 ## Federated App / Protocol-Config Migration
 

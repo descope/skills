@@ -25,7 +25,7 @@ Do not collapse these parts or skip ahead. The plan must be reviewed before code
 
 Primary references in this skill (detailed in Reference Files at the end):
 
-- `references/pingone-detection-patterns.md` - what to search for
+- `references/pingone-detection-patterns.md` - what to search for and optional PingOne API discovery routes
 - `references/implementation-nuances.md` - how to implement each path
 
 ## Scope
@@ -137,9 +137,11 @@ If the user says yes:
 
 1. Ask for PingOne environment ID(s), region/API host or issuer, and a secure way to use an access
    token or Worker app credentials with read permissions. Do not paste secrets into `MIGRATION-PLAN.md`.
-2. After any required OAuth token acquisition, use only read-only `GET` discovery calls against
-   PingOne management resources. Do not create, update, delete, disable, import, or rotate anything
-   in PingOne during discovery.
+2. After any required OAuth token acquisition, use Authorization type `Bearer {{accessToken}}` and
+   only read-only `GET` discovery calls against
+   PingOne management resources. Use `references/pingone-detection-patterns.md` ->
+   "PingOne Read-Only API Discovery Routes" for route skeletons. Do not create, update, delete,
+   disable, import, or rotate anything in PingOne during discovery.
 3. Prefer metadata and counts before full user export. Do not export full user profiles unless the
    migration plan actually requires user import analysis.
 4. Pull and summarize, as available:
@@ -1469,8 +1471,8 @@ complexity (Low/Medium/High) so the user can plan.
 
 ## Reference Files
 
-- `references/pingone-detection-patterns.md` - grep patterns, package/import hints, env var hints,
-  OIDC/SAML hints, DaVinci hints, and out-of-scope detection.
+- `references/pingone-detection-patterns.md` - grep patterns, PingOne read-only API discovery routes,
+  package/import hints, env var hints, OIDC/SAML hints, DaVinci hints, and out-of-scope detection.
 - `references/implementation-nuances.md` - path selection, Federated App/protocol compatibility, web Client SDK/Mobile SDK/Flow
   migration, token validation, claim mapping, framework notes, Console-first decisions, and testing notes.
 - Descope Docs: [https://docs.descope.com](https://docs.descope.com)

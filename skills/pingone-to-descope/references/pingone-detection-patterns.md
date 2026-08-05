@@ -3,6 +3,7 @@
 ## Contents
 
 - [Search Groups](#search-groups)
+- [PingOne Read-Only API Discovery Routes](#pingone-read-only-api-discovery-routes)
 - [Package and Import Hints](#package-and-import-hints)
 - [Environment Variable Hints](#environment-variable-hints)
 - [Worker App Hints](#worker-app-hints)
@@ -78,6 +79,59 @@ grep -rni "scope\|claims\|groups\|groupId\|group_id\|roles\|permissions\|entitle
 grep -rni "webhook\|event\|notification\|audit\|user.created\|user.updated\|user.deleted" \
   . 2>/dev/null
 ```
+
+## PingOne Read-Only API Discovery Routes
+
+Use these route skeletons only when the user opts into PingOne API discovery after the Descope MCP
+check. Confirm `apiPath`, `envID`, credentials, region, and permissions from the user's PingOne
+tenant. After any required OAuth token acquisition, use only read-only `GET` calls; do not create,
+update, delete, disable, import, or rotate anything in PingOne during discovery.
+
+All routes in this section use Authorization type `Bearer {{accessToken}}`.
+
+Primary discovery routes:
+
+| Source object | Read-only route | Use in the migration plan for |
+|---|---|---|
+| All environments | `GET {{apiPath}}/v1/environments` | Project/environment inventory and multi-environment strategy. |
+| One environment | `GET {{apiPath}}/v1/environments/{{envID}}` | Confirm environment name, region, and IDs used by issuers/apps. |
+| All populations in an environment | `GET {{apiPath}}/v1/environments/{{envID}}/populations` | Population names, IDs, descriptions, default marker, and user counts for tenant/attribute/Flow-branch classification. |
+| One population | `GET {{apiPath}}/v1/environments/{{envID}}/populations/{{populationID}}` | Validate a specific population before mapping it to tenant, attribute, Flow branch, project strategy, or no object. |
+| Population default identity provider | `GET {{apiPath}}/v1/environments/{{envID}}/populations/{{popID}}/defaultIdentityProvider` | Identify population-specific login/IdP behavior that may affect Flow routing, social login, or tenant SSO. |
+| Built-in roles | `GET {{apiPath}}/v1/roles` | Understand PingOne built-in roles and permissions; use as source evidence only when they affect customer-facing admin or app authorization. |
+| One built-in role | `GET {{apiPath}}/v1/roles/{{roleID}}` | Inspect one built-in role. This does not return custom-role details. |
+| Custom roles for an environment | `GET {{apiPath}}/v1/environments/{{envID}}/roles?filter=%28type+eq+%22CUSTOM%22%29` | Custom role names and permissions for RBAC/FGA/app-side authorization mapping. |
+| One custom role | `GET {{apiPath}}/v1/environments/{{envID}}/roles/{{roleID}}` | Inspect one custom role name, description, ID, and permission list. |
+| All groups in an environment | `GET {{apiPath}}/v1/environments/{{envID}}/groups` | Group inventory, environment-level vs population-level scope, internal/external source, static/dynamic behavior, and rough role/attribute mapping. |
+| One group | `GET {{apiPath}}/v1/environments/{{envID}}/groups/{{groupID}}` | Inspect one group; add `?include=totalMemberCounts` when member counts are needed for mapping confidence. |
+| Parent groups for a group | `GET {{apiPath}}/v1/environments/{{envID}}/groups/{{groupID}}/memberOfGroups` | Detect nested/effective group hierarchy before flattening roles or recommending FGA/ReBAC. |
+
+Secondary optional discovery routes:
+
+| Source object | Read-only route | Use in the migration plan for |
+|---|---|---|
+| All applications | `GET {{apiPath}}/v1/environments/{{envID}}/applications` | Application inventory, type, protocol, client IDs, and multi-app migration path. |
+| One application | `GET {{apiPath}}/v1/environments/{{envID}}/applications/{{appID}}` | Confirm app type, redirect/ACS/logout config, grants, policy assignments, and protocol shape. |
+| Application grants | `GET {{apiPath}}/v1/environments/{{envID}}/applications/{{appID}}/grants` | OAuth grant/resource/scope relationships and service/admin app behavior. |
+| Application attributes | `GET {{apiPath}}/v1/environments/{{envID}}/applications/{{appID}}/attributes` | Claims/SAML attribute mappings that may become Descope JWT Templates or SAML attributes. |
+| Application sign-on policy assignments | `GET {{apiPath}}/v1/environments/{{envID}}/applications/{{appID}}/signOnPolicyAssignments` | Which PingOne sign-on policy governs the app. |
+| Application flow policy assignments | `GET {{apiPath}}/v1/environments/{{envID}}/applications/{{appID}}/flowPolicyAssignments` | Whether DaVinci or flow policy configuration drives the app journey. |
+| All sign-on policies | `GET {{apiPath}}/v1/environments/{{envID}}/signOnPolicies` | Policy inventory for Flow migration. |
+| One sign-on policy | `GET {{apiPath}}/v1/environments/{{envID}}/signOnPolicies/{{policyID}}` | Policy-level behavior and decision points. |
+| Sign-on policy actions | `GET {{apiPath}}/v1/environments/{{envID}}/signOnPolicies/{{policyID}}/actions` | Login methods, MFA, risk, recovery, and branches to rebuild in Descope Flows. |
+| All resources | `GET {{apiPath}}/v1/environments/{{envID}}/resources` | Protected API/MCP resource inventory and audience strategy. |
+| One resource | `GET {{apiPath}}/v1/environments/{{envID}}/resources/{{resourceID}}` | Resource identifier/audience, description, and token validation implications. |
+| Resource scopes | `GET {{apiPath}}/v1/environments/{{envID}}/resources/{{resourceID}}/scopes` | Scope catalog for Descope Resources, Policies, and API enforcement. |
+| Resource attributes | `GET {{apiPath}}/v1/environments/{{envID}}/resources/{{resourceID}}/attributes` | Resource-specific token claims or attribute mappings. |
+| All identity providers | `GET {{apiPath}}/v1/environments/{{envID}}/identityProviders` | Social provider vs customer/org IdP inventory. |
+| One identity provider | `GET {{apiPath}}/v1/environments/{{envID}}/identityProviders/{{providerID}}` | Provider type, domains, issuer/metadata, and SSO/social migration target. |
+| Identity provider attributes | `GET {{apiPath}}/v1/environments/{{envID}}/identityProviders/{{providerID}}/attributes` | IdP claim mappings for social profile, tenant SSO, or SCIM/group mapping decisions. |
+
+When summarizing API discovery, record which routes were queried, what data was available, and what
+confidence that gives the Descope hierarchy recommendation. Prefer metadata and counts before full
+user export. If direct API access is unavailable, ask for equivalent JSON/CSV exports or console
+screenshots and mark discovery as partial. If a route is unavailable in the tenant, mark it as
+unavailable and continue with the closest available export or console evidence.
 
 ## Package and Import Hints
 
