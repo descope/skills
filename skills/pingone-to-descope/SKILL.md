@@ -17,16 +17,16 @@ description: >
 This skill guides migrations from PingOne for Customers / PingOne CIAM to Descope. It runs in
 three parts:
 
-1. **MCP Check** - confirm whether the Descope MCP Server is available before giving SDK/API guidance
+1. **MCP Check** - confirm whether the Descope MCP Server is available, then resolve optional PingOne API discovery
 2. **Migration Plan** - confirm CIAM scope, triage PingOne surfaces, analyze the codebase, and write `MIGRATION-PLAN.md`
 3. **Execution** - only after the user reviews the plan, execute with `MIGRATION-STATE.md` continuity
 
 Do not collapse these parts or skip ahead. The plan must be reviewed before code changes begin.
 
-Primary references in this skill:
+Primary references in this skill (detailed in Reference Files at the end):
 
-- `references/pingone-detection-patterns.md` - grep patterns, import/package/env hints, and out-of-scope detection
-- `references/implementation-nuances.md` - framework notes for Federated App/protocol migration, client orchestration SDK/Flow migration, token validation, and claims
+- `references/pingone-detection-patterns.md` - what to search for
+- `references/implementation-nuances.md` - how to implement each path
 
 ## Scope
 
@@ -58,26 +58,30 @@ customer organizations, realms, or isolated user communities; policy, segment, r
 lifecycle, and reporting buckets usually become attributes, Flow branches, project strategy, or no
 object.
 
-**Protocol migration is valid only for generic protocol clients.** If the app uses generic
-OIDC/OAuth/SAML middleware or a standards library with PingOne as IdP, a Federated App/config swap
-may be the first phase. Never recommend keeping a Ping Orchestration/OIDC SDK in Swift, Kotlin,
-React Native, or JavaScript and merely pointing it at Descope.
-
 **Use Descope SDK terms precisely.** Descope Client SDKs are for web apps: Web JS, React, Vue,
 Angular, and Next.js. Descope Mobile SDKs are for mobile apps: Swift/iOS, Kotlin/Android, Flutter,
 and React Native. When replacing Ping Swift, Kotlin, or React Native SDK code, say "Descope Mobile
 SDK", not "client SDK".
 
-**Ping SDK evidence is client-side/mobile and limited.** Ping Orchestration SDKs are for
-Kotlin/Android, Swift/iOS, JavaScript/TypeScript, and React Native TypeScript. Prioritize Swift and
-Kotlin evidence, especially when PingOne Protect collects native device or risk context. Do not look
-for nonexistent Ping orchestration SDKs in Python, Go, Node server code, Java, or .NET; in those
-stacks, look for generic OIDC/SAML config, token validation, REST/API calls, claims, sessions, and
-authorization logic.
+**Prefer Descope Native Flows for mobile migrations.** Ping mobile SDK evidence can mean either
+OIDC Redirect/centralized login or embedded DaVinci orchestration. Do not assume Ping mobile equals
+redirect-only. When replacing mobile auth, recommend Descope Mobile SDK Native Flows as the default
+target for Swift/iOS, Kotlin/Android, Flutter, and React Native; handle OAuth/social, passkeys, magic
+links, and other browser-dependent steps through the Mobile SDK's Native Flow behavior.
+Ping DaVinci SDK integrations render flow inputs using application-owned native UI components, while
+Descope Native Flows embed a hosted Descope Flow in an in-app WebView. The user experience is
+embedded in both cases, but migration replaces Ping collector-rendering code with Descope's native
+flow view integration rather than translating each collector directly.
 
-**SDK migration is only one path.** Do not assume the app imports a Ping SDK. Many PingOne
-CIAM apps use generic OIDC middleware, hosted redirects, custom UI, direct REST calls, DaVinci
-widgets, or backend token validation.
+**Ping SDK evidence is client-side/mobile, limited, and only one possible path.** Ping Orchestration
+SDKs exist only for Kotlin/Android, Swift/iOS, JavaScript/TypeScript, and React Native TypeScript.
+Prioritize Swift and Kotlin evidence, especially when PingOne Protect collects native device or risk
+context. Do not look for nonexistent Ping orchestration SDKs in Python, Go, Node server code, Java,
+or .NET; in those stacks, look for generic OIDC/SAML config, token validation, REST/API calls,
+claims, sessions, and authorization logic. Do not assume the app imports a Ping SDK at all - many
+PingOne CIAM apps use generic OIDC middleware, hosted redirects, custom UI, direct REST calls,
+DaVinci widgets, or backend token validation. Where a client does use a Ping SDK, replace it; never
+keep it and merely point it at Descope.
 
 **Console-first.** Prefer Descope Console, Flows, Widgets, JWT Templates, SSO Setup Suite, and
 tenant configuration before custom code. Code owns app integration and business authorization;
@@ -113,6 +117,56 @@ they want to install it first:
 
 Do not proceed to Part 2 until this step is resolved.
 
+## Part 1.5: Optional PingOne API Discovery (BLOCKING CHOICE)
+
+After the Descope MCP check is resolved and before Part 2 planning, ask whether the user wants to
+use PingOne read-only APIs to inventory the source organization, population, group, and role model.
+Use `AskUserQuestion`:
+
+> Do you want to use PingOne APIs to pull current populations, groups, memberships/counts, roles,
+> applications, and resources before writing the migration plan?
+
+Explain the tradeoff:
+
+- **Yes:** use live PingOne data to recommend the Descope organization structure, tenant strategy,
+  role/group mapping, claims, and authorization model with higher confidence.
+- **No:** continue with repo evidence and manual answers only; mark hierarchy and role mapping
+  confidence lower when evidence is incomplete.
+
+If the user says yes:
+
+1. Ask for PingOne environment ID(s), region/API host or issuer, and a secure way to use an access
+   token or Worker app credentials with read permissions. Do not paste secrets into `MIGRATION-PLAN.md`.
+2. After any required OAuth token acquisition, use only read-only `GET` discovery calls against
+   PingOne management resources. Do not create, update, delete, disable, import, or rotate anything
+   in PingOne during discovery.
+3. Prefer metadata and counts before full user export. Do not export full user profiles unless the
+   migration plan actually requires user import analysis.
+4. Pull and summarize, as available:
+   - Environments and applications, including application type and assigned policies/flows.
+   - Populations, default population, population names/IDs, descriptions, and user counts.
+   - Groups, whether each group is environment-level or population-level, external vs internal,
+     static vs dynamic, `userFilter`, nested/effective membership indicators, and member counts.
+   - Role assignments, permissions, entitlements, Resources/scopes, and claims that affect customer
+     authorization. Treat PingOne admin roles as migration evidence only when they affect customer
+     administration or app authorization; otherwise keep them out of the CIAM mapping.
+   - External IdPs, customer SSO/SCIM, and group-to-role or group-to-attribute mappings, if visible.
+   If direct API access is not available, ask the user for equivalent JSON/CSV exports or console
+   screenshots and mark discovery as partial.
+5. Use the API facts directly in the Descope hierarchy recommendation:
+   - Populations with real customer/org boundaries, SSO/SCIM, delegated admins, data isolation, or
+     app account boundaries are tenant candidates.
+   - Populations that only represent region, policy, lifecycle, product, or reporting segments are
+     attributes, Flow branches, project strategy, or no Descope object.
+   - Population-level access groups often become tenant roles or tenant-scoped attributes.
+   - Environment-level access groups may become project roles, global attributes, FGA/app logic, or
+     JWT claims depending on enforcement.
+   - Dynamic groups usually become source attributes plus Flow conditions, ABAC/FGA, or app logic.
+   - External groups usually remain authoritative through SSO/SCIM group mapping.
+
+If PingOne API discovery finds employee/workforce products or non-CIAM populations/apps, treat that
+as scope evidence and apply the CIAM scope guard before continuing.
+
 ## Part 2: Migration Plan
 
 Part 2 has four blocking phases:
@@ -129,7 +183,7 @@ employees.
 
 Proceed for: Customer registration, Customer login, Customer profile management, Passwordless login, Social login, Customer MFA, Account recovery, Risk checks, Identity verification, Customer-facing authorization, Customer-organization SSO
 
-Stop if the app is primarily: Employee SSO, Workforce app-launcher access, Internal employee auth, PingID workforce auth, Workforce device trust, Employee lifecycle management, PingFederate, PingDirectory, PingAccess, or ForgeRock/PingOne Advanced Identity Cloud migration
+Stop if the app is primarily any of the out-of-scope products or use cases listed under Scope.
 
 When stopping, explain that this skill is restricted to PingOne CIAM and ask whether the user wants a
 separate migration path for the detected product.
@@ -160,6 +214,9 @@ Use `AskUserQuestion` to gather:
    - PingOne Protect
    - PingOne Verify
    - PingOne Authorize
+   - PingOne Resources / API scopes
+   - PingOne External IdPs
+   - PingOne AI Agents
    - Customer SSO
    - SCIM / provisioning
    - Worker app / client credentials / admin API automation
@@ -224,10 +281,9 @@ At minimum, cover these evidence groups:
 - User/profile, population, group, role, permission, entitlement, claim, MFA, Protect, Verify,
   social, SSO, SCIM, webhook, event, and audit references.
 
-Use `references/pingone-detection-patterns.md` for the full grep/rg command set, including the
-high-signal Swift patterns (`PingOrchestrate`, `PingOidc`, `OidcWebClient`) and Kotlin patterns
-(`OidcWeb`, `module(Oidc)`, `web.authorize`). Use
-`references/implementation-nuances.md` before recommending implementation details.
+Use `references/pingone-detection-patterns.md` for the full command set and the high-signal
+Swift/Kotlin symbols. Use `references/implementation-nuances.md` before recommending implementation
+details.
 
 For each hit, record:
 
@@ -261,6 +317,15 @@ Write 2-3 sentences explaining what PingOne CIAM behavior is being replaced by D
 State why this appears to be customer identity, not workforce IAM. If uncertain, list what evidence
 is missing.
 
+#### PingOne API Discovery
+
+Include this section if the user accepted or attempted PingOne API discovery. State whether discovery
+was completed, partially completed, or unavailable. List the read-only objects queried, such as
+environments, applications, populations, groups, group membership counts, dynamic group filters,
+roles/permissions, Resources/scopes, external IdPs, SSO, or SCIM. Summarize the API-derived
+organization recommendation for Descope: project strategy, tenant candidates, attributes, Flow
+branches, role/group mappings, and any remaining uncertainties.
+
 #### PingOne Surfaces Found
 
 Use this table:
@@ -279,8 +344,8 @@ Use this table:
 | Population | Tenant, custom attribute, Flow branch, project split, or no object | [population ID/name usage, SSO/SCIM scope, app data boundary] | [classification result] |
 | Group | Tenant role, project role, custom attribute, dynamic rule, SSO/SCIM mapping, FGA/app logic, or no object | [group usage in claims, authz, SSO/SCIM, policies, app code] | [classification result] |
 
-Classify populations and groups using Step 3. Do not automatically map populations to tenants or
-groups to roles.
+Classify populations and groups using Step 3. Prefer PingOne API discovery facts when available, but
+do not automatically map populations to tenants or groups to roles.
 
 #### Migration Path
 
@@ -295,7 +360,8 @@ Use plain-English prose explaining today vs. after migration.
 For every PingOne touchpoint, explain whether it maps to:
 
 - Descope web Client SDK / web component / React/Next SDK for browser auth UI
-- Descope Mobile SDK for Swift/iOS, Kotlin/Android, Flutter, or React Native mobile auth
+- Descope Mobile SDK Native Flow integration for Swift/iOS, Kotlin/Android, Flutter, or React Native
+  mobile auth
 - Descope backend token/session validation or Management API, where server-side work is actually needed
 - Descope Console / Flow / JWT Template / Widget / SSO Setup Suite
 - App-side authorization logic
@@ -308,11 +374,13 @@ Group by functional area:
 - Callback / redirect / OIDC
 - Session validation
 - Token claims
+- API resources / scopes
 - User profile
 - MFA / step-up
 - Social login
 - SSO
 - Authorization
+- AI agents / agent access
 - Webhooks/events
 
 #### PingOne Feature Migration
@@ -321,7 +389,8 @@ Include only confirmed features. For each one, use the matching Step 3 feature s
 
 - What the PingOne feature does today.
 - The Descope target: Federated App, Flow, Connector, tenant config, JWT Template, Widget,
-  Management API, RBAC/FGA, or app-side authorization.
+  Resource, Policy, Inbound App, Agentic Client, Management API, RBAC/FGA, or app-side
+  authorization.
 - Required code/config/data changes.
 - Complexity and unresolved decisions.
 
@@ -333,8 +402,9 @@ Split into:
 - Required before production
 
 Include Descope project, Flow, auth methods, JWT Template for profile/custom claims, social
-providers, tenants only if customer organizations exist, roles/permissions if used, SSO/SCIM if
-used, and event/webhook/audit forwarding if used.
+providers, tenants only if customer organizations exist, roles/permissions if used, Resources and
+Policies if protected APIs/MCP servers need scoped tokens, SSO/SCIM if used, and event/webhook/audit
+forwarding if used.
 
 #### Environment Variables
 
@@ -343,19 +413,14 @@ Use a diff table:
 | Remove PingOne var | Add Descope var | Why |
 |---|---|---|
 
-Likely additions:
-
-- `DESCOPE_PROJECT_ID`
-- `NEXT_PUBLIC_DESCOPE_PROJECT_ID`, if applicable
-- `DESCOPE_MANAGEMENT_KEY`, if server-side management operations are needed
+Use the PingOne var list in `references/pingone-detection-patterns.md` and the Descope var table in
+Step 1.5 item 10.
 
 #### User and Password Cutover
 
-Include only if existing users exist. State clearly that PingOne does not support exporting
-passwords or password hashes, so password preservation is not an available migration path. Discuss
-user export/import, forced re-login, dry runs in dev/staging, and the two Descope Flow-based
-password cutover options: require password reset on first login, or move users to passwordless
-authentication.
+Include only if existing users exist. Document user export/import, forced re-login, dry runs in
+dev/staging, and the chosen cutover option from
+`references/implementation-nuances.md` -> User Migration and Password Cutover.
 
 #### Population / Tenant / Attribute Mapping
 
@@ -382,6 +447,7 @@ changes.
 Include applicable risks:
 
 - Workforce IAM out of scope
+- PingOne API discovery declined, unavailable, or partial; hierarchy and role mapping confidence may be lower
 - Populations are not automatically tenants
 - Groups are not automatically roles
 - DaVinci flows may hide important journey logic outside the app repo
@@ -440,6 +506,7 @@ _Last updated: [timestamp of last completed step]_
 
 ## PingOne Surfaces in Use
 - Applications: [confirmed / not found]
+- PingOne API discovery: [accepted/completed / accepted/partial / declined / not available]
 - Worker apps/admin API automation: [confirmed / not found]
 - Authentication policies: [confirmed / not found]
 - DaVinci flows: [confirmed / not found]
@@ -449,10 +516,12 @@ _Last updated: [timestamp of last completed step]_
 - Authorize/roles/claims: [confirmed / not found]
 
 ## Populations Mapping
+- API evidence used: [yes/no] - [objects queried or reason not used]
 - [population name/id]: [Tenant / custom attribute / Flow branch / project split / no object / unknown] - [rationale]
 - Tenant membership model: [one tenant per migrated user from original population / multi-tenant membership confirmed / unknown]
 
 ## Groups Mapping
+- API evidence used: [yes/no] - [objects queried or reason not used]
 - [group name/id]: [tenant role / project role / custom attribute / dynamic rule / SSO-SCIM group mapping / FGA-ReBAC / app-side logic / no object / unknown] - [rationale]
 - Dynamic groups: [source attributes and recreated rule, or not applicable]
 - External directory groups: [authoritative source and group-to-role mapping, or not applicable]
@@ -603,6 +672,10 @@ to verifying items 5-9 - those are easy to miss even for existing projects.
 Required for user CRUD, user import, tenant operations, role/permission management, SSO/SCIM
 configuration, FGA/ReBAC, access keys, and most migration scripts.
 
+- If the source uses a PingOne Worker application to call PingOne Management APIs, replace the
+  Worker app Client ID/Client Secret + OAuth 2.0 Client Credentials token exchange with a Descope
+  Management Key. Descope management calls authenticate directly with the Management Key; there is
+  no Client Credentials token exchange.
 - Console -> Company -> Management Keys -> create a Management Key.
 - Store as `DESCOPE_MANAGEMENT_KEY`.
 - Treat it like a secret. Never expose it in client-side code or `NEXT_PUBLIC_` variables.
@@ -686,73 +759,34 @@ record Project ID and Flow ID, and set Next Action to the first code/config chan
 Use this section to choose the integration style. Use Step 3 to map PingOne features and
 `references/implementation-nuances.md` for framework-specific details before writing code.
 
-Classify each code touchpoint:
+Classify each code touchpoint as Path A, Path B, Path C (defined in Step 0.25), or:
 
-- **Path A: Federated App / protocol-config migration** - generic OIDC/OAuth/SAML middleware points
-  at PingOne as IdP and can be repointed to Descope OIDC or SAML Federated Apps. Do not use this
-  path to keep Ping SDK code and only swap issuer/discovery/client settings.
-- **Path B: Descope web Client SDK or Mobile SDK + Flow migration** - web/mobile code owns login UI
-  or imports supported Ping SDKs, DaVinci SDK/widget code, or direct auth API calls.
-- **Path C: Journey/config migration** - PingOne authentication policies or DaVinci define the
-  journey and must be rebuilt in Descope Flows + Connectors.
 - **Token/API-only backend work** - APIs/services validate PingOne tokens, read claims, call PingOne
   REST/Admin APIs, or enforce authorization; this is not a Ping SDK swap.
 
-Read `references/implementation-nuances.md` in two passes before writing code:
+Then read `references/implementation-nuances.md` in two passes before writing code:
 
-1. **General sections** - Path Selection, Federated App/protocol migration, web Client SDK/Mobile SDK/Flow migration, token
-   validation, claim mapping, Console-first decisions.
+1. **General sections** - Path Selection (per-path work and risk), Federated App/protocol migration,
+   web Client SDK/Mobile SDK/Flow migration, token validation, claim mapping, Console-first
+   decisions. These carry the implementation detail for each path; do not restate it from memory.
 2. **Framework section** - read only the section matching the user's stack.
 
-### Path A: Federated App / protocol-config migration
+Path-choice guardrails:
 
-Use this when the app uses a generic OIDC/OAuth or SAML client configuration pointed at PingOne as
-the IdP.
-
-- For PingOne OIDC Web applications: create/configure a Descope OIDC Federated Application.
-- For PingOne SAML applications: create/configure a Descope SAML Federated Application.
-- Replace PingOne issuer/authority/discovery metadata with Descope OIDC Federated App settings.
-- Replace PingOne SAML metadata/certificate/SSO URL with Descope SAML Federated App metadata.
-- Replace PingOne client credentials with the Descope OIDC Federated App/client values required by the framework.
-- Update redirect URI, ACS URL, and post-logout redirect URI in Descope Console as applicable.
-
-Good for phased migrations when the app already uses generic protocol middleware: swap the IdP to
-Descope Federated Apps first, then refactor web apps to Descope web Client SDK/embedded Flow later
-if needed. Caveat: PingOne authentication policies, DaVinci flows, Protect, Verify, customer SSO,
-SCIM, and user/password cutover may still require separate work.
-
-Do not recommend Path A for Swift/Kotlin/React Native/JavaScript code that imports Ping
-Orchestration, Ping OIDC, or DaVinci SDKs. In those cases the Ping SDK is part of the app
-integration and must be replaced, usually by Path B plus Path C when policies or DaVinci are in use.
-
-### Path B: Descope web Client SDK or Mobile SDK + Flow migration
-
-Use this when a web or mobile app imports Ping Orchestration/OIDC SDKs or DaVinci SDK/widget code,
-owns custom login UI, or directly calls PingOne auth APIs. Ping SDK evidence should appear in
-Kotlin/Android, Swift/iOS, JavaScript/TypeScript, or React Native TypeScript code. Do not use Path B
-only because a Python, Go, Node API, Java, or .NET service validates PingOne tokens.
-
-- Treat Swift/iOS and Kotlin/Android as high-priority SDK surfaces, especially for OIDC redirect
-  login and PingOne Protect/device-context collection.
-- Record client ID, scopes, redirect/deep link, discovery endpoint, browser/session mode, token
-  storage, refresh/logout, callbacks, and any device/risk payload handoff.
-- Replace web login/signup/account recovery/MFA UI with Descope web Client SDKs or web components.
-- Replace Swift/iOS, Kotlin/Android, Flutter, or React Native mobile auth with Descope Mobile SDKs.
-- Never keep Ping mobile/OIDC SDK code and point it at Descope discovery metadata.
-- Move journey logic to Descope Console/Flows unless the app has confirmed post-login business logic.
-- Use `references/pingone-detection-patterns.md` for complete Swift/Kotlin import patterns.
-
-### Path C: Journey/config migration for PingOne policies or DaVinci-heavy usage
-
-Use this when PingOne admin configuration or DaVinci carries most of the behavior.
-
-- Request DaVinci exports/screenshots and authentication policy details.
-- Inventory screens, nodes, connectors, conditions, risk branches, Verify steps, MFA steps,
-  progressive profiling, claims, and side effects.
-- Rebuild the journey in Descope Flows using screens, actions, conditions, subflows, connectors,
-  scriptlets only when necessary, and JWT Templates.
-- Keep custom business logic in the app only when it belongs after session validation; auth-time
-  decisions should usually become Flow logic.
+- Path A applies only when a generic OIDC/OAuth/SAML client is pointed at PingOne as the IdP. Do not
+  use it for Swift/Kotlin/React Native/JavaScript code that imports Ping Orchestration, Ping OIDC,
+  or DaVinci SDKs - that SDK must be replaced, usually Path B plus Path C.
+- Path A is a good first phase for a phased migration, but PingOne authentication policies, DaVinci
+  flows, Protect, Verify, customer SSO, SCIM, and user/password cutover may still need separate work.
+- Do not choose Path B only because a Python, Go, Node API, Java, or .NET service validates PingOne
+  tokens.
+- For Path B mobile work, record client ID, scopes, redirect/deep link, discovery endpoint,
+  browser/session mode, token storage, refresh/logout, callbacks, and any device/risk payload
+  handoff before replacing the SDK.
+- For Path C, request DaVinci exports/screenshots and authentication policy details, and inventory
+  screens, nodes, connectors, conditions, risk branches, Verify/MFA steps, progressive profiling,
+  claims, and side effects before rebuilding. Keep custom business logic in the app only when it
+  belongs after session validation.
 
 ### Framework routing notes
 
@@ -762,8 +796,11 @@ Use this when PingOne admin configuration or DaVinci carries most of the behavio
 - Node, Python, Go, Java, and .NET backends usually need issuer/JWKS/audience/claim validation,
   cookie/session, REST/API, or Management API updates. Do not describe these as Ping orchestration
   SDK replacements.
-- Native Swift/Kotlin/Flutter/React Native apps use Descope Mobile SDKs and require mobile-specific
-  callback/deep-link, token storage, logout, and Protect/device-context review.
+- Native Swift/Kotlin/Flutter/React Native apps use Descope Mobile SDK Native Flows and require
+  mobile-specific callback/deep-link, token storage, logout, and Protect/device-context review.
+- Ping DaVinci collector-based mobile UI maps to Descope Native Flows. Ping OIDC Sign-on /
+  centralized browser login can still use Native Flows, with mobile browser flow / browser handoff
+  only for auth methods or product requirements that need external/system browser behavior.
 - Verify all Descope SDK/API method names through MCP or local type declarations before generating
   code.
 
@@ -779,9 +816,8 @@ Scan for PingOne references in non-code files after updating source files.
 ### `.env.example` / `.env.template` / `.env.sample`
 
 Remove PingOne variables that are no longer used and add only the Descope variables the chosen path
-requires. Common additions are `DESCOPE_PROJECT_ID`, `NEXT_PUBLIC_DESCOPE_PROJECT_ID` for
-browser-rendered Descope UI, and `DESCOPE_MANAGEMENT_KEY` only for server-side management/import
-work. Use `references/pingone-detection-patterns.md` for the full PingOne env-var list.
+requires - see the Step 1.5 item 10 table. Use `references/pingone-detection-patterns.md` for the
+full PingOne env-var list.
 
 Run:
 
@@ -845,16 +881,18 @@ detections as blockers, not recipes.
 |---|---|---|---|
 | PingOne environment | Descope Project | Create separate Descope projects for dev/staging/prod | Project IDs replace PingOne environment/issuer identifiers. |
 | PingOne application records | Descope Federated App, SDK/Flow integration, or service automation pattern | Inventory application type, protocol, client ID, redirects, scopes, assigned policy/flow, and whether it serves users or services | Map by PingOne application type, not repo name. |
-| SAML and OIDC Web applications | Descope SAML or OIDC Federated Application | Repoint metadata/issuer/discovery/client/JWKS/claims from PingOne to Descope | This is the usual Path A for standards-based apps. |
-| SPA applications | Descope web Client SDK, web component, Flow, or protocol-preserving OIDC | Replace browser public-client, callback, token, and session handling as appropriate | Never introduce server-only secrets into browser code. |
-| Native/mobile and device applications | Descope Mobile SDK or device-flow architecture review | Replace Ping mobile SDK, deep-link, callback, device-flow, and token handling | Do not keep Ping mobile/OIDC SDKs and point them at Descope. |
-| Worker applications | Descope Management API, Management Key, Access Keys, or M2M pattern | Separate service/admin automation from customer login | Worker apps are not normal sign-on apps and must not map to Federated Apps or login Flows. |
-| Supported Ping SDKs | Descope web Client SDK for web or Descope Mobile SDK for mobile | Replace confirmed Swift, Kotlin, JavaScript/TypeScript, or React Native TypeScript SDK usage | Swift/Kotlin evidence is high signal, especially for Protect/device context. |
+| SAML applications | Descope SAML Federated Application | Repoint metadata/certificates/ACS/entity ID from PingOne to Descope | This is the usual Path A for standards-based SAML apps. |
+| OIDC Web and SPA applications | Descope OIDC Federated Application | Repoint issuer/discovery/client/redirect/JWKS/claims from PingOne to Descope | Both are OIDC apps; see the application-type table below for confidential vs public client handling. |
+| Native/mobile and device applications | Descope Mobile SDK Native Flows or device-flow architecture review | Replace Ping mobile SDK, deep-link, callback, device-flow, and token handling | Ping mobile can be OIDC Sign-on/centralized browser login or DaVinci collector-based orchestration; default to Native Flows and use browser handoff only when needed. |
+| Worker applications | Descope Management API with Management Key, or Access Keys/M2M for your own APIs | Replace the Worker app's client-credentials authentication - see Step 1.5 item 2 | Worker apps are service/admin automation, not normal sign-on apps; do not map them to Federated Apps or login Flows. |
+| Supported Ping SDKs | Descope web Client SDK for web or Descope Mobile SDK Native Flows for mobile | Replace confirmed Swift, Kotlin, JavaScript/TypeScript, or React Native TypeScript SDK usage | Swift/Kotlin evidence is high signal, especially for Protect/device context. |
 | Authentication policies and DaVinci flows | Descope Flows + Connectors | Rebuild screens, branches, MFA, risk, Verify, social, SSO, external calls, and claim-setting behavior | Request exports/screenshots when the repo only shows IDs or callbacks. |
 | Users and password auth | Descope Users + Flow-based password cutover | Export/import users; choose first-login reset or passwordless authentication | PingOne cannot export passwords or password hashes. |
 | Populations, groups, roles, and entitlements | Tenants, attributes, Flow branches, RBAC/FGA, JWT Templates, SSO/SCIM mappings, or app logic | Classify by business function before creating Descope objects | This is the core hierarchy decision; see the dedicated section below. |
 | MFA, Protect, and Verify | Descope MFA/step-up Flows, fingerprinting `riskInfo`, Fraud & Risk Connectors, IDV connectors | Preserve the decision behavior: allow, step up, block, verify, notify, log, or review | These are security/product requirements, not simple SDK swaps. |
-| Social login, customer SSO, and SCIM | Descope social providers, tenant SSO/SSO Setup Suite, and SCIM provisioning | Recreate provider credentials and re-point enterprise lifecycle integrations | SSO/SCIM require a confirmed tenant/customer-organization model. |
+| Social login, PingOne External IdPs, customer SSO, and SCIM | Descope social providers, tenant SSO connections/SSO Setup Suite, and SCIM provisioning | Recreate provider credentials and re-point enterprise identity/lifecycle integrations | Customer/org IdPs map to tenant SSO; consumer social IdPs usually map to social login. |
+| PingOne AI Agents | Descope Agentic Identity Hub Clients, Resources, Policies, and Agentic Identity | Register agent clients, map resources/scopes, and recreate delegation, approval, and audit behavior | CIAM-only when agents access customer-facing APIs/MCP servers or act for external customers. Workforce agent governance is out of scope unless explicit. |
+| PingOne Resources | Descope API Resources or MCP Server Resources | Recreate each OAuth-protected API/MCP server, audience, scopes, and access rules | Use Inbound Apps or Agentic Clients when resource-scoped tokens are required; do not assume Federated Apps cover this. |
 | Token claims | Descope JWT Templates and Flow custom claims | Recreate only claims the app reads | Claim names and nesting may change; update validators and tests. |
 | Events, webhooks, and audit | Descope events, audit connectors, webhooks, or platform-specific audit forwarding | Update event names, payload handling, auth, and signing validation | Set up before production when compliance or automation depends on events. |
 | PingOne APIs and admin automation | Descope Management API, Console configuration, token validation, or app logic | Replace only confirmed source calls and verify Descope method names with MCP | Backend Python/Go/Node/Java/.NET findings are usually protocol, token, API, claims, or authz work, not Ping SDK swaps. |
@@ -934,18 +972,23 @@ Map by application type:
 
 | PingOne application type | What it usually means | Descope migration direction |
 |---|---|---|
-| **OIDC Web application** | Browser-based app with a server-side component using PingOne as OIDC IdP | Map first to a Descope OIDC Federated Application. Update the app from PingOne issuer/discovery/client/JWKS/claims to Descope's OIDC Federated App settings. Descope web Client SDK + embedded Flow is a later refactor option, not the default protocol-preserving migration. |
-| **Single Page Application** | Browser-only public client using OIDC and no client secret | Usually map to Descope web Client SDK/web component + Flow. If the SPA already has solid OIDC handling and protocol preservation is required, use a Descope OIDC Federated Application/public-client setup. Never add Management Key or client secret to browser code. |
-| **Native application** | Mobile/desktop installed app using OIDC, sometimes involved in MFA | Use Descope Mobile SDK for Swift/iOS, Kotlin/Android, Flutter, or React Native migrations. If the app imports Ping OIDC/Orchestration SDKs, replace them; do not keep Ping SDK and point it at Descope. Review callback/deep links, token storage, logout, and any MFA-authenticator role before implementation. |
+| **OIDC Web or Single Page Application** | Both are OIDC application clients. PingOne OIDC Web apps are confidential clients that can use a client secret; PingOne SPA apps are public clients and must not use a client secret. | Map both to a Descope OIDC Federated Application. Use the Descope Federated App client/auth type toggle to match confidential vs public-client behavior, then update issuer/discovery/client/redirect/JWKS/claims. |
+| **Native application** | Mobile/desktop installed app using OIDC Sign-on/centralized browser login or embedded DaVinci orchestration, sometimes involved in MFA | Use Descope Mobile SDK Native Flows for Swift/iOS, Kotlin/Android, Flutter, or React Native migrations. Replace Ping collector-rendering code with Descope's native flow view integration; do not translate each collector directly or keep Ping SDK and point it at Descope. Review callback/deep links, token storage, logout, and any MFA-authenticator role before implementation. |
 | **SAML application** | Browser app using PingOne as SAML IdP | Map first to a Descope SAML Federated Application. Configure Descope's IdP metadata/certificate/SSO URL in the app's Service Provider settings, and configure the SP ACS/entity ID in Descope. Stop if it is employee/Microsoft 365/WS-Fed/WS-Trust scope unless explicitly included. |
 | **Device Authorization** | Input-constrained device gets user authorization through a second device | Treat as a dedicated device-flow migration or architecture review; do not collapse it into normal web login. |
-| **Worker** | Service/admin API client, usually using client credentials and administrator role assignments | Treat as supporting automation, not customer login. Map to Descope Management API with `DESCOPE_MANAGEMENT_KEY` when it manages Descope resources, or to Descope Access Keys/M2M when it authenticates machine-to-machine calls to your own APIs. Do not map Worker apps to Descope Federated Apps or login Flows. |
+| **Worker** | Service/admin API client using Client ID/Secret to get a short-lived OAuth 2.0 Client Credentials access token for PingOne Management APIs | See Step 1.5 item 2 and the Worker app table in `references/implementation-nuances.md`. Do not map Worker apps to Descope Federated Apps or login Flows. |
 
 Action: inventory every PingOne application record and every app/service validating tokens or SAML
-assertions from it. Multi-application environments often need a mixed path: OIDC Web and SAML apps
-usually map to Descope Federated Apps for Path A, SPAs may need Descope web Client SDK/Flow work,
-native/mobile apps need Descope Mobile SDK/Flow work, DaVinci/policy-bound apps need Path C, and
-Worker apps need a separate service/admin-auth review.
+assertions from it. Multi-application environments often need a mixed path: OIDC Web, SPA, and SAML
+apps usually map to Descope Federated Apps for Path A, native/mobile apps need Descope Mobile
+SDK/Flow work, DaVinci/policy-bound apps need Path C, and Worker apps need a separate service/admin-auth review.
+
+### PingOne AI Agents -> Agentic Identity Hub Clients
+
+PingOne AI Agents are OAuth identities for non-human actors that need credentials, ownership,
+resource access, delegation, approval, and audit. In Descope, model each customer-facing agent as an
+Agentic Identity Hub Client, then map the protected APIs or MCP servers to Resources, the allowed
+actions to scopes, and the least-privilege rules to Policies.
 
 ### PingOne Authentication Policies -> Descope Flows
 
@@ -998,9 +1041,8 @@ incomplete and request the DaVinci configuration before implementation.
 PingOne users map to Descope users. The hard part is not the object name; it is stable identifiers,
 password cutover, profile fields, MFA factors, social identities, and claims.
 
-PingOne does **not** support exporting passwords or password hashes. Do not plan a hash import or
-password-preservation migration. See `references/implementation-nuances.md` -> User Migration and
-Password Cutover for the two Flow-based cutover options.
+See `references/implementation-nuances.md` -> User Migration and Password Cutover for the two
+Flow-based cutover options and why hash import is not available.
 
 Decide before cutover:
 
@@ -1061,31 +1103,13 @@ analytics), which journey points are affected, acceptable friction, and whether 
 Android Kotlin SDK collects device information, device ID, behavioral signals, browser/session
 context, or Protect payloads before/during login.
 
-Mobile Protect evidence is high signal:
+Mobile Protect evidence is high signal. Use `references/pingone-detection-patterns.md` for the
+Swift/Kotlin symbols. If mobile SDK code is collecting Protect/device context, do not treat it as
+generic login SDK code - preserve the purpose of that collection when designing Descope
+fingerprinting, Fraud & Risk Connectors, and Flow branches.
 
-- Swift/iOS: `PingProtect`, `PingOneProtect`, `PingOrchestrate`, `PingOidc`, `OidcWebClient`,
-  `authorize`, `discoveryEndpoint`, `browserMode`, `browserType`, `acrValues`.
-- Kotlin/Android: `PingProtect`, Ping Android SDK or DaVinci client Gradle dependencies,
-  `com.pingidentity.oidc.OidcWeb`, `com.pingidentity.oidc.module.Oidc`, `Logger.STANDARD`,
-  `module(Oidc)`, `web.authorize`, `viewModelScope.launch`, `onSuccess`, `onFailure`,
-  `orchestrate`, `oidc`, `protect`, device ID, device profiling, `Journey`, `Node`, `ContinueNode`,
-  `SuccessNode`, `FailureNode`.
-
-If mobile SDK code is collecting Protect/device context, do not treat it as generic login SDK code.
-Preserve the purpose of that collection when designing Descope fingerprinting, Fraud & Risk
-Connectors, and Flow branches.
-
-Built-in mapping:
-
-- `riskInfo.botDetected` -> CAPTCHA, step-up, or block before session
-- `riskInfo.impossibleTravel` -> MFA/step-up, notify, or block
-- `riskInfo.riskScore` -> low/medium/high Flow branches
-- `riskInfo.trustedDevice` -> reduced friction vs extra verification
-- Bot Trap screen -> low-friction bot check
-
-When built-in signals are not enough, add a Fraud & Risk Connector (CAPTCHA, Fingerprint, IP/threat,
-phone/identity, behavioral fraud, or breach/email reputation - see fraud connector docs) or a
-Generic HTTP Connector to the existing risk service.
+For the `riskInfo` signal-to-Flow mapping and the Fraud & Risk Connector catalog, see
+`references/implementation-nuances.md` -> PingOne Protect Replacement.
 
 Decision mapping: risk branch -> Flow conditions; challenge -> MFA/OTP/CAPTCHA; block -> deny with
 no session; allow -> success / skip extra MFA; notify/log -> connector, webhook, or audit
@@ -1137,6 +1161,13 @@ Customer SSO maps to Descope tenant SSO only when the customer organization mode
 current app uses populations as policy groups, do not create tenants solely for SSO until the account
 model is clarified.
 
+PingOne External IdPs usually map here when they represent a customer's SAML or OIDC IdP. In
+PingOne, an external IdP can appear in login, identifier-first, or external-IdP authentication
+policy steps. In Descope, configure the customer's IdP as one or more tenant-level SSO connections,
+then route users by SSO domain, tenant slug/ID, or Flow logic. If the PingOne external IdP is a
+consumer/social provider instead of a customer organization IdP, map it to Descope social login
+instead.
+
 Prefer:
 
 - Tenant SSO for per-customer SAML/OIDC.
@@ -1164,6 +1195,21 @@ Map:
 Action: re-point every customer directory before production cutover or provisioning silently breaks.
 Test create, update, deactivate, group change, and reactivation in staging.
 
+### PingOne Resources -> Descope Resources
+
+PingOne Resources represent OAuth-protected API endpoints with scopes, attribute mappings, and
+optional PingOne Authorize permissions. Descope Resources are the same basic concept: an OAuth
+resource server with an audience (`aud`) and a scope catalog that clients request and APIs enforce.
+
+Map each PingOne Resource to a Descope API Resource unless it protects an MCP server, in which case
+use a Descope MCP Server Resource. Recreate resource identifiers/audiences, scopes, role or policy
+rules, user-attribute sharing, and token validation checks for `aud` and `scope`. If an application
+needs tokens scoped to a Descope Resource, model the client as an Inbound App or Agentic Client;
+Federated Apps are not the right target for Resource association.
+
+Action: inventory each protected API/MCP server, requested scopes, granted scopes, API enforcement
+points, and any PingOne Authorize permission mapping before updating token validators.
+
 ### PingOne Authorize -> Descope RBAC/FGA or app-side authorization review
 
 PingOne Authorize for customer-facing authorization maps based on enforcement model. Do not confuse
@@ -1185,19 +1231,7 @@ For FGA/ReBAC, require a dedicated schema review before writing implementation c
 PingOne custom claims often glue the app together. Descope JWT Templates recreate claims the app
 actually reads.
 
-Map common claims:
-
-| PingOne claim/source | Descope target | Notes |
-|---|---|---|
-| `sub` / PingOne user ID | Descope user ID or legacy ID custom attribute | Preserve old ID only if needed. |
-| `email`, `email_verified` | JWT Template and user profile | Add explicitly if code reads token claims. |
-| `given_name`, `family_name`, `name` | JWT Template / user profile | Update adapters if shape changes. |
-| `username` | Login ID or custom attribute | PingOne username may not equal email. |
-| `populationId` | Tenant, custom attribute, Flow branch, or project strategy | Classify first. |
-| `groups` | Tenant roles, project roles, custom attributes, SSO/SCIM mappings, FGA, JWT Templates, or app-side logic | Classify access vs. segmentation vs. dynamic/external membership before recreating claims. |
-| `roles` | Descope RBAC roles / JWT roles | Roles must exist before assignment. |
-| `permissions`, `entitlements` | Permissions, FGA, JWT Templates, or app-side authz | Entitlements may need model review. |
-| Custom claims | JWT Templates or Flow custom claims | Recreate only consumed claims. |
+Map claims using the claim table in `references/implementation-nuances.md` -> Claim Mapping.
 
 Action: list every claim reader in the plan. Do not ship code that expects `email`, groups, roles,
 or population fields until the JWT Template is configured and tested.
@@ -1231,7 +1265,8 @@ of Ping orchestration SDKs in Python, Go, Node server code, Java, or .NET.
 For every confirmed PingOne API or supported SDK call found, decide whether it should become:
 
 - A Descope web Client SDK or web component call for browser auth UI
-- A Descope Mobile SDK call for Swift/iOS, Kotlin/Android, Flutter, or React Native mobile auth
+- A Descope Mobile SDK Native Flow integration for Swift/iOS, Kotlin/Android, Flutter, or React
+  Native mobile auth
 - Descope session/token validation in backend code
 - A Descope Management API call
 - A Console/Flow/JWT Template/Widget/SSO Setup Suite configuration item
@@ -1240,6 +1275,10 @@ For every confirmed PingOne API or supported SDK call found, decide whether it s
 
 If the source is a Ping mobile/OIDC SDK, the migration replaces that SDK. Do not write a plan that
 keeps Ping SDK and only changes discovery endpoint, issuer, client ID, or redirect URI to Descope.
+Do not assume Ping mobile SDK usage was redirect-only: OIDC Redirect modules usually indicate
+centralized-login redirects, while DaVinci orchestration modules may indicate embedded,
+server-driven mobile flows. In both cases, recommend Descope Mobile SDK Native Flows as the default
+mobile migration target.
 
 Classify backend Python, Go, Node, Java, and .NET findings as OIDC/SAML config, JWT validation,
 session handling, PingOne REST/API calls, claims, or Management API automation. Do not describe them
@@ -1250,16 +1289,8 @@ configuration for auth journey behavior.
 
 ### Out-of-scope product handling
 
-If any of these appear, stop and ask for explicit scope confirmation:
-
-- PingFederate
-- PingDirectory
-- PingAccess
-- PingID used for workforce authentication
-- Workforce IAM / employee app launcher
-- HR-driven employee lifecycle provisioning
-- ForgeRock / PingOne Advanced Identity Cloud
-- PingAuthorize as a standalone product migration
+If any product listed under Scope as out of scope appears - plus PingAuthorize as a standalone
+product migration - stop and ask for explicit scope confirmation.
 
 Suggested stop message:
 
@@ -1442,3 +1473,45 @@ complexity (Low/Medium/High) so the user can plan.
   OIDC/SAML hints, DaVinci hints, and out-of-scope detection.
 - `references/implementation-nuances.md` - path selection, Federated App/protocol compatibility, web Client SDK/Mobile SDK/Flow
   migration, token validation, claim mapping, framework notes, Console-first decisions, and testing notes.
+- Descope Docs: [https://docs.descope.com](https://docs.descope.com)
+- User Import (Custom): [https://docs.descope.com/migrate/custom](https://docs.descope.com/migrate/custom)
+- Descope OIDC Endpoints: [https://docs.descope.com/getting-started/oidc-endpoints](https://docs.descope.com/getting-started/oidc-endpoints)
+- Descope Flows: [https://docs.descope.com/flows](https://docs.descope.com/flows)
+- JWT Templates: [https://docs.descope.com/management/jwt-templates](https://docs.descope.com/management/jwt-templates)
+- Access Keys (M2M): [https://docs.descope.com/management/m2m-access-keys](https://docs.descope.com/management/m2m-access-keys)
+- Messaging Templates: [https://docs.descope.com/management/messaging-templates](https://docs.descope.com/management/messaging-templates)
+- Audit Webhook: [https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook](https://docs.descope.com/connectors/connector-configuration-guides/network/audit-webhook)
+- Custom Domains: [https://docs.descope.com/how-to-deploy-to-production/custom-domain](https://docs.descope.com/how-to-deploy-to-production/custom-domain)
+- ReBAC: [https://docs.descope.com/authorization/rebac](https://docs.descope.com/authorization/rebac)
+- Outbound Apps: [https://docs.descope.com/identity-federation/outbound-apps](https://docs.descope.com/identity-federation/outbound-apps)
+- SSO Migration: [https://docs.descope.com/migrate/sso](https://docs.descope.com/migrate/sso)
+- KYC Connectors: [https://docs.descope.com/connectors/connector-configuration-guides/kyc](https://docs.descope.com/connectors/connector-configuration-guides/kyc)
+
+### Session Validation by Language
+
+- Node.js: [https://docs.descope.com/getting-started/nodejs#implement-session-validation](https://docs.descope.com/getting-started/nodejs#implement-session-validation)
+- Python: [https://docs.descope.com/getting-started/python#implement-session-validation](https://docs.descope.com/getting-started/python#implement-session-validation)
+- Go: [https://docs.descope.com/getting-started/golang#implement-session-validation](https://docs.descope.com/getting-started/golang#implement-session-validation)
+- Ruby: [https://docs.descope.com/getting-started/ruby#implement-session-validation](https://docs.descope.com/getting-started/ruby#implement-session-validation)
+- Java / Kotlin: [https://docs.descope.com/getting-started/java#implement-session-validation](https://docs.descope.com/getting-started/java#implement-session-validation)
+- .NET / C#: [https://docs.descope.com/getting-started/dotnet#implement-session-validation](https://docs.descope.com/getting-started/dotnet#implement-session-validation)
+- Next.js: [https://docs.descope.com/getting-started/nextjs#implement-session-validation](https://docs.descope.com/getting-started/nextjs#implement-session-validation)
+- React: [https://docs.descope.com/getting-started/react#implement-session-validation](https://docs.descope.com/getting-started/react#implement-session-validation)
+- Angular: [https://docs.descope.com/getting-started/angular#implement-session-validation](https://docs.descope.com/getting-started/angular#implement-session-validation)
+- Vue: [https://docs.descope.com/getting-started/vue#implement-session-validation](https://docs.descope.com/getting-started/vue#implement-session-validation)
+- Swift / iOS: [https://docs.descope.com/getting-started/swift#implement-session-validation](https://docs.descope.com/getting-started/swift#implement-session-validation)
+- Kotlin / Android: [https://docs.descope.com/getting-started/android#implement-session-validation](https://docs.descope.com/getting-started/android#implement-session-validation)
+- Flutter: [https://docs.descope.com/getting-started/flutter#implement-session-validation](https://docs.descope.com/getting-started/flutter#implement-session-validation)
+
+### SDKs (GitHub)
+
+- Node SDK: [https://github.com/descope/node-sdk](https://github.com/descope/node-sdk)
+- Python SDK: [https://github.com/descope/python-sdk](https://github.com/descope/python-sdk)
+- Go SDK: [https://github.com/descope/go-sdk](https://github.com/descope/go-sdk)
+- Ruby SDK: [https://github.com/descope/descope-ruby-sdk](https://github.com/descope/descope-ruby-sdk)
+- Java SDK: [https://github.com/descope/descope-java](https://github.com/descope/descope-java)
+- .NET SDK: [https://github.com/descope/descope-dotnet](https://github.com/descope/descope-dotnet)
+- Swift SDK: [https://github.com/descope/swift-sdk](https://github.com/descope/swift-sdk)
+- Kotlin SDK: [https://github.com/descope/descope-kotlin](https://github.com/descope/descope-kotlin)
+- Flutter SDK: [https://github.com/descope/descope-flutter](https://github.com/descope/descope-flutter)
+- JS/TS monorepo (React, Angular, Vue, Next.js, Web Component, Web JS): [https://github.com/descope/descope-js](https://github.com/descope/descope-js)

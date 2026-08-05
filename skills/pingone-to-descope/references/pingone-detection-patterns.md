@@ -5,6 +5,7 @@
 - [Search Groups](#search-groups)
 - [Package and Import Hints](#package-and-import-hints)
 - [Environment Variable Hints](#environment-variable-hints)
+- [Worker App Hints](#worker-app-hints)
 - [Hierarchy and Group Hints](#hierarchy-and-group-hints)
 - [OIDC and SAML Hints](#oidc-and-saml-hints)
 - [DaVinci Hints](#davinci-hints)
@@ -78,19 +79,6 @@ grep -rni "webhook\|event\|notification\|audit\|user.created\|user.updated\|user
   . 2>/dev/null
 ```
 
-Useful `rg` equivalents:
-
-```bash
-rg -n -i "pingone|pingidentity|davinci|forgerock|orchestration" -g '*.{ts,tsx,js,jsx,kt,kts,swift}' -g '!node_modules' -g '!.next' -g '!dist'
-rg -n -i "import PingOrchestrate|import PingOidc|import PingProtect|import PingOneProtect|import PingLogger|import PingBrowser|OidcWebClient|createOidcWebClient|authorize|discoveryEndpoint|browserMode|browserType|acrValues" -g '*.swift'
-rg -n -i "com\\.pingidentity\\.oidc\\.OidcWeb|com\\.pingidentity\\.oidc\\.module\\.Oidc|com\\.pingidentity\\.logger\\.Logger|Logger\\.STANDARD|OidcWeb|module\\(Oidc\\)|clientId|discoveryEndpoint|redirectUri|scopes|web\\.authorize|onSuccess|onFailure|viewModelScope\\.launch|MutableStateFlow|PingProtect|ping-android-sdk|davinci-client|orchestrate|Oidc|OIDC|protect|device.*profil|Journey|Node|ContinueNode|SuccessNode|FailureNode" -g '*.{kt,kts,gradle}'
-rg -n -i "pingone|auth\\.pingone\\.com|api\\.pingone\\.com|/as/authorize|/as/token|/userinfo|/as/jwks" -g '!node_modules' -g '!.next' -g '!dist'
-rg -n -i "PINGONE_|PING_ONE_|PING_CLIENT|PING_ENVIRONMENT|PING_REGION|PING_ISSUER|PING_AUTH"
-rg -n -i "issuer|client_id|clientId|clientSecret|redirect_uri|redirectUri|openid-configuration|jwks_uri|authorization_endpoint|token_endpoint"
-rg -n -i "auth\.pingone\.com|api\.pingone\.com|pingone\.com"
-rg -n -i "population|populationId|userId|username|emailVerified|verifyEmail|profile|customAttributes|locale|preferredLanguage"
-```
-
 ## Package and Import Hints
 
 Look for packages, namespaces, and imports that imply PingOne, DaVinci, or generic protocol usage.
@@ -114,41 +102,25 @@ JavaScript/TypeScript hints:
 - `next-auth` / Auth.js provider configuration with PingOne issuer
 - `jose`, `jsonwebtoken`, `jwks-rsa` used with PingOne issuer/JWKS
 
-Kotlin / Android hints:
+Kotlin / Android and Swift / iOS hints:
 
-- Treat Android/Kotlin as a high-priority SDK surface, especially for PingOne Protect and device
-  context collection.
-- Ping Orchestration SDK package/import names.
+The symbol inventory for both platforms is in the Swift and Kotlin grep commands under
+[Search Groups](#search-groups). Beyond those symbols, also look for:
+
+- Gradle, Swift Package Manager, or CocoaPods dependencies on Ping SDK artifacts (Ping Android SDK,
+  DaVinci client packages, Ping Swift SDK packages).
 - DaVinci, OIDC Redirect, Protect, MFA OTP, FIDO2/Passkeys, device ID, or device profiling modules.
-- Gradle dependencies from Ping SDK artifacts such as Ping Android SDK or DaVinci client packages.
-- `import com.pingidentity.oidc.OidcWeb`
-- `import com.pingidentity.oidc.module.Oidc`
-- `import com.pingidentity.logger.Logger`
-- `Logger.STANDARD`
-- `OidcWeb { ... }`
-- `module(Oidc) { clientId / discoveryEndpoint / scopes / redirectUri }`
-- `viewModelScope.launch`
-- `web.authorize { ... }`
-- `onSuccess { user -> ... }` / `onFailure { throwable -> ... }`
-- `MutableStateFlow` or other ViewModel state around login.
-- Journey/node navigation types such as `Journey`, `Node`, `ContinueNode`, `SuccessNode`, or
-  `FailureNode`.
 
-Swift / iOS hints:
+Treat both as high-priority SDK surfaces, especially for PingOne Protect and device-context
+collection. Classify the shape of the code:
 
-- Treat iOS/Swift as a high-priority SDK surface, especially for PingOne Protect and device context
-  collection.
-- `import PingOrchestrate`
-- `import PingOidc`
-- `import PingProtect` or `import PingOneProtect`
-- `import PingLogger`
-- `import PingBrowser`
-- `OidcWebClient.createOidcWebClient`
-- `config.module(PingOidc.OidcModule.config)`
-- `clientId`, `scopes`, `redirectUri`, `discoveryEndpoint`
-- `browserMode`, `browserType`, `acrValues`
-- `authorize { options in ... }`
-- Swift Package Manager or CocoaPods dependencies from Ping SDK artifacts.
+- `OidcWeb` / `module(Oidc)` / `OidcWebClient` / discovery endpoint / browser mode / redirect URI ->
+  mobile OIDC Redirect or centralized-login evidence.
+- `PingOrchestrate` plus collector/node-shaped handling (`Journey`, `Node`, `ContinueNode`,
+  `SuccessNode`, `FailureNode`) -> embedded DaVinci orchestration evidence.
+- Collector/node-shaped UI code means the app renders Ping DaVinci inputs with native components.
+  Plan to replace that renderer with Descope Mobile SDK Native Flow view integration, not translate
+  each collector directly.
 
 Python hints (not Ping orchestration SDKs):
 
@@ -176,8 +148,10 @@ Interpretation:
 - Generic OIDC libraries suggest Path A may be viable only when the app is not using Ping SDKs for
   login/session behavior.
 - Ping/DaVinci SDK imports in Kotlin, Swift, JavaScript/TypeScript, or React Native TypeScript
-  suggest Path B or C. For Swift, Kotlin, or React Native, Path B targets Descope Mobile SDKs and
-  must replace the Ping SDK.
+  suggest Path B or C. For Swift, Kotlin, or React Native, Path B targets Descope Mobile SDK Native
+  Flows by default and must replace the Ping SDK.
+- Distinguish Ping OIDC Sign-on/centralized browser login from DaVinci collector-based flows, but
+  do not recommend keeping Ping SDK code for either pattern.
 - Backend Python/Go/Node/Java/.NET hits suggest Path A, token validation, REST/API migration,
   Management API automation, or app-side authorization review, not a Ping SDK swap.
 - Only JWT/JWKS validation in APIs suggests downstream services need issuer/JWKS/claim updates, even if login lives elsewhere.
@@ -219,9 +193,9 @@ Do not add `DESCOPE_MANAGEMENT_KEY` to client-side bundles or `NEXT_PUBLIC_` var
 
 ## Worker App Hints
 
-PingOne Worker apps are primarily service/admin API clients. They usually use client credentials and
-administrator role assignments to call PingOne platform APIs. They are not normal customer login
-apps and should not be mapped to Descope login Flows or Federated Apps.
+Worker apps are service/admin API clients, not customer login apps. For what they map to in
+Descope, see
+[implementation-nuances.md -> Worker Apps and Service Automation](./implementation-nuances.md#worker-apps-and-service-automation).
 
 Search for:
 
@@ -239,27 +213,15 @@ For each Worker app hit, record:
 - Which role assignments or scopes it relies on.
 - Whether it manages users, populations, groups, applications, PingOne Authorize, Verify, MFA, or audit.
 - Whether it is a temporary migration/export tool or a production service.
-- Whether it should map to Descope Management API with `DESCOPE_MANAGEMENT_KEY`, or Descope Access Keys/M2M for your own APIs.
+- Which Descope target it maps to - see the Worker app table in
+  [implementation-nuances.md](./implementation-nuances.md#worker-apps-and-service-automation).
 
 ## Hierarchy and Group Hints
 
-Use hierarchy evidence to decide project, tenant, role, attribute, and SSO/SCIM mappings:
-
-- PingOne environments usually map to Descope projects.
-- PingOne populations map to tenants only when they represent customer organizations, realms, or
-  isolated user communities.
-- Population IDs in claims, database rows, or route params may indicate tenant routing, but they may
-  also be segmentation or policy state. Confirm before creating tenants.
-- PingOne users belong to exactly one population; do not create multi-tenant Descope membership
-  unless the app has a confirmed multi-organization model.
-- Groups used for app access, permissions, admin capability, or authorization claims map to
-  project-level or tenant-level roles.
-- Groups used for filtering, personalization, cohorts, regions, reporting, plans, or lifecycle state
-  map to custom attributes or Flow/app conditions.
-- Dynamic groups require source attributes and recreated rules, not just imported current members.
-- External IdP, LDAP, or directory groups should remain authoritative through SSO/SCIM group-to-role
-  mappings.
-- Nested groups usually need flattened effective access unless the hierarchy itself is required.
+Collect hierarchy evidence here; classify it using the tables in
+[implementation-nuances.md -> Hierarchy and Object Mapping](./implementation-nuances.md#hierarchy-and-object-mapping).
+Population IDs in claims, database rows, or route params may indicate tenant routing, but they may
+also be segmentation or policy state - confirm before creating tenants.
 
 Search for:
 
@@ -292,6 +254,9 @@ If the app uses a generic OIDC client with no Ping SDK login/session dependency,
 
 - Update issuer/authority to Descope
 - Update client ID/secret if the protocol integration requires it
+- Treat PingOne OIDC Web and SPA application records as the same OIDC Federated App migration
+  surface - see
+  [Federated App / Protocol-Config Migration](./implementation-nuances.md#federated-app--protocol-config-migration)
 - Update redirect/logout URLs
 - Update JWKS/discovery settings
 - Update expected claims
@@ -301,7 +266,11 @@ SAML hints:
 
 - `saml`, `metadata`, `acs`, `entityId`, `x509`, `certificate`, `NameID`
 - Customer SSO may be configured in PingOne rather than in repo code
+- PingOne External IdPs may appear in login, identifier-first, or external-IdP authentication policy
+  steps rather than application code
 - Map customer SSO to Descope tenant SSO / SSO Setup Suite only when the customer organization model is confirmed
+- Map customer/org External IdPs to Descope tenant-level SSO connections; map consumer/social IdPs
+  to Descope social login
 
 ## DaVinci Hints
 

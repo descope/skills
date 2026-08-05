@@ -13,7 +13,7 @@
 - [User Migration and Password Cutover](#user-migration-and-password-cutover)
 - [Framework Notes](#framework-notes)
 - [Console-First Decisions](#console-first-decisions)
-- [Testing Notes](#testing-notes)
+- [Production Cutover Notes](#production-cutover-notes)
 
 ## Path Selection
 
@@ -22,7 +22,7 @@ Choose a path from evidence, not from provider preference.
 | Path | Use when | Main work | Risk |
 |---|---|---|---|
 | Path A: Federated App / protocol-config migration | App uses generic OIDC/OAuth/SAML libraries and no Ping SDK in that client | Configure Descope OIDC or SAML Federated App; repoint issuer/metadata/JWKS/SAML metadata/client config to Descope; update claims | Do not use this to keep Ping mobile/OIDC SDK code and point it at Descope. |
-| Path B: Descope web Client SDK or Mobile SDK + Flow migration | Web/mobile app imports Ping Orchestration/OIDC SDKs or DaVinci SDK/widget code, renders custom auth UI, or directly handles auth calls | Use Descope web Client SDK/web component for web, or Descope Mobile SDK for Swift/Kotlin/Flutter/React Native; embed or invoke Flow; validate sessions where backend validation exists | Ping SDKs must be replaced; do not invent Python/Go/Node/Java/.NET Ping SDK swaps. |
+| Path B: Descope web Client SDK or Mobile SDK + Flow migration | Web/mobile app imports Ping Orchestration/OIDC SDKs or DaVinci SDK/widget code, renders custom auth UI, or directly handles auth calls | Use Descope web Client SDK/web component for web, or Descope Mobile SDK Native Flows for Swift/Kotlin/Flutter/React Native; validate sessions where backend validation exists | Ping SDKs must be replaced; do not invent Python/Go/Node/Java/.NET Ping SDK swaps. |
 | Path C: Journey/config migration | PingOne authentication policies or DaVinci flows define most behavior | Recreate journeys in Descope Flows + Connectors | Repo may not contain the important logic; request PingOne/DaVinci exports. |
 | Mixed | Multiple apps/services use different integration styles | Execute per surface | Requires careful cutover sequencing and token validation updates across services. |
 
@@ -30,15 +30,26 @@ Descope Client SDKs are web SDKs: Web JS, React, Vue, Angular, and Next.js. Desc
 Swift/iOS, Kotlin/Android, Flutter, and React Native. Ping Orchestration/OIDC SDK findings in Swift,
 Kotlin, or React Native should map to Descope Mobile SDK work, not "client SDK" work.
 
+For mobile auth replacement, recommend Descope Mobile SDK Native Flows by default. Ping mobile SDK
+code is not always redirect-only: Ping OIDC Redirect modules are centralized-login/redirect
+oriented, while Ping DaVinci orchestration modules can drive embedded, server-driven native app UI
+through collectors/nodes.
+Ping DaVinci SDK integrations render flow inputs using application-owned native UI components.
+Descope Native Flows embed a hosted Descope Flow in an in-app WebView. The experience is embedded in
+both cases, but migration replaces Ping collector-rendering code with Descope's native flow view
+integration rather than translating each collector directly.
+
 Reference the current Descope SDK terminology before writing SDK guidance:
 
 - `https://docs.descope.com/client-sdk`
 - `https://docs.descope.com/mobile-sdk`
+- `https://docs.descope.com/mobile-sdk/native-vs-browser-flows`
 
-Ping Orchestration SDKs are client-side/mobile SDKs for Kotlin/Android, Swift/iOS,
-JavaScript/TypeScript, and React Native TypeScript. Backend Python, Go, Node server, Java, and .NET
-code may still contain PingOne OIDC/SAML config, token validation, claims, REST/API calls, cookies,
-or authorization logic, but it should not be treated as Ping orchestration SDK usage.
+**Ping SDK platform scope (applies throughout this document).** Ping Orchestration SDKs are
+client-side/mobile SDKs for Kotlin/Android, Swift/iOS, JavaScript/TypeScript, and React Native
+TypeScript only. There is no Ping orchestration SDK to replace in Python, Go, Node server, Java, or
+.NET; that code may still contain PingOne OIDC/SAML config, token validation, claims, REST/API
+calls, cookies, or authorization logic, and should be migrated as such.
 
 Prioritize Swift/iOS and Kotlin/Android SDK evidence when it exists. These native SDKs are often
 the most important Ping client footprint in CIAM migrations, especially when PingOne Protect or
@@ -64,11 +75,14 @@ Inventory:
 
 Typical changes:
 
-- For PingOne OIDC Web applications, create/configure a Descope OIDC Federated Application.
+- For PingOne OIDC Web and SPA applications, create/configure a Descope OIDC Federated Application.
+  OIDC Web apps are confidential clients; SPA apps are public clients. Use the Descope Federated App
+  client/auth type toggle to match that behavior.
 - For PingOne SAML applications, create/configure a Descope SAML Federated Application.
 - Replace PingOne issuer/authority/discovery with Descope's OIDC Federated App issuer/discovery.
 - Replace PingOne SAML metadata/certificate/SSO URL with Descope's SAML Federated App metadata.
-- Replace PingOne client credentials with Descope OIDC Federated App values when required by the framework.
+- Replace PingOne client settings with Descope OIDC Federated App values when required by the
+  framework. Do not add a client secret to SPA/browser code.
 - Update allowed redirect, ACS, and logout URLs in Descope Console.
 - Update JWKS/discovery references or SAML certificate/assertion validation.
 - Update claim expectations and tests.
@@ -87,28 +101,33 @@ backend service validates PingOne tokens.
 Target the correct Descope SDK family:
 
 - Web apps: Descope web Client SDKs or web components.
-- Mobile apps: Descope Mobile SDKs for Swift/iOS, Kotlin/Android, Flutter, or React Native.
+- Mobile apps: Descope Mobile SDK Native Flows for Swift/iOS, Kotlin/Android, Flutter, or React
+  Native.
 - Ping mobile/OIDC SDK imports: replace the SDK. Do not keep Ping SDK and swap discovery endpoint,
   issuer, client ID, or redirect URI to Descope.
 
-Native mobile checkpoint:
+Native mobile checkpoint - use `pingone-detection-patterns.md` for the Swift/Kotlin symbol
+inventory, then:
 
-- Swift/iOS: look for `PingOrchestrate`, `PingOidc`, `PingProtect`, `PingOneProtect`,
-  `PingBrowser`, `PingLogger`, `OidcWebClient`, `createOidcWebClient`, `authorize`,
-  `discoveryEndpoint`, `browserMode`, `browserType`, and `acrValues`.
-- Kotlin/Android: look for Ping Android SDK or DaVinci client Gradle dependencies, `PingProtect`,
-  `com.pingidentity.oidc.OidcWeb`, `com.pingidentity.oidc.module.Oidc`, `Logger.STANDARD`,
-  `OidcWeb`, `module(Oidc)`, `web.authorize`, `viewModelScope.launch`, `MutableStateFlow`,
-  `onSuccess`, `onFailure`, `orchestrate`, `oidc`, `protect`, device ID, device profiling,
-  `Journey`, `Node`, `ContinueNode`, `SuccessNode`, and `FailureNode`.
-- If these apps collect Protect/device context, preserve the risk-signal purpose in Descope Flows,
+- If the app collects Protect/device context, preserve the risk-signal purpose in Descope Flows,
   fingerprinting, and Fraud & Risk Connectors instead of treating the code as generic login UI.
+- Whether the Ping side is mobile OIDC Redirect/centralized login or embedded DaVinci orchestration,
+  both migrate to Descope Mobile SDK Native Flows unless the user explicitly chooses a non-Flow
+  mobile SDK implementation.
+- Ping DaVinci collector-based native UI: remove the app's collector renderer and integrate the
+  Descope Native Flow view. Recreate journey screens, conditions, connectors, and actions in
+  Descope Flow Builder, not one collector component at a time.
+- Ping OIDC Sign-on / centralized browser login: migrate to Descope Native Flows by default. Use a
+  mobile browser flow / browser handoff only when a specific auth method, SSO cookie behavior, or
+  product requirement needs external/system browser behavior.
 
 Web/mobile responsibilities:
 
-- Render or invoke Descope Flow with the correct web Client SDK, web component, or Mobile SDK.
+- Render or invoke Descope Flow with the correct web Client SDK, web component, or Mobile SDK Native
+  Flow integration.
 - Use only public Project ID in browser code.
-- Handle success/error redirects.
+- Handle success/error states, deep links, and any external browser handoff required by specific
+  auth methods.
 - Read UI auth state through Descope web/mobile SDK helpers rather than decoding JWTs in UI code.
 - Trigger logout through the web Client SDK or Mobile SDK when appropriate.
 
@@ -206,11 +225,18 @@ PingOne Worker apps are primarily service/admin API clients. Treat them separate
 sign-in applications. They usually use client credentials and administrator role assignments to call
 PingOne platform APIs, and they are not a login Flow or Federated App migration target.
 
+If an application currently uses a PingOne Worker application to access the PingOne Management API,
+replace that authentication mechanism with a Descope Management Key when migrating to Descope. In
+PingOne, the Worker app uses a Client ID and Client Secret to obtain a short-lived access token
+through the OAuth 2.0 Client Credentials flow, then uses that token to call PingOne Management APIs.
+In Descope, management applications authenticate directly with a Management Key. There is no Client
+Credentials token exchange.
+
 Map Worker app usage by intent:
 
 | PingOne Worker app use | Descope target | Notes |
 |---|---|---|
-| Manage Descope resources after migration: users, tenants, roles, SSO/SCIM, FGA, imports | Descope Management API with `DESCOPE_MANAGEMENT_KEY` | Management Key is an admin secret. Keep it server-side only. |
+| Manage Descope resources after migration: users, tenants, roles, SSO/SCIM, FGA, imports | Descope Management API with `DESCOPE_MANAGEMENT_KEY` | Replace PingOne Worker Client ID/Secret and client_credentials token exchange. Management Key is an admin secret; keep it server-side only. |
 | Authenticate a machine/service to your own app APIs | Descope Access Keys / M2M | Access Keys are not the same as Management Keys; use them for service auth to your own systems. |
 | Temporary PingOne export/migration script | PingOne Worker credentials for source reads + Descope Management API for target writes | Remove or rotate PingOne Worker credentials after cutover. |
 | PingOne Authorize automation | Descope RBAC/FGA Management API or app-side authorization review | Requires authorization model review. |
@@ -279,34 +305,17 @@ Decide before cutover and exercise the selected Flow path in dev/staging dry run
 
 ## Framework Notes
 
-### Swift / iOS
+### Swift / iOS and Kotlin / Android
 
-- Treat Swift Ping SDK imports as high-signal Path B evidence, especially in customer login,
-  PingOne Protect, or device-context flows.
-- Inventory `PingOrchestrate`, `PingOidc`, `PingProtect`/`PingOneProtect`, `PingBrowser`,
-  `PingLogger`, `OidcWebClient`, `createOidcWebClient`, `authorize`, `discoveryEndpoint`,
-  `browserMode`, `browserType`, and `acrValues`.
-- For Swift apps using Ping OIDC/Orchestration SDKs, replace Ping SDK with the Descope Swift Mobile
-  SDK. Do not keep `PingOidc`, `OidcWebClient`, or Ping discovery/client configuration and point it
-  at Descope.
-- For Protect/device collection, preserve the risk context and decision path with Descope
-  fingerprinting, Fraud & Risk Connectors, and Flow conditions.
+Symbol inventory: `pingone-detection-patterns.md`. Both platforms follow the same migration rules.
 
-### Kotlin / Android
-
-- Treat Kotlin/Android Ping SDK imports and Gradle dependencies as high-signal Path B evidence,
-  especially in customer login, PingOne Protect, device ID, or device profiling flows.
-- Inventory Ping Android SDK or DaVinci client dependencies, `com.pingidentity.oidc.OidcWeb`,
-  `com.pingidentity.oidc.module.Oidc`, `com.pingidentity.logger.Logger`, `Logger.STANDARD`,
-  `OidcWeb`, `module(Oidc)`, OIDC `clientId`, `discoveryEndpoint`, `scopes`, `redirectUri`,
-  `web.authorize`, `viewModelScope.launch`, `MutableStateFlow`, `onSuccess`, `onFailure`,
-  `PingProtect`, `orchestrate`, `oidc`, `protect`, device ID, device profiling, `Journey`, `Node`,
-  `ContinueNode`, `SuccessNode`, and `FailureNode`.
-- For sample-shaped code using `OidcWeb { module(Oidc) { ... } }`, classify it as mobile OIDC
-  login first, then separately check whether Protect/device profiling modules are present.
-- For Android apps using Ping OIDC/Orchestration SDKs, replace Ping SDK with the Descope Kotlin
-  Mobile SDK. Do not keep `OidcWeb`, `module(Oidc)`, or Ping discovery/client configuration and
+- Treat Ping SDK imports and Gradle/SPM dependencies as high-signal Path B evidence, especially in
+  customer login, PingOne Protect, device ID, or device profiling flows.
+- Replace the Ping SDK with the Descope Swift or Kotlin Mobile SDK and Native Flows. Do not keep
+  `PingOidc`/`OidcWebClient`/`OidcWeb`/`module(Oidc)` or Ping discovery/client configuration and
   point it at Descope.
+- For sample-shaped code such as `OidcWeb { module(Oidc) { ... } }`, classify it as mobile OIDC
+  login first, then separately check whether Protect/device profiling modules are present.
 - For Protect/device collection, preserve the risk context and decision path with Descope
   fingerprinting, Fraud & Risk Connectors, and Flow conditions.
 
@@ -324,8 +333,8 @@ Decide before cutover and exercise the selected Flow path in dev/staging dry run
 
 - If the app currently validates PingOne JWTs with `jwks-rsa`, `jose`, or framework middleware,
   update issuer/JWKS/audience/claims.
-- Ping does not provide a Node server orchestration SDK to replace. Treat Node API work as token
-  validation, cookies, claims, REST/API calls, or Management API automation.
+- Treat Node API work as token validation, cookies, claims, REST/API calls, or Management API
+  automation.
 - If using Descope SDK validation, verify the exact `validateSession` API with MCP.
 - Parse cookies explicitly if session tokens are cookie-based.
 - Preserve public/protected route semantics from existing middleware.
@@ -334,17 +343,15 @@ Decide before cutover and exercise the selected Flow path in dev/staging dry run
 
 - Generic OIDC libraries can often use Path A.
 - Custom JWT validators must update issuer/JWKS/audience checks.
-- Ping does not provide a Python orchestration SDK to replace. Do not add Descope Python SDK as a
-  direct Ping replacement; use it only if the migration explicitly needs Descope session validation
-  or Management API work, and verify method names before code generation.
+- Add the Descope Python SDK only if the migration explicitly needs Descope session validation or
+  Management API work, and verify method names before code generation.
 - Django middleware/auth backends may need claim-to-user adapter updates.
 
 ### Go
 
 - Generic `go-oidc` integrations often fit Path A.
 - Update issuer provider, OAuth2 config, JWKS verifier, expected audience, and claim structs.
-- Ping does not provide a Go orchestration SDK to replace. Do not add Descope Go SDK as a direct
-  Ping replacement; use it only if the migration explicitly needs Descope session validation or
+- Add the Descope Go SDK only if the migration explicitly needs Descope session validation or
   Management API work, and verify method names before code generation.
 
 ### Java / Spring
@@ -352,15 +359,15 @@ Decide before cutover and exercise the selected Flow path in dev/staging dry run
 - Spring Security OAuth2 Resource Server or OIDC Login configs may use Path A.
 - Update `issuer-uri`, `jwk-set-uri`, client registration, scopes, and claim mappers.
 - If roles are mapped from claims, update authorities conversion.
-- Ping does not provide a Java orchestration SDK to replace. Treat Java work as OIDC/resource server
-  config, claims, authority mapping, or Descope validation/Management API only if needed.
+- Treat Java work as OIDC/resource server config, claims, authority mapping, or Descope
+  validation/Management API only if needed.
 
 ### .NET
 
 - ASP.NET OpenIdConnect and JwtBearer configs may use Path A.
 - Update `Authority`, `Audience`, metadata address, callback paths, and claim mappings.
-- Ping does not provide a .NET orchestration SDK to replace. Treat .NET work as protocol config,
-  token validation, claims, cookies, or Descope Management API only if needed.
+- Treat .NET work as protocol config, token validation, claims, cookies, or Descope Management API
+  only if needed.
 - Keep Management Key out of client/browser code.
 
 ## Console-First Decisions
@@ -375,6 +382,7 @@ Before writing custom code, ask whether the feature should be handled in Console
 | Risk/adaptive auth | Descope fingerprinting `riskInfo` signals + Fraud & Risk Connectors + Flow conditions |
 | Identity verification | Flow step + external provider connector if needed |
 | Social login | Social provider config + Flow |
+| PingOne External IdP for customer/org SSO | Tenant SSO connection / SSO Setup Suite |
 | Customer SSO setup | Tenant SSO / SSO Setup Suite |
 | Customer provisioning | Tenant SCIM/provisioning |
 | User profile management | User Profile Widget |
@@ -384,32 +392,9 @@ Before writing custom code, ask whether the feature should be handled in Console
 The clean migration is often less code than the PingOne implementation because journey behavior moves
 into Descope Flows.
 
-## Testing Notes
+## Production Cutover Notes
 
-Compile/static checks first:
-
-- TypeScript: `npx tsc --noEmit`
-- Python: project test command plus import check
-- Go: `go test ./...`
-- Java: `mvn test` or Gradle equivalent
-- .NET: `dotnet test`
-
-Auth smoke tests:
-
-- Unauthenticated protected route returns 302/401, not 500.
-- Login page renders Descope component or OIDC redirect starts.
-- Successful login creates a Descope session.
-- API validates Descope token and rejects missing/invalid tokens.
-- Expected claims appear only after JWT Template configuration.
-- Logout clears local session and invalidates refresh token if applicable.
-- User profile displays expected fields.
-- MFA/step-up triggers in the expected branch.
-- Social login provider works in dev/staging.
-- Customer SSO routes to the right tenant/IdP.
-- SCIM/provisioning updates users after cutover.
-- Webhook/event handlers receive and validate Descope events.
-
-Production cutover notes:
+Compile checks and auth smoke tests are in `SKILL.md` Step 5. Cutover-specific notes:
 
 - Run user import dry run in dev/staging first.
 - Confirm the password cutover decision - see [User Migration and Password Cutover](./implementation-nuances.md#user-migration-and-password-cutover).
