@@ -218,6 +218,34 @@ Guides self-service migrations from Stytch to Descope across any language or fra
 
 </details>
 
+<details>
+<summary><b>pingone-to-descope</b> — Migrate PingOne CIAM to Descope</summary>
+
+Guides self-service migrations from **PingOne for Customers / PingOne CIAM** to Descope. CIAM-only: it first confirms customer-identity scope, then inventories PingOne surfaces (apps, populations, policies, DaVinci, Protect, Verify, SSO/SCIM), analyzes the codebase, produces a reviewed `MIGRATION-PLAN.md`, and executes only after approval. Uses the Descope Docs MCP when available to verify SDK method names and option shapes. Stops for workforce IAM, PingFederate, PingDirectory, PingAccess, PingID, or ForgeRock/AIC unless those are explicitly in scope.
+
+**Use when:**
+- "Migrate PingOne to Descope" / "PingOne CIAM to Descope"
+- "Replace PingOne for Customers with Descope"
+- "Move DaVinci flows to Descope"
+- "How do PingOne populations / Protect / Verify / customer SSO map to Descope?"
+- "We're moving off PingOne"
+
+**Covers:**
+- Path selection: Federated App / protocol-config swap, Descope SDK + Flow, or journey/config (DaVinci/policies) migration — mixed paths supported
+- Feature mappings: Applications → Federated Apps or SDK/Flow; Populations → Tenants / attributes / Flow branches (not automatic tenants); Auth policies & DaVinci → Descope Flows; MFA → Flow MFA/step-up; Protect → fingerprinting `riskInfo` + Fraud & Risk Connectors; Verify → external IDV (e.g. Incode) via Flow; Customer SSO/SCIM → tenant SSO / SCIM; Authorize → RBAC/FGA or app-side authz; Worker apps → Management API or Access Keys/M2M
+- Client orchestration SDK replacement where present (Swift/iOS, Kotlin/Android, JS/TS, React Native) and protocol/token validation updates for backends without Ping SDKs
+- User export/import with password cutover (no PingOne password/hash export — first-login reset or passwordless)
+- Console-first setup: Flows, Widgets, JWT Templates, SSO Setup Suite, tenants
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- Code/config changes across confirmed auth touchpoints
+- Descope Flow, Federated App, and Console configuration guidance
+
+**Workflow:** MCP check → CIAM scope guard → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
 
 <details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
