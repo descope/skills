@@ -3,6 +3,7 @@
 ## Contents
 
 - [Search Groups](#search-groups)
+- [Worker App Setup for API Discovery](#worker-app-setup-for-api-discovery)
 - [PingOne Read-Only API Discovery Routes](#pingone-read-only-api-discovery-routes)
 - [Package and Import Hints](#package-and-import-hints)
 - [Environment Variable Hints](#environment-variable-hints)
@@ -80,12 +81,23 @@ grep -rni "webhook\|event\|notification\|audit\|user.created\|user.updated\|user
   . 2>/dev/null
 ```
 
+## Worker App Setup for API Discovery
+
+When the user opts into PingOne API discovery, `SKILL.md` contains the user-facing setup block to
+show before reading any local credentials. Use a temporary Worker application for source inventory,
+grant only the minimum read-only roles available, obtain a short-lived access token, and have the
+user store it in an uncommitted `.env` file as `PINGONE_API_ACCESS_TOKEN` with `PINGONE_API_PATH`
+and one or more environment IDs. Read the token only after explicit user confirmation, never print
+or persist it, use only read-only `GET` calls, and ask for manual exports or screenshots instead if
+read-only PingOne access is not available.
+
 ## PingOne Read-Only API Discovery Routes
 
-Use these route skeletons only when the user opts into PingOne API discovery after the Descope MCP
-check. Confirm `apiPath`, `envID`, credentials, region, and permissions from the user's PingOne
-tenant. After any required OAuth token acquisition, use only read-only `GET` calls; do not create,
-update, delete, disable, import, or rotate anything in PingOne during discovery.
+Use these route skeletons only when the user opts into PingOne API discovery during early source
+configuration triage and confirms the local `.env` token is ready to read. Confirm `apiPath`,
+`envID`, credentials, region, and permissions from the user's PingOne tenant. After any required
+OAuth token acquisition, use only read-only `GET` calls; do not create, update, delete, disable,
+import, or rotate anything in PingOne during discovery.
 
 All routes in this section use Authorization type `Bearer {{accessToken}}`.
 

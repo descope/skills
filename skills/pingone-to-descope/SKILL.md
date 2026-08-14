@@ -17,7 +17,7 @@ description: >
 This skill guides migrations from PingOne for Customers / PingOne CIAM to Descope. It runs in
 three parts:
 
-1. **MCP Check** - confirm whether the Descope MCP Server is available, then resolve optional PingOne API discovery
+1. **MCP Check** - confirm whether the Descope MCP Server is available
 2. **Migration Plan** - confirm CIAM scope, triage PingOne surfaces, analyze the codebase, and write `MIGRATION-PLAN.md`
 3. **Execution** - only after the user reviews the plan, execute with `MIGRATION-STATE.md` continuity
 
@@ -117,58 +117,6 @@ they want to install it first:
 
 Do not proceed to Part 2 until this step is resolved.
 
-## Part 1.5: Optional PingOne API Discovery (BLOCKING CHOICE)
-
-After the Descope MCP check is resolved and before Part 2 planning, ask whether the user wants to
-use PingOne read-only APIs to inventory the source organization, population, group, and role model.
-Use `AskUserQuestion`:
-
-> Do you want to use PingOne APIs to pull current populations, groups, memberships/counts, roles,
-> applications, and resources before writing the migration plan?
-
-Explain the tradeoff:
-
-- **Yes:** use live PingOne data to recommend the Descope organization structure, tenant strategy,
-  role/group mapping, claims, and authorization model with higher confidence.
-- **No:** continue with repo evidence and manual answers only; mark hierarchy and role mapping
-  confidence lower when evidence is incomplete.
-
-If the user says yes:
-
-1. Ask for PingOne environment ID(s), region/API host or issuer, and a secure way to use an access
-   token or Worker app credentials with read permissions. Do not paste secrets into `MIGRATION-PLAN.md`.
-2. After any required OAuth token acquisition, use Authorization type `Bearer {{accessToken}}` and
-   only read-only `GET` discovery calls against
-   PingOne management resources. Use `references/pingone-detection-patterns.md` ->
-   "PingOne Read-Only API Discovery Routes" for route skeletons. Do not create, update, delete,
-   disable, import, or rotate anything in PingOne during discovery.
-3. Prefer metadata and counts before full user export. Do not export full user profiles unless the
-   migration plan actually requires user import analysis.
-4. Pull and summarize, as available:
-   - Environments and applications, including application type and assigned policies/flows.
-   - Populations, default population, population names/IDs, descriptions, and user counts.
-   - Groups, whether each group is environment-level or population-level, external vs internal,
-     static vs dynamic, `userFilter`, nested/effective membership indicators, and member counts.
-   - Role assignments, permissions, entitlements, Resources/scopes, and claims that affect customer
-     authorization. Treat PingOne admin roles as migration evidence only when they affect customer
-     administration or app authorization; otherwise keep them out of the CIAM mapping.
-   - External IdPs, customer SSO/SCIM, and group-to-role or group-to-attribute mappings, if visible.
-   If direct API access is not available, ask the user for equivalent JSON/CSV exports or console
-   screenshots and mark discovery as partial.
-5. Use the API facts directly in the Descope hierarchy recommendation:
-   - Populations with real customer/org boundaries, SSO/SCIM, delegated admins, data isolation, or
-     app account boundaries are tenant candidates.
-   - Populations that only represent region, policy, lifecycle, product, or reporting segments are
-     attributes, Flow branches, project strategy, or no Descope object.
-   - Population-level access groups often become tenant roles or tenant-scoped attributes.
-   - Environment-level access groups may become project roles, global attributes, FGA/app logic, or
-     JWT claims depending on enforcement.
-   - Dynamic groups usually become source attributes plus Flow conditions, ABAC/FGA, or app logic.
-   - External groups usually remain authoritative through SSO/SCIM group mapping.
-
-If PingOne API discovery finds employee/workforce products or non-CIAM populations/apps, treat that
-as scope evidence and apply the CIAM scope guard before continuing.
-
 ## Part 2: Migration Plan
 
 Part 2 has four blocking phases:
@@ -197,7 +145,11 @@ Use `AskUserQuestion` to gather:
 1. Backend language/framework.
 2. Migration goal: full cutover, phased/incremental, or evaluating.
 3. Existing user base: active production users, staging/dev only, or starting fresh.
-4. PingOne CIAM capabilities in use, as a multi-select:
+4. Source configuration discovery method:
+   - PingOne API discovery from a local `.env` access token
+   - Manual PingOne Console/configuration evidence through typed details, exports, or screenshots
+   - Skip source configuration discovery for now
+5. PingOne CIAM capabilities in use, as a multi-select:
    - OIDC/OAuth application login
    - Embedded/custom login UI
    - iOS Swift Ping Orchestration/OIDC SDK
@@ -225,6 +177,78 @@ Use `AskUserQuestion` to gather:
    - Custom claims
    - Webhooks/events
    - Other
+
+Resolve the source configuration discovery method before Step 1 codebase analysis:
+
+- **If the user chooses PingOne API discovery**, show this exact setup guidance and wait until the
+  user says the `.env` file is ready and the agent may read it:
+
+```markdown
+To use PingOne API discovery safely, please set up a temporary read-only Worker application for source inventory.
+
+1. In PingOne Admin Console, go to Applications -> Applications and create or select a Worker application.
+2. Keep it for discovery only. Worker apps are service/admin API clients; they are not customer login applications.
+3. Grant the minimum read-only roles needed for inventory:
+   - Configuration Read Only for environment/application/config discovery, where available.
+   - Identity Data Read Only for populations, groups, and user-count style discovery, where available.
+   - DaVinci Admin Read Only only if DaVinci flow inventory is needed.
+   - Avoid write-capable admin roles unless your PingOne tenant has no read-only alternative. If read-only access is not possible, use manual exports or screenshots instead.
+4. Enable the Worker application and use Client Credentials to obtain a short-lived access token. You can either use PingOne Console's Get Access Token action, if available, or your normal token endpoint workflow.
+5. Store the token in a local, uncommitted `.env` file in this repo:
+
+PINGONE_API_ACCESS_TOKEN=...
+PINGONE_API_PATH=https://api.pingone.com
+PINGONE_ENVIRONMENT_ID=...
+
+For multiple environments, use:
+
+PINGONE_ENVIRONMENT_IDS=env1,env2,env3
+
+6. Tell me when the `.env` file is ready and that I may read it.
+7. I will only use read-only GET requests with `Authorization: Bearer $PINGONE_API_ACCESS_TOKEN`. I will not create, update, delete, disable, import, rotate, or mutate anything in PingOne.
+8. Do not commit this `.env` file. After discovery, revoke or rotate the token/Worker credentials.
+```
+
+  After the user confirms, read only the needed local `.env` values. Do not print secrets, write
+  them to `MIGRATION-PLAN.md`, or store them in `MIGRATION-STATE.md`. Use Authorization type
+  `Bearer {{accessToken}}` and only read-only `GET` calls from
+  `references/pingone-detection-patterns.md` -> "PingOne Read-Only API Discovery Routes".
+  Prefer metadata and counts before full user export. Do not create, update, delete, disable,
+  import, rotate, or mutate anything in PingOne during discovery.
+
+- **If the user declines API discovery**, ask this follow-up:
+
+```markdown
+No problem. Do you want to provide PingOne Console configuration manually instead?
+
+Useful evidence can be typed, exported, or shared as screenshots:
+- Applications and application types
+- Populations and what each represents
+- Groups, dynamic groups, and group membership purpose
+- Custom roles, permissions, entitlements, and claims
+- Resources and scopes
+- Sign-on policies or DaVinci flow screenshots
+- External IdPs, customer SSO, and SCIM configuration
+```
+
+- **If the user skips source configuration discovery**, continue with repo evidence and mark
+  hierarchy, group, role, SSO/SCIM, and authorization mapping confidence lower when evidence is
+  incomplete.
+
+Use API or manual console facts directly in the Descope hierarchy recommendation:
+
+- Populations with real customer/org boundaries, SSO/SCIM, delegated admins, data isolation, or
+  app account boundaries are tenant candidates.
+- Populations that only represent region, policy, lifecycle, product, or reporting segments are
+  attributes, Flow branches, project strategy, or no Descope object.
+- Population-level access groups often become tenant roles or tenant-scoped attributes.
+- Environment-level access groups may become project roles, global attributes, FGA/app logic, or
+  JWT claims depending on enforcement.
+- Dynamic groups usually become source attributes plus Flow conditions, ABAC/FGA, or app logic.
+- External groups usually remain authoritative through SSO/SCIM group mapping.
+
+If PingOne API or manual console discovery finds employee/workforce products or non-CIAM
+populations/apps, treat that as scope evidence and apply the CIAM scope guard before continuing.
 
 After triage, summarize the likely migration path:
 
@@ -319,14 +343,15 @@ Write 2-3 sentences explaining what PingOne CIAM behavior is being replaced by D
 State why this appears to be customer identity, not workforce IAM. If uncertain, list what evidence
 is missing.
 
-#### PingOne API Discovery
+#### Source Configuration Discovery
 
-Include this section if the user accepted or attempted PingOne API discovery. State whether discovery
-was completed, partially completed, or unavailable. List the read-only objects queried, such as
-environments, applications, populations, groups, group membership counts, dynamic group filters,
-roles/permissions, Resources/scopes, external IdPs, SSO, or SCIM. Summarize the API-derived
-organization recommendation for Descope: project strategy, tenant candidates, attributes, Flow
-branches, role/group mappings, and any remaining uncertainties.
+State which source-discovery method was used: PingOne API discovery, manual Console/configuration
+evidence, repo-only evidence, or a partial mix. If API discovery was used, list only the read-only
+objects queried, such as environments, applications, populations, groups, group membership counts,
+dynamic group filters, roles/permissions, Resources/scopes, external IdPs, SSO, or SCIM. If manual
+evidence was used, list the typed details, exports, or screenshots reviewed. Summarize what this
+evidence implies for Descope project strategy, tenant candidates, attributes, Flow branches,
+role/group mappings, and any remaining uncertainties.
 
 #### PingOne Surfaces Found
 
@@ -346,8 +371,8 @@ Use this table:
 | Population | Tenant, custom attribute, Flow branch, project split, or no object | [population ID/name usage, SSO/SCIM scope, app data boundary] | [classification result] |
 | Group | Tenant role, project role, custom attribute, dynamic rule, SSO/SCIM mapping, FGA/app logic, or no object | [group usage in claims, authz, SSO/SCIM, policies, app code] | [classification result] |
 
-Classify populations and groups using Step 3. Prefer PingOne API discovery facts when available, but
-do not automatically map populations to tenants or groups to roles.
+Classify populations and groups using Step 3. Prefer PingOne API or manual Console discovery facts
+when available, but do not automatically map populations to tenants or groups to roles.
 
 #### Migration Path
 
@@ -449,7 +474,7 @@ changes.
 Include applicable risks:
 
 - Workforce IAM out of scope
-- PingOne API discovery declined, unavailable, or partial; hierarchy and role mapping confidence may be lower
+- Source configuration discovery declined, unavailable, or partial; hierarchy and role mapping confidence may be lower
 - Populations are not automatically tenants
 - Groups are not automatically roles
 - DaVinci flows may hide important journey logic outside the app repo
@@ -508,7 +533,7 @@ _Last updated: [timestamp of last completed step]_
 
 ## PingOne Surfaces in Use
 - Applications: [confirmed / not found]
-- PingOne API discovery: [accepted/completed / accepted/partial / declined / not available]
+- Source configuration discovery: [API completed / API partial / manual Console evidence / repo-only / skipped]
 - Worker apps/admin API automation: [confirmed / not found]
 - Authentication policies: [confirmed / not found]
 - DaVinci flows: [confirmed / not found]
@@ -518,12 +543,12 @@ _Last updated: [timestamp of last completed step]_
 - Authorize/roles/claims: [confirmed / not found]
 
 ## Populations Mapping
-- API evidence used: [yes/no] - [objects queried or reason not used]
+- Source evidence used: [API routes / manual Console evidence / repo evidence / not available]
 - [population name/id]: [Tenant / custom attribute / Flow branch / project split / no object / unknown] - [rationale]
 - Tenant membership model: [one tenant per migrated user from original population / multi-tenant membership confirmed / unknown]
 
 ## Groups Mapping
-- API evidence used: [yes/no] - [objects queried or reason not used]
+- Source evidence used: [API routes / manual Console evidence / repo evidence / not available]
 - [group name/id]: [tenant role / project role / custom attribute / dynamic rule / SSO-SCIM group mapping / FGA-ReBAC / app-side logic / no object / unknown] - [rationale]
 - Dynamic groups: [source attributes and recreated rule, or not applicable]
 - External directory groups: [authoritative source and group-to-role mapping, or not applicable]
