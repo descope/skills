@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Descope authentication, authorization, migration, and security skills for Cursor",
-    "version": "1.1.9"
+    "version": "1.1.11"
   },
   "plugins": [
     {

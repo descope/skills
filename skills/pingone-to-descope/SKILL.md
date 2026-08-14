@@ -514,7 +514,7 @@ for each step.
 
 Context can be lost between turns. These rules keep the migration coherent.
 
-**Step 3.0 - Create `MIGRATION-STATE.md` before touching any code.**
+**Rule 1 - Create `MIGRATION-STATE.md` before touching any code.**
 
 Write `MIGRATION-STATE.md` to the working directory from the template below. It is the source of
 truth for migration state - keep it current throughout execution.
@@ -599,12 +599,12 @@ _(none yet)_
 
 ---
 
-**Rule 1 - Re-read before every turn.**
+**Rule 2 - Re-read before every turn.**
 
 At the start of every execution turn, re-read `MIGRATION-PLAN.md` and `MIGRATION-STATE.md` before
 writing code or making a migration decision.
 
-**Rule 2 - Verify context before every code change.**
+**Rule 3 - Verify context before every code change.**
 
 If the framework, migration path, triage answers, population mapping, or next step are not clear
 from the conversation, re-read both files before proceeding. Then output a context line:
@@ -613,7 +613,7 @@ from the conversation, re-read both files before proceeding. Then output a conte
 
 If this line cannot be filled in accurately, re-read the files first.
 
-**Rule 3 - Update `MIGRATION-STATE.md` immediately after each step.**
+**Rule 4 - Update `MIGRATION-STATE.md` immediately after each step.**
 
 Mark files done in the Files Inventory, update Current Phase and Next Action, and append any
 non-obvious decision to the Decisions Log before moving on.
