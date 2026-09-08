@@ -246,6 +246,35 @@ Guides self-service migrations from **PingOne for Customers / PingOne CIAM** to 
 
 </details>
 
+<details>
+<summary><b>frontegg-to-descope</b> — Migrate applications from Frontegg to Descope</summary>
+
+Guides self-service migrations from Frontegg to Descope across any language or framework. Frontegg is a B2B SaaS identity platform spanning hosted and embedded login, Accounts (tenants), Environments, Applications, a broad end-customer self-service portal, RBAC, ReBAC, entitlements, prehooks, and M2M — so the skill first identifies which Frontegg surfaces are in use, maps each to Descope, analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Frontegg to Descope"
+- "Replace Frontegg with Descope"
+- "Our app uses frontegg / @frontegg/react / @frontegg/nextjs / FronteggProvider / the Frontegg admin portal — switch to Descope"
+- "How do Frontegg Accounts / entitlements / prehooks / the self-service portal map to Descope?"
+- "We're moving off Frontegg"
+
+**Covers:**
+- Hosted vs. embedded login-box detection, driving the Auth Hosting vs. embedded Flow decision
+- Feature mappings: login box → Flows, self-service portal → Widgets + SSO Setup Suite, Accounts → Tenants, Environments → Projects, Applications → Projects/Federated Apps/Inbound Apps, RBAC → Descope RBAC, ReBAC (self-hosted SpiceDB) → managed Descope ReBAC, prehooks → Flow steps/Connectors/JWT Templates, security rules → Flow-based security, SCIM → Descope SCIM, M2M → Resources + Inbound Apps + Policies or Access Keys, Frontegg AI integrations → Outbound Apps
+- User and account migration via the Descope [Frontegg migration tool](https://github.com/descope/descope-migration), plus both JIT paths (Generic HTTP Connector to preserve passwords, or Frontegg as a custom OIDC provider) and dual token validation during cutover
+- Detection patterns across all 14 Frontegg SDKs (React, Next.js, Vue, Angular, JS, Node, Python, Go, Java entitlements, iOS, Android, React Native, Flutter, Ionic) plus .NET apps with no Frontegg SDK
+- Frontegg-specific gotchas: no password-hash export, `fe_refresh`/`fe_session` cookies, `tenantId`/`tenantIds` → `dct`/`tenants`, `aud` validation, `X-API-KEY` vs. `Authorization`, hardcoded public keys, role levels and sub-accounts with no Descope equivalent
+- Scope guards for entitlements, plans, and feature flags — flagged, not silently rebuilt
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- Code/config changes across confirmed auth touchpoints
+- Descope Flow, Widget, and Console configuration guidance
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
 
 <details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
@@ -525,6 +554,11 @@ skills/
 │       ├── implementation-nuances.md - Per-framework patterns, OIDC path, scp/scope, gotchas
 │       ├── flows-and-widgets.md - Okta→Descope lingo map, Flow/Widget guides, console-vs-code
 │       └── backend-sdks.md - Python and Java backend migration patterns
+├── frontegg-to-descope/
+│   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
+│   └── references/
+│       ├── implementation-nuances.md - Per-framework patterns, user export/JIT paths, ReBAC and prehook mapping, gotchas
+│       └── flows-and-widgets.md - Frontegg→Descope lingo map, self-service portal mapping, Flow/Widget guides
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
