@@ -396,7 +396,6 @@ find . -maxdepth 4 \( \
   -name "package.json" -o -name "go.mod" -o -name "requirements.txt" -o \
   -name "pyproject.toml" -o -name "pom.xml" -o -name "build.gradle" -o \
   -name "build.gradle.kts" -o -name "Package.swift" -o -name "Podfile" -o \
-  -name "pubspec.yaml" -o -name "*.csproj" \
   -name "pubspec.yaml" -o -name "*.csproj" -o -name "Podfile.lock" -o \
   -name "libs.versions.toml" -o -name "settings.gradle" \
 \) ! -path "*/node_modules/*" ! -path "*/build/*" \

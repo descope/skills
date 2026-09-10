@@ -261,7 +261,7 @@ Guides self-service migrations from Frontegg to Descope across any language or f
 **Covers:**
 - Hosted vs. embedded login-box detection, driving the Auth Hosting vs. embedded Flow decision
 - Feature mappings: login box → Flows, self-service portal → Widgets + SSO Setup Suite, Accounts → Tenants, Environments → Projects, Applications → Projects/Federated Apps/Inbound Apps, RBAC → Descope RBAC, ReBAC (self-hosted SpiceDB) → managed Descope ReBAC, prehooks → Flow steps/Connectors/JWT Templates, security rules → Flow-based security, SCIM → Descope SCIM, M2M → Resources + Inbound Apps + Policies or Access Keys, Frontegg AI integrations → Outbound Apps
-- User and account migration via the Descope [Frontegg migration tool](https://github.com/descope/descope-migration), plus both JIT paths (Generic HTTP Connector to preserve passwords, or Frontegg as a custom OIDC provider) and dual token validation during cutover
+- User and account migration via the Descope migration tool (if it includes a Frontegg module; otherwise via a custom export/import script), plus both JIT paths (Generic HTTP Connector to preserve passwords, or Frontegg as a custom OIDC provider) and dual token validation during cutover
 - Detection patterns across all 14 Frontegg SDKs (React, Next.js, Vue, Angular, JS, Node, Python, Go, Java entitlements, iOS, Android, React Native, Flutter, Ionic) plus .NET apps with no Frontegg SDK
 - Frontegg-specific gotchas: no password-hash export, `fe_refresh`/`fe_session` cookies, `tenantId`/`tenantIds` → `dct`/`tenants`, `aud` validation, `X-API-KEY` vs. `Authorization`, hardcoded public keys, role levels and sub-accounts with no Descope equivalent
 - Scope guards for entitlements, plans, and feature flags — flagged, not silently rebuilt
