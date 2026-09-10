@@ -41,7 +41,7 @@ projects.
 | **User** | **User** | Frontegg's primary identifier is email, and it auto-merges users across login methods on email. |
 | **Application** (`appId`, max 200/env) | **Project**, **Federated App**, or **Inbound App** | Depends on what the Applications were doing — see SKILL.md Step 3. |
 | **Client ID + API Key** (Keys & domains) | **Project ID** (+ **Management Key** for server-side admin) | Frontegg mints a short-lived vendor token from these; Descope uses the Project ID directly and a Management Key only for administration. |
-| **Hosted login box** (`/oauth/account/login`) | **Auth Hosting** / hosted Flow | Frontegg's default. `loginWithRedirect()` becomes a redirect to the Descope-hosted flow. |
+| **Hosted login box** (`/oauth/account/login`) | A decision, not a direct swap — embedded Flow, **Auth Hosting** behind a custom domain, or an OIDC-client model | Auth Hosting is built for Descope acting as IdP to a Federated/Inbound/Agentic App, not as a generic redirect-and-return page for a first-party origin — see SKILL.md Step 1.5 item 3 before defaulting to it. |
 | **Embedded login box** (injected `/account/login`, `/account/sign-up`) | Embedded **`<descope-wc>` / `<Descope>` component** | Frontegg injects routes into your app; Descope renders a Flow component on your own login route. |
 | **Self-service portal** (`AdminPortal.show()` / `/oauth/portal`) | **Widgets + SSO Setup Suite** | See the dedicated mapping table below. |
 | **Social login providers** | **OAuth Provider** | Configured under Authentication Methods in Console. Note Frontegg ships shared dev credentials for every provider except LinkedIn — you may be registering real OAuth apps for the first time. |
@@ -85,7 +85,8 @@ services. In Descope, that logic moves *inside* the Flow as steps, conditions, a
 
 | Frontegg | Descope Flow equivalent |
 |---|---|
-| Hosted or embedded login box | Flow (hosted via Auth Hosting, or embedded via the Flow component) |
+| Embedded login box | Embedded Flow component |
+| Hosted login box | Not a direct swap — embedded Flow, Auth Hosting behind a custom domain, or an OIDC-client model, decided per SKILL.md Step 1.5 item 3 |
 | `customLoginBox` / custom login screens | Flow Screens in Screen Builder |
 | Login identifier configuration (email / username / phone) | Flow steps per method |
 | MFA policy and enrollment | MFA step in the main sign-in Flow, or MFA subflow |
@@ -187,6 +188,16 @@ Whenever the migration plan calls for building or migrating a custom:
 - Third-party OAuth connection management → **Outbound Applications Widget**
 
 Ask before writing code: *"Does a Widget cover this use case?"*
+
+**A widget must actually be provisioned in the project before its `widgetId` is usable.** Referencing
+an ID that isn't provisioned fails at runtime with **"Unauthorized user: Operation not allowed for
+management request"** — an error that reads like an RBAC problem and will send you chasing role and
+permission assignments that were never the issue. The SDK exports and types every widget component
+regardless of whether the backing widget exists in a given project, so TypeScript provides no warning
+either. Some widgets (e.g. profile, user management, role management, access keys) commonly ship
+provisioned by default; others (e.g. tenant profile) may not. Check Console → Widgets for what's
+actually present before writing code against a `widgetId`, and if that specific error shows up,
+confirm the widget exists before touching permissions.
 
 ### Widget types
 

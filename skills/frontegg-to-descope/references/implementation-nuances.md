@@ -90,9 +90,9 @@ carry both, and the env var wins.
 | Trigger | `loginWithRedirect()` / `useLoginWithRedirect()` | Navigate to the injected `/account/login` route |
 | Session refresh | `keepSessionAlive` in `authOptions` — **the same flag in both modes**, refreshing at ~80% of token lifetime | same |
 | Logout | Navigate to `{baseUrl}/oauth/logout?post_logout_redirect_uri=…` | Navigate to `/account/logout` (or call `logout()`); clears `fe_refresh` |
-| Descope target | **Auth Hosting** / hosted Flow | Embedded `<Descope flowId>` / `<descope-wc>` component |
+| Descope target | A decision — see below | Embedded `<Descope flowId>` / `<descope-wc>` component |
 
-Three traps. First, **logout in both modes is usually a navigation, not a method call** — often just
+Four traps. First, **logout in both modes is usually a navigation, not a method call** — often just
 an anchor tag — so a grep for `logout()` will miss it. That link has to become real two-step logout
 handling. Second, mobile SDKs are **always** hosted, so a project with an embedded web app and a
 mobile app needs both targets. Third, do not treat `keepSessionAlive` or `useAuthUser()` as evidence
@@ -100,7 +100,27 @@ of either mode; both appear in hosted and embedded quickstarts alike. `hostedLog
 `FRONTEGG_HOSTED_LOGIN` is the only reliable signal, and the Console's Login method setting is the
 authority if the code is ambiguous.
 
-Match the existing model unless the user explicitly wants to change it. Switching models mid-migration
+**Fourth, and most consequential: "hosted → Auth Hosting" is not a mechanical swap for a first-party
+app.** Descope's Auth Hosting page is built for cases where Descope is the identity provider to
+something else — a Federated App, an Inbound App, or an MCP/Agentic Client — via a redirect flow that
+lands back on *that object's* configured URL. It is not a generic "redirect out, redirect back to my
+own domain" mechanism the way Frontegg's hosted login box was. Treating the mapping as automatic can
+produce an app where the login screen renders and completes but the app's own origin never gets a
+session. For a web app, work through three options rather than defaulting to Auth Hosting:
+
+1. **Embedded `<Descope flowId>` component** — same Flows, same tokens, no DNS work. The default
+   choice even for a previously-hosted app, unless something specifically requires a redirect.
+2. **Auth Hosting behind a custom domain (CNAME)** — keeps a redirect-based UX. Worth it if the app
+   manages refresh tokens in first-party cookies, or if a Frontegg custom domain existed for
+   branding or to avoid third-party-cookie failures on token refresh (see *Silent Refresh and
+   Third-Party Cookies* below) — that same reason argues for a Descope custom domain.
+3. **Model the app as an OIDC client of a Descope Inbound/Federated App** — the case where Auth
+   Hosting's `redirect_uri` handling is actually designed to apply.
+
+Mobile is the exception where this isn't a real choice: hosted is the only mode, embedded doesn't
+exist as a concept, and the migration runs a Descope Flow through the native SDK regardless.
+
+Match the existing embedded/hosted model unless the user explicitly wants to change it. Switching models mid-migration
 changes routing, redirect handling, and session bootstrapping simultaneously, which makes failures
 hard to attribute.
 
@@ -394,7 +414,10 @@ Decide before writing migration code — the choice affects the export mapping, 
 Two Frontegg behaviors worth fixing rather than porting. Frontegg's own docs note that **role changes
 do not take effect until the current token expires**, and recommend shortening JWT lifetime to
 compensate — so many apps carry forced refreshes, artificially short tokens, or client-side role
-caches that may no longer be needed. And **group roles are calculated at login and appear in the JWT,
+caches. **Don't assume Descope makes these workarounds unnecessary — it has the identical behavior**
+(see SKILL.md Step 4 → *Claim Freshness*): `roles`, `permissions`, `tenants`, and `dct` are all set at
+token-issue time on both platforms. Decide deliberately whether each workaround is still needed rather
+than dropping it by default. And **group roles are calculated at login and appear in the JWT,
 but are not visible from the management section of the Frontegg portal** (they are visible in the
 self-service portal's Groups tab), so exported role assignments can disagree with what users actually
 get at login. Reconcile against a decoded token, not just the API response.
@@ -756,6 +779,19 @@ not.
 `session()` is server-only; `useSession()` / `useUser()` from `@descope/nextjs-sdk/client` are
 client-only. Mixing them compiles and throws at runtime.
 
+**`authMiddleware`'s default matcher covers API routes — exclude them, or `fetch()` calls break.**
+Descope's documented middleware matcher includes `/(api|trpc)(.*)`. With API routes matched, an
+unauthenticated `fetch()` to one of them gets a **307 redirect to the sign-in page** instead of a 401
+— so client code expecting JSON parses an HTML document instead. Exclude API routes from the matcher
+and have each route handler validate `session()` itself and return a real 401; don't rely on the
+middleware to gate them.
+
+**The middleware gates routes; it does not guarantee `session()` returns something.** Verified against
+a shipped `@descope/nextjs-sdk` release: the middleware admits a request on a still-valid refresh
+token *without refreshing* it, so a page reached through `authMiddleware` can still call `session()`
+and get back `undefined`. Always null-check `session()` on the page/route itself and redirect if it's
+missing — never assume that merely being reached through the middleware proves a valid session.
+
 **Next.js 15:** `cookies()` and `headers()` from `next/headers` return a `Promise`. Check
 `package.json` first, then `await` them and mark the containing function `async` — and trace every
 caller, because the cascade routinely spans 10–20 files.
@@ -770,19 +806,45 @@ constraint, re-evaluate after migration rather than preserving it by default.
 | Frontegg | Descope |
 |---|---|
 | `<FronteggProvider contextOptions={{ baseUrl, clientId, appId }}>` | `<AuthProvider projectId>` |
-| `useLoginWithRedirect()` (hosted) | Redirect to Descope Auth Hosting |
+| `useLoginWithRedirect()` (hosted) | Not a direct swap — embedded Flow, Auth Hosting behind a custom domain, or an OIDC-client model; see *Hosted vs. embedded* above |
 | Injected `/account/login` routes (embedded) | `<Descope flowId="sign-up-or-in" onSuccess={...}>` |
 | `useAuth()` / `useAuthUser()` / `useAuthUserOrNull()` | `useSession()` + `useUser()` |
 | `useIsAuthenticated()` | `useSession()` authentication state |
 | `useAuthActions()` → `requestAuthorize`, `switchTenant`, `loadEntitlements` | `useDescope()` actions; tenant selection for `switchTenant`; `loadEntitlements` has no equivalent |
-| `useTenantsActions().loadTenants()` / `useAuth().tenantsState` | Read membership from the validated session (`tenants`) |
+| `useTenantsActions().loadTenants()` / `useAuth().tenantsState` | Read membership from the validated session (`tenants`), or `useUser().userTenants` for fresher, API-sourced data |
 | `ContextHolder.for().getContext()` | Descope SDK session accessors — do **not** hand-parse the token |
 | `AdminPortal.show()` / `.openHosted()` | Descope Widgets — see `flows-and-widgets.md` |
 | `useFeatureEntitlements()` / `usePermissionEntitlements()` | Roles/permissions where it is access control; otherwise out of scope |
+| `useTeamState()` / `useTeamActions().loadUsers()` (tenant-user listing, invites, role assignment — client-side, gated by `fe.*` permissions) | **Server-side only**: a route handler calling `management.user.searchAll([tenantId])` with a Management Key, or the User Management Widget |
 
 **Always read auth state through the hooks.** `ContextHolder` makes the raw token easy to reach in
 Frontegg apps, and that habit should not carry over. Never call backend `validateSession()` from
 client code.
+
+**Frontegg let the browser do things Descope classes as management operations.** The team/tenant-user
+hooks above are the clearest example: Frontegg's frontend SDK exposes tenant-user listing, invites,
+and role assignment directly to client code, gated by `fe.*` permissions on the client's token.
+Descope's equivalents require a Management Key, which must never reach the browser. Audit for this
+pattern explicitly wherever Frontegg client code called a management-shaped operation directly — it's
+the kind of code most likely to get ported verbatim into a credential leak, because it looks like
+ordinary client code and worked fine on the Frontegg side. Every such call becomes either a server
+endpoint the client calls instead, or a Descope Widget performing the operation as the logged-in user
+with no Management Key involved.
+
+**Client-side claim helpers assume claims that exist.** `getTenants()`, `getJwtRoles()`, and
+`getCurrentTenant()` in `@descope/web-js-sdk` read the `tenants` claim without guarding against its
+absence. A user with no tenant memberships — the normal state right after signup — has no `tenants`
+claim, and `getTenants()` throws instead of returning `[]`. This was verified in the browser client
+SDK; check the equivalent helper's null-handling on other stacks before assuming it behaves the same
+way. Read claims defensively (`Object.keys(claims?.tenants ?? {})`) or prefer `useUser().userTenants`.
+A tenant-less user is a valid state to render, not an error.
+
+**Descope's hooks return a new object identity on every render.** Unlike Frontegg's store-backed
+hooks, `useUser()` and `useSession()` hand back a fresh object each time. Deriving a value from them
+inline and putting that derived value in a `useEffect` dependency array creates an infinite render
+loop — and if the effect does a fetch, that's one request per render, not a one-time bug. Depend on
+primitives (an id string) instead of the object itself, and `useMemo` any derived array on a stable
+key.
 
 Note the React-vs-others API difference in Frontegg: `ContextHolder.for().getContext()` in React,
 `ContextHolder.getContext()` in Vue and Angular. Both become the same Descope pattern.

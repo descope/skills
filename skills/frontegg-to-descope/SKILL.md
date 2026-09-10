@@ -80,10 +80,30 @@ Part 2 has two sub-steps:
 1. **Triage** — ask the questions needed to understand scope (migration questions go here since answers shape the plan)
 2. **Codebase Analysis + Plan File** — scan the project, produce `MIGRATION-PLAN.md`, and pause for review
 
+**Scan before you ask.** If there's a codebase available, run Step 1's searches (or at minimum the
+broad sweep, search 1) *before* Step 0's `AskUserQuestion` calls — silently, as a normal tool call,
+not as something that needs permission. Scanning is free, non-destructive, and turns generic
+multiple-choice questions into specific, pre-filled ones: naming the actual framework and SDK version
+found rather than offering a menu of every framework Frontegg supports, presenting the detected login
+mode as a confirmation rather than an open question, and skipping questions in the feature-usage call
+entirely for categories the scan found zero evidence of. Triage then does two things: **confirms**
+what the scan found (cheap to get wrong if assumed silently, cheap to confirm explicitly) and **asks
+only what code cannot reveal** — production user/account counts, migration goal, password strategy,
+whether prehooks live in another service, which portal modules are actually enabled versus merely
+available. This still requires `AskUserQuestion` for both calls below; it changes what the questions
+contain and how many are asked, not whether the step happens.
+
+**Scale the question count to the project.** A small app with a handful of components and one env
+file does not need the same triage volume as a multi-tenant platform with prehooks and SSO. If the
+scan shows no evidence of a feature category (ReBAC, SCIM, M2M, entitlements, user pools, AI agents,
+etc.), it's reasonable to state "no evidence found for X — confirm out of scope?" as a single grouped
+question rather than working through the full second-call catalogue item by item.
+
 ### Step 0: Triage (BLOCKING — requires `AskUserQuestion`)
 
-**Use the `AskUserQuestion` tool to gather the information below. Do not infer answers
-from memory, prior conversations, or assumptions — even if you think you know.**
+**Use the `AskUserQuestion` tool to gather the information below, informed by whatever the codebase
+scan already found. Do not infer answers from memory, prior conversations, or assumptions the scan
+didn't actually confirm — even if you think you know.**
 The migration path differs based on these answers; getting them wrong wastes the user's
 time and produces incorrect guidance.
 
@@ -98,9 +118,13 @@ Do not proceed to Step 0.5 until the user has answered.
 2. **Hosted or embedded login?** — Frontegg's biggest branch point. **Hosted** means users are
    redirected to `https://[frontegg-domain]/oauth/account/login` and the app calls
    `loginWithRedirect()`. **Embedded** means the Frontegg SDK injects `/account/login`,
-   `/account/sign-up`, and `/account/logout` routes into the app itself. Hosted apps map to
-   Descope Auth Hosting (or a redirect-style Flow); embedded apps map to an embedded Descope
-   Flow component. Mobile apps are always hosted. If they don't know, the signal is
+   `/account/sign-up`, and `/account/logout` routes into the app itself. Embedded apps map cleanly to
+   an embedded Descope Flow component. Hosted apps are a real decision, not a mechanical swap — Auth
+   Hosting is built for Descope acting as an IdP to a Federated/Inbound/Agentic App, not as a generic
+   redirect page for an arbitrary first-party origin, so a hosted app may end up embedded, on Auth
+   Hosting behind a custom domain, or modeled as an OIDC client — see Step 1.5 item 3 for the decision
+   framework. Mobile apps are always hosted, and there embedded isn't an option at all. If they don't
+   know, the signal is
    `hostedLoginBox` / `FRONTEGG_HOSTED_LOGIN` (for the Next.js **Pages Router**, the SDK deprecates
    the prop in favor of the env var; the **App Router** quickstart still requires the `hostedLoginBox`
    prop alongside the env var, so check which router is in use before assuming the prop is dead), or
@@ -954,12 +978,35 @@ A Flow is the auth UI sequence. Reference it by Flow ID in the web component.
 - There's a large Flow template library — check for an existing template before building a custom flow. See `references/flows-and-widgets.md` → Flows.
 - MFA: add an MFA step to the Flow or embed MFA as a subflow. Descope manages MFA enrollment through Flows.
 
-**Hosted vs. embedded matters here.** If the Frontegg app used the **hosted** login box
-(`loginWithRedirect()`, `/oauth/account/login`), the closest equivalent is Descope **Auth Hosting** —
-the app redirects out and back. If it used the **embedded** login box (injected `/account/login`
-routes), the equivalent is the embedded Flow component rendered in the app's own page. Match the
-existing model unless the user explicitly wants to change it; switching models mid-migration changes
-routing, redirect handling, and session bootstrapping all at once.
+**Hosted vs. embedded matters here — and hosted has no drop-in equivalent for a first-party app.**
+Descope's **Auth Hosting** looks like the obvious match for Frontegg's hosted login box
+(`loginWithRedirect()`, `/oauth/account/login`), but Auth Hosting is built for cases where Descope
+itself is acting as an OIDC/SAML **identity provider** to something else — a Federated App, an Inbound
+App, or an MCP/Agentic Client — not as a generic redirect-and-come-back page for an arbitrary
+first-party origin. Its session is established against the Descope-hosted page itself; there's no
+documented `redirect_uri` round-trip back to your own domain unless your app is actually configured
+as one of those OIDC-client object types. Treating "hosted → Auth Hosting" as a mechanical swap can
+produce an app where login appears to complete and the user is still signed out. Present this as a
+decision with real trade-offs rather than assuming the mapping transfers for free:
+
+- **Embedded `<Descope flowId>` component** (the well-trodden path for web apps) — same Flows, same
+  session tokens, no DNS work. The natural choice even for an app that used to be hosted-mode, unless
+  something specifically requires the redirect model.
+- **Auth Hosting behind a custom domain (CNAME)** — preserves a redirect-based UX. Required if the app
+  needs to manage refresh tokens in first-party cookies, or if branding/URL stability matters. Ask
+  whether the Frontegg app had a **custom domain**, and if so, whether it existed for branding or to
+  dodge third-party-cookie failures on the refresh endpoint (see Step 4) — either reason argues for a
+  Descope custom domain too.
+- **Model the app as an OIDC client of a Descope Inbound/Federated App** — the case where Auth
+  Hosting's documented `redirect_uri` handling genuinely applies as designed.
+
+Ask which of these fits before writing code — it changes routing, redirect handling, and session
+bootstrapping together, and reversing the decision later touches all three. **Mobile is the one case
+where this isn't a real choice**: Frontegg mobile SDKs are always hosted, embedded doesn't exist as a
+concept there, and a mobile migration runs a Descope Flow through the native SDK regardless. Match
+the existing embedded/hosted model unless the user explicitly wants to change it on a web app;
+switching models mid-migration changes routing, redirect handling, and session bootstrapping all at
+once.
 
 ### 4. Configure authentication methods
 
@@ -991,7 +1038,16 @@ wildcard entry should be represented before assuming a one-to-one copy.
 Frontegg's access token carries profile claims by default; Descope's does not.
 
 - Console → **Project Settings → JWT Templates**
-- Add claims: `{"email": "{{user.email}}", "name": "{{user.name}}", "picture": "{{user.picture}}"}`
+- Add claims: `{"email": "{{user.email}}", "name": "{{user.name}}", "picture": "{{user.picture}}"}`.
+  To confirm the exact placeholder syntax in any given project rather than trusting memory, read the
+  built-in **"Default OIDC compliant User JWT"** template that ships with every project — it already
+  uses `{{user.email}}`.
+- **Set `authSchema: "default"` on the template.** Without it, the `tenants`/`roles`/`permissions`
+  claims are omitted from the token even if the app otherwise looks correctly configured — this is a
+  common way to "do everything right" and still get no tenant/role data at request time.
+- Before saving, validate the template with the `ValidateJwtTemplate` operation (dry-run; a
+  `CreateJwtTemplate` call with bad shape fails validation up front rather than saving something
+  broken) — either via the Descope MCP if available, or the equivalent Console preview.
 - Apply the template to your project. Without this step, any code reading `token.email`,
   `token.name`, or `token.profilePictureUrl` will get `undefined` after migration.
 - If the app relies on custom claims injected by a Frontegg `JWT_GENERATION` prehook, those belong
@@ -1043,6 +1099,34 @@ Widget or the SSO Setup Suite covers the use case. This is the single largest op
 writing code in a Frontegg migration. See `references/flows-and-widgets.md` → Widgets and
 Step 3 → *Self-service portal*.
 
+**Enumerate the project's actual widgets before referencing any `widgetId` in code.** Not every
+widget is provisioned by default in a fresh project, and the SDK exports and types every widget
+component regardless of whether it's actually provisioned — so a missing widget is invisible to
+TypeScript and shows up only at runtime. See Step 4 → *A widgetId with no widget behind it fails as
+an authorization error*.
+
+### 11. If the Descope MCP is available, let it do the console setup it can — and read state first
+
+The Descope MCP server automates a real share of this checklist, but not all of it, and writes require
+explicit elevation. Before manually clicking through the Console:
+
+- **Read current state before creating anything.** A project may already have what you're about to
+  "create" — the built-in `sign-up-or-in` flow, a `Tenant Admin` role, and several default widgets
+  (profile, user management, role management, access keys) typically ship with every project. Use the
+  read operations first (listing flows, widgets, roles, permissions, users) so planned "create" steps
+  don't duplicate what already exists.
+- **Automatable:** JWT templates (create, plus a dry-run validate operation before saving), tenants
+  (including custom attributes), roles and permissions, and reading current project state.
+- **Not exposed via the management API/MCP:** Approved Domains, and attaching a JWT Template to
+  Session Management's Token Format setting. These are project-settings changes that stay
+  Console-only clicks regardless of MCP availability.
+- **Writes require elevation.** Every mutating operation needs an explicit user confirmation naming
+  the exact operation and target before it runs — batch related confirmations together (e.g. "create
+  these 4 tenants") rather than asking once per call.
+- **Permissions may gate this entirely.** The Management Key or role connected to the MCP may not have
+  write access to everything (user creation and role assignment are common gaps) — confirm what's
+  actually writable before promising to automate a step.
+
 **After completing console setup:** Update `MIGRATION-STATE.md` — check off each completed
 item in the Console Setup Checklist, record the Project ID in the file, and set Next Action
 to the first code change step.
@@ -1082,6 +1166,7 @@ When a new framework is added to the file, add it to this list.
 - Backend `withAuthentication()` / `validateIdentityOnToken()` / `FronteggSecurity(...)` / `frontegg.WithAuthentication(...)` → custom middleware calling the Descope SDK's `validateSession()` against the `DS` cookie
 - Frontegg access token in `Authorization: Bearer`, refresh in the `fe_refresh` cookie → Descope signed session JWT in `DS`, refresh in `DSR`
 - Hosted logout navigation to `{baseUrl}/oauth/logout?post_logout_redirect_uri=…` or embedded `logout()` → Descope two-step logout (see Step 4)
+- **Frontegg let client code do things Descope treats as management operations** — several Frontegg frontend SDKs expose tenant-user listing, invites, and role assignment directly to the browser, gated only by `fe.*` permissions on the client's token. The Descope equivalents require a Management Key, which must never ship to a client. Audit every such call explicitly: it becomes a server endpoint the client calls, or a Descope Widget acting as the logged-in user — never a like-for-like client-side port. This is the kind of code most likely to get carried over verbatim into a credential leak, because it looks like ordinary client code and worked fine on the Frontegg side.
 
 ### Frontend SDKs
 
@@ -1098,11 +1183,14 @@ When a new framework is added to the file, add it to this list.
 *Frontegg SDK: `@frontegg/react` → Descope `@descope/react-sdk`*
 
 - `<FronteggProvider contextOptions={{ baseUrl, clientId, appId }}>` → `<AuthProvider projectId>`
-- Hosted `useLoginWithRedirect()` → redirect to Descope Auth Hosting; embedded login routes → `<Descope flowId>` component, wiring `onSuccess`
+- Hosted `useLoginWithRedirect()` → not a direct swap, see Step 1.5 item 3; embedded login routes → `<Descope flowId>` component, wiring `onSuccess`
 - `useAuth()` / `useAuthUser()` / `useAuthUserOrNull()` / `useIsAuthenticated()` → `useSession()` + `useUser()`
 - `useAuthActions()` (`requestAuthorize`, `switchTenant`, `loadEntitlements`) → Descope SDK actions via `useDescope()`; tenant switching is modeled through Descope tenant context, and `loadEntitlements` has no equivalent
+- `useTeamState()` / `useTeamActions().loadUsers()` (tenant-user listing/invites/roles, client-side in Frontegg) → **server-side only**: a route handler using a Management Key, or the User Management Widget — never port this to client code as-is
 - `AdminPortal.show()` → Descope Widgets (see Step 3)
 - Logout: `sdk.logout()` via `useDescope()`
+- **Descope's hooks return a new object identity every render** (Frontegg's store-backed hooks don't). Deriving a value from `useUser()`/`useSession()` inline into a `useEffect` dependency array causes an infinite render loop. Depend on primitives, not the object.
+- See `references/implementation-nuances.md` → React for the fuller version of these gotchas, plus the claim-helper null-handling caveat.
 
 #### Next.js
 
@@ -1111,11 +1199,13 @@ When a new framework is added to the file, add it to this list.
 - App Router: `FronteggAppProvider` / `FronteggAppRouter` (`@frontegg/nextjs/app`) → Descope `AuthProvider` (takes `projectId`; must use the `NEXT_PUBLIC_` prefix)
 - Pages Router: `withFronteggApp` / `FronteggRouter` / `getSession` / `withSSRSession` (`@frontegg/nextjs/pages`) → Descope `session()` from `@descope/nextjs-sdk/server` for server-side reads
 - `getAppUserSession()` / `getAppUserTokens()` → `session()` (server-side only)
-- `FronteggApiMiddleware` (`@frontegg/nextjs/middleware`) / `handleSessionOnEdge` (`@frontegg/nextjs/edge`) → Descope `authMiddleware(options)`
+- `FronteggApiMiddleware` (`@frontegg/nextjs/middleware`) / `handleSessionOnEdge` (`@frontegg/nextjs/edge`) → Descope `authMiddleware(options)` — **exclude API routes from the matcher.** Descope's documented matcher includes `/(api|trpc)(.*)` by default; an unauthenticated `fetch()` to a matched API route gets a 307 redirect to the sign-in page instead of a 401, breaking client code expecting JSON. Let route handlers validate `session()` and return their own 401.
 - `FRONTEGG_ENCRYPTION_PASSWORD` + `FRONTEGG_COOKIE_NAME` (`fe_session` stateless cookie) → removed; Descope manages `DS`/`DSR`
 - `FRONTEGG_HOSTED_LOGIN` toggle → decided once, in Console configuration, not per-request
 - **Client vs. server session access** — `session()` from `@descope/nextjs-sdk/server` is server-only; `useSession()`/`useUser()` from `@descope/nextjs-sdk/client` are client-only. Using `session()` in a client component compiles but throws at runtime.
+- **The middleware gates routes; it doesn't guarantee a session.** It can admit a request on a still-valid refresh token without refreshing it, so `session()` can still come back `undefined` on a page reached through `authMiddleware`. Always null-check `session()` and redirect — don't treat "the middleware let it through" as proof of a valid session.
 - Frontegg's Next.js SDK requires SSR and does not support SSG — if the app was structured around that constraint, re-check whether it still applies after migration.
+- See `references/implementation-nuances.md` → Next.js for the fuller version of these gotchas.
 
 #### Angular
 
@@ -1313,6 +1403,12 @@ declarative.
 - iOS: delete `Frontegg.plist`, update associated-domain entitlements and URL schemes
 - Android: remove `FRONTEGG_*` `buildConfigField`s and manifest placeholders, remove the Frontegg activities and deep-link intent filters
 
+### Web app manifests
+
+Check `public/manifest.json`-style PWA/web-app manifests for Frontegg references (icons, start URLs,
+or scope tied to a Frontegg-hosted domain). These don't break compilation, aren't source files, and
+are easy to skip in a code-focused review.
+
 ### Setup / bootstrap scripts
 
 When the migration includes a setup or seed script, split it into two parts:
@@ -1398,7 +1494,7 @@ authentication methods, and Console configuration.
 
 | Frontegg | Descope |
 | --- | --- |
-| Hosted login box (`/oauth/account/login`) | [Auth Hosting](https://docs.descope.com/flows) / hosted Flow |
+| Hosted login box (`/oauth/account/login`) | A decision, not a swap — embedded Flow (most common), [Auth Hosting](https://docs.descope.com/identity-federation/auth-hosting) behind a custom domain, or an OIDC-client model. See Step 1.5 item 3. |
 | Embedded login box (injected `/account/login`, `/account/sign-up`) | Embedded `<Descope flowId>` / `<descope-wc>` component |
 | `customLoginBox` / custom login screens | Custom Flow in the visual builder, or headless SDK |
 | Login identifiers: email / username / phone | Descope login identifiers configured per method |
@@ -2070,13 +2166,54 @@ account off the session changes shape: Descope exposes the active tenant as `dct
 the nested `tenants` object. Grep for all `tenantId` / `tenantIds` reads and sort them into these two
 buckets — by-ID management calls vs. session reads — before updating.
 
-### Role Changes Don't Take Effect Until Token Expiry (in Frontegg)
+**On the web client, don't reach for the claim-reading helpers without checking their null-handling
+first.** `@descope/web-js-sdk`'s `getTenants()`, `getJwtRoles()`, and `getCurrentTenant()` read the
+`tenants` claim without guarding against it being absent — a user who belongs to no tenant yet (the
+normal state right after signup) has no `tenants` claim at all, and `getTenants()` throws
+(`Cannot convert undefined or null to object`) instead of returning `[]`. A tenant-less user is a
+valid, renderable state, not an error state — the migrated app needs to handle it. This was verified
+in the browser client SDK specifically; if a backend SDK's equivalent helper is in play, check its
+null-handling too rather than assuming the same behavior. Prefer `useUser().userTenants` for display
+purposes (it's fetched fresh from the API — see the claim-freshness gotcha below) or guard the claim
+read defensively (`Object.keys(claims?.tenants ?? {})`).
+
+### Claim Freshness: Both Providers Stamp Authorization Claims at Issue Time
 
 Frontegg's own docs note that role changes only apply once the current token expires, and recommend
-shortening JWT lifetime to compensate. Apps often carry workarounds for this — forced refreshes after
-role assignment, artificially short token lifetimes, or client-side role caches. Identify them during
-migration and decide deliberately whether to keep them; they may be solving a problem that no longer
-exists.
+shortening JWT lifetime to compensate. **Descope behaves the same way, for the same reason** — a
+user's `tenants`, `roles`, `permissions`, and `dct` claims are set when the token is issued and do not
+update themselves. Someone added to a tenant, or granted a new role, after their last sign-in holds a
+token with the old claim set (or none at all) until they get a new one. This is easy to miss because
+it's invisible in normal production use — JIT provisioning assigns the tenant *before* the first token
+is ever issued — but very visible during migration testing, where tenants and roles get assigned by
+hand in the Console against users who are already signed in from an earlier step. Symptoms show up as
+several seemingly unrelated bugs ("no tenant" here, "no active tenant" there) before the shared cause
+is obvious.
+
+Apps migrating off Frontegg often already carry workarounds for this on the Frontegg side — forced
+refreshes after role assignment, artificially short token lifetimes, client-side role caches. Identify
+them and decide deliberately whether to keep them; don't assume Descope makes them unnecessary.
+
+Two consequences for code, on the Descope side:
+- **For display, prefer the live user object over token claims.** `useUser()` (or the equivalent
+  SDK call) returns tenant/role data fetched from the API, so Console changes show up on reload;
+  reading the same data out of the JWT gives you whatever was true at issue time.
+- **For authorization, repair the token rather than working around it in the UI.** If a user has
+  tenant memberships but the current token has no `dct`, call `selectTenant()` (client SDK) to
+  re-issue the token with the claim populated. Falling back to "just use the first tenant" in the UI
+  leaves the backend still seeing no active tenant, since the token itself never changed.
+
+### A `widgetId` With No Widget Behind It Fails as an Authorization Error
+
+Every Widget referenced in code (e.g. `<TenantProfile widgetId="...">`) must correspond to a widget
+actually provisioned in the Console for that project — referencing an ID that isn't provisioned fails
+at runtime with **"Unauthorized user: Operation not allowed for management request,"** which reads
+like an RBAC problem and sends you chasing role and permission assignments that are actually fine.
+**If a widget call fails with that specific error, check whether the widget exists before touching
+permissions.** The SDK exports and types every widget component regardless of whether the backing
+widget is provisioned in a given project, so TypeScript gives false confidence — a type existing is
+not evidence the widget is live. Not all widgets ship provisioned by default; verify what's actually
+in Console → Widgets for the project in hand rather than assuming the full catalog is present.
 
 ### No Drop-In Middleware
 
@@ -2163,9 +2300,15 @@ grep -rni "frontegg" \
   .
 ```
 
-If this returns any results, **stop and fix them before proceeding**. Pay particular attention to
-hits in `.env*`, CI config, `build.gradle`, and `Frontegg.plist` — these do not break compilation and
-are the most commonly missed.
+**Triage the hits — don't treat every match as a failure.** Imports, package names, env vars, config
+files, CI workflows, and manifests referencing Frontegg must be zero. Comments and migration
+documentation that explain what a construct *used to be* (`// Replaces Frontegg's
+handleSessionOnEdge`) are expected and should stay — they're valuable, not stale. Pay particular
+attention to non-source files — `.env*`, CI workflows, `build.gradle`, `Frontegg.plist`, and web-app
+manifests (`public/manifest.json`-style files) — since none of these break compilation and are the
+most commonly missed. A real migration commonly turns up a handful of hits that are all deliberate
+comments alongside one or two real stragglers (an auto-update CI job pointed at Frontegg, a stale
+manifest entry); read each hit rather than gating on the raw count.
 
 ### Phase 1: Install, compile, and start
 
