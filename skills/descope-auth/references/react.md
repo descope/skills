@@ -253,24 +253,6 @@ a user is updated out-of-band (backend Management SDK/API, SCIM, admin action), 
 `sdk.me()` to refetch the user, or both `refresh()` then `me()` if you need updated
 claims and user data together.
 
-## OIDC Login
-
-To use the SDK as an OIDC client against a Descope Federated App, pass `oidcConfig`
-to `AuthProvider`:
-
-```tsx
-<AuthProvider
-  projectId="my-project-id" // also serves as the client ID
-  oidcConfig={{
-    applicationId: 'my-application-id', // optional; default OIDC app if omitted
-    redirectUri: 'https://my-app.com/redirect', // optional
-    scope: 'openid profile email', // optional
-  }}
->
-  <App />
-</AuthProvider>
-```
-
 ## Vanilla / Framework-Agnostic Alternative
 
 If you don't want React hooks or `AuthProvider` session management, the flow

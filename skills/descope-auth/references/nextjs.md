@@ -163,13 +163,14 @@ If middleware didn't already set the session, `session()` falls back to reading 
 validating the token from cookies itself — this requires `projectId` to be available
 via `NEXT_PUBLIC_DESCOPE_PROJECT_ID` or passed explicitly: `session({ projectId, baseUrl, logLevel })`.
 
-## 6. Server-Side Management Operations
+## 6. Loading the Full User Profile Server-Side
 
-Use `createSdk()` to call the Descope Management API (user CRUD, roles, etc.) from
-route handlers or server components:
+`session()`/`getSession(req)` only return what's in the JWT. To fetch the full user
+record for the already-authenticated `sub` (e.g. custom attributes not in the
+token), use `createSdk()`:
 
 ```typescript
-import { createSdk } from '@descope/nextjs-sdk/server';
+import { createSdk, session } from '@descope/nextjs-sdk/server';
 
 const sdk = createSdk({
   projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID,
@@ -177,7 +178,10 @@ const sdk = createSdk({
 });
 
 export async function GET() {
-  const { ok, data: user } = await sdk.management.user.load('user123');
+  const currentSession = await session();
+  if (!currentSession) return new Response('Unauthorized', { status: 401 });
+
+  const { ok, data: user } = await sdk.management.user.load(currentSession.token.sub);
   if (!ok) return new Response('User not found', { status: 404 });
   return Response.json(user);
 }
@@ -185,43 +189,3 @@ export async function GET() {
 
 Never expose `DESCOPE_MANAGEMENT_KEY` to client code — only use `createSdk` in
 server-only files (route handlers, server components, server actions).
-
-## Prebuilt Admin Widgets
-
-`@descope/nextjs-sdk` also ships drop-in widgets for common admin UI, each scoped to
-a `tenant`: `RoleManagement`, `AccessKeyManagement`, `AuditManagement`, `UserProfile`,
-and `ApplicationsPortal`. Example:
-
-```tsx
-import { UserProfile } from '@descope/nextjs-sdk';
-
-<UserProfile
-  widgetId="user-profile-widget"
-  onLogout={() => { window.location.href = '/login'; }}
-/>
-```
-
-## Multi-Project (Multi-Tenant) Setups
-
-If each tenant maps to a separate Descope project, build the middleware per-request
-instead of exporting a static config, and pass a per-tenant `projectId`/`baseUrl`:
-
-```typescript
-import { authMiddleware } from '@descope/nextjs-sdk/server';
-import { NextRequest } from 'next/server';
-
-export const middleware = async (request: NextRequest) => {
-  const tenantId = request.headers.get('x-tenant-id');
-  const config = tenantConfigs[tenantId]; // your own mapping
-  const auth = authMiddleware({
-    projectId: config.projectId,
-    baseUrl: config.baseUrl,
-    redirectUrl: '/sign-in',
-    privateRoutes: ['/dashboard', '/profile'],
-  });
-  return auth(request);
-};
-```
-
-The SDK caches one instance per `projectId`, so repeated requests for the same
-tenant reuse the existing instance instead of re-initializing.
