@@ -15,6 +15,8 @@ Detect the user's framework and use the appropriate reference:
 |-------------------|---------------|
 | `next` in package.json | `references/nextjs.md` |
 | `react` (no Next.js) | `references/react.md` |
+| `@angular/core` in package.json | `references/angular.md` |
+| No frontend framework (plain HTML/JS) | `references/vanilla-js.md` |
 | Python/Node.js backend only | `references/backend.md` |
 
 ## Quick Start (all frameworks)
@@ -74,6 +76,8 @@ For React SPA or backend-only setups, see the framework-specific references belo
 
 ## References
 
-- `references/nextjs.md` - Next.js App Router integration
-- `references/react.md` - React SPA integration  
+- `references/nextjs.md` - Next.js App Router & Pages Router integration
+- `references/react.md` - React SPA integration
+- `references/angular.md` - Angular integration
+- `references/vanilla-js.md` - Vanilla JavaScript / plain HTML integration
 - `references/backend.md` - Backend session validation

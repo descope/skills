@@ -10,7 +10,7 @@ npm install @descope/nextjs-sdk
 
 ```bash
 NEXT_PUBLIC_DESCOPE_PROJECT_ID=<project-id>
-DESCOPE_MANAGEMENT_KEY=<management-key>  # For server operations
+DESCOPE_MANAGEMENT_KEY=<management-key>  # For server-side management operations
 ```
 
 ## 1. Wrap App with AuthProvider
@@ -55,17 +55,33 @@ export default function LoginPage() {
 import { authMiddleware } from '@descope/nextjs-sdk/server';
 
 export default authMiddleware({
+  // Defaults to process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID
   projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID,
+  // Defaults to process.env.SIGN_IN_ROUTE or '/sign-in'
   redirectUrl: '/login',
+  // publicRoutes are ADDED to the defaults (SIGN_IN_ROUTE/'/sign-in' and
+  // SIGN_UP_ROUTE/'/sign-up'), all other routes are private by default.
   publicRoutes: ['/login', '/signup', '/api/public/*'],
+  // privateRoutes is ignored (with a warning) if publicRoutes is also set.
+  // logLevel: 'debug' | 'info' | 'warn' | 'error' (default 'info')
 });
 
 export const config = {
-  matcher: ['/((?!.+\\.[\w]+$|_next).*)', '/', '/(api|trpc)(.*)']
+  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)']
 };
 ```
 
-## 4. Access Session in Components
+> **Next.js 16:** the `middleware.ts` file convention is deprecated and renamed
+> `proxy.ts` (same behavior, same `config`/`matcher`). `middleware.ts` still works
+> today, but on Next.js 16+ use `proxy.ts`, or run
+> `npx @next/codemod@canary middleware-to-proxy .`. Requires Next.js 13+.
+
+Middleware validates the session JWT once and attaches the result to the request as
+an `X-Descope-Session` header, so server components/route handlers using `session()`
+below don't need to re-validate it — though `session()` also works without the
+middleware (it falls back to reading/validating the token from cookies itself).
+
+## 4. Access Session in Client Components
 
 ```tsx
 'use client';
@@ -88,17 +104,124 @@ export function UserProfile() {
 }
 ```
 
+The same session helpers, core SDK functions (`refresh`, `selectTenant`, `logout`,
+`me`, etc.), and state-change listeners documented in `references/react.md` are
+available here from `@descope/nextjs-sdk/client` instead of `@descope/react-sdk`.
+
 ## 5. Server-Side Session Access
+
+**App Router** (Server Components, Route Handlers, and Middleware) — use `session()`:
 
 ```typescript
 // src/app/api/protected/route.ts
-import { getSession } from '@descope/nextjs-sdk/server';
+import { session } from '@descope/nextjs-sdk/server';
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) {
+  const currentSession = await session();
+  if (!currentSession) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return Response.json({ user: session.user });
+  // currentSession.jwt is the raw JWT, currentSession.token is the parsed claims
+  return Response.json({ user: currentSession.token.sub });
 }
 ```
+
+```tsx
+// src/app/dashboard/page.tsx (Server Component)
+import { session } from '@descope/nextjs-sdk/server';
+
+export default async function Dashboard() {
+  const currentSession = await session();
+  if (!currentSession) return <p>Access Denied</p>;
+  return <p>Welcome, {currentSession.token.sub}</p>;
+}
+```
+
+**Pages Router API routes only** (`pages/api/`) — use `getSession(req)` instead;
+it does not work in Middleware or Server Components:
+
+```typescript
+// pages/api/protected.ts
+import { getSession } from '@descope/nextjs-sdk/server';
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const currentSession = getSession(req);
+  if (!currentSession) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  return res.status(200).json({ user: currentSession.token.sub });
+}
+```
+
+| Function | Use case | Middleware | API routes | Server Components |
+|---|---|---|---|---|
+| `session()` | App Router, Middleware, Server Components | Yes | Yes | Yes |
+| `getSession(req)` | Pages Router API routes | No | Yes | No |
+
+If middleware didn't already set the session, `session()` falls back to reading and
+validating the token from cookies itself — this requires `projectId` to be available
+via `NEXT_PUBLIC_DESCOPE_PROJECT_ID` or passed explicitly: `session({ projectId, baseUrl, logLevel })`.
+
+## 6. Server-Side Management Operations
+
+Use `createSdk()` to call the Descope Management API (user CRUD, roles, etc.) from
+route handlers or server components:
+
+```typescript
+import { createSdk } from '@descope/nextjs-sdk/server';
+
+const sdk = createSdk({
+  projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID,
+  managementKey: process.env.DESCOPE_MANAGEMENT_KEY,
+});
+
+export async function GET() {
+  const { ok, data: user } = await sdk.management.user.load('user123');
+  if (!ok) return new Response('User not found', { status: 404 });
+  return Response.json(user);
+}
+```
+
+Never expose `DESCOPE_MANAGEMENT_KEY` to client code — only use `createSdk` in
+server-only files (route handlers, server components, server actions).
+
+## Prebuilt Admin Widgets
+
+`@descope/nextjs-sdk` also ships drop-in widgets for common admin UI, each scoped to
+a `tenant`: `RoleManagement`, `AccessKeyManagement`, `AuditManagement`, `UserProfile`,
+and `ApplicationsPortal`. Example:
+
+```tsx
+import { UserProfile } from '@descope/nextjs-sdk';
+
+<UserProfile
+  widgetId="user-profile-widget"
+  onLogout={() => { window.location.href = '/login'; }}
+/>
+```
+
+## Multi-Project (Multi-Tenant) Setups
+
+If each tenant maps to a separate Descope project, build the middleware per-request
+instead of exporting a static config, and pass a per-tenant `projectId`/`baseUrl`:
+
+```typescript
+import { authMiddleware } from '@descope/nextjs-sdk/server';
+import { NextRequest } from 'next/server';
+
+export const middleware = async (request: NextRequest) => {
+  const tenantId = request.headers.get('x-tenant-id');
+  const config = tenantConfigs[tenantId]; // your own mapping
+  const auth = authMiddleware({
+    projectId: config.projectId,
+    baseUrl: config.baseUrl,
+    redirectUrl: '/sign-in',
+    privateRoutes: ['/dashboard', '/profile'],
+  });
+  return auth(request);
+};
+```
+
+The SDK caches one instance per `projectId`, so repeated requests for the same
+tenant reuse the existing instance instead of re-initializing.
