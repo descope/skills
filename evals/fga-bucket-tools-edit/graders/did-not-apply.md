@@ -1,7 +1,7 @@
 ---
-type: regex
-target: mock_calls
-pattern: access_control_write
-match: not_contains
+type: tool_used
+tool: mcp__plugin_descope-skills_descope__access_control_write
+min: 0
+max: 0
 arm: both
 ---
