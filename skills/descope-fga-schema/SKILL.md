@@ -9,14 +9,27 @@ Help the user design and apply Descope FGA schemas. The workflow is: understand 
 
 ## MCP Setup — check first, stop if missing
 
-**Before doing anything else**, check whether the Descope Management MCP is connected by looking for tools whose names contain `FGASchema` or `DryRunSchema` (e.g. `mcp__descope__DryRunSchema`). The exact prefix depends on how the user installed the MCP, but the operation IDs are `DryRunSchema`, `CreateFGASchema`, and `GetFGASchema`.
+**Before doing anything else**, check whether the Descope Management MCP is connected. The server exposes the FGA operations in one of two shapes, and either one means it is connected:
 
-**If the tools are not found:** output only the message below, then end your turn. Do not generate a schema, do not say "here's what I'll apply once connected", do not do any design work, do not continue:
+- **Per-operation tools** — tool names contain the operation, e.g. `mcp__descope__DryRunSchema`, `mcp__descope__GetFGASchema`, `mcp__descope__CreateFGASchema`.
+- **Bucket tools** — `access_control_read` and `access_control_write` (usually next to a `list_operations` tool). Operations are dispatched by name:
+
+  ```
+  access_control_read({ operation: "GetFGASchema", args: {} })
+  access_control_read({ operation: "DryRunSchema", args: { dsl: "..." } })
+  access_control_write({ operation: "CreateFGASchema", args: { dsl: "..." } })
+  ```
+
+The tool-name prefix depends on how the user installed the MCP (`mcp__descope__`, `mcp__plugin_<name>_descope__`, ...); match on the suffix. The operation IDs are `DryRunSchema`, `CreateFGASchema`, and `GetFGASchema`.
+
+**Everywhere below, an operation name means "the per-operation tool if present, otherwise the bucket call shown above".** `DryRunSchema` and `GetFGASchema` go through `access_control_read`; `CreateFGASchema` goes through `access_control_write`.
+
+**If neither shape is found:** output only the message below, then end your turn. Do not generate a schema, do not say "here's what I'll apply once connected", do not do any design work, do not continue:
 
 > The Descope Management MCP is required. If not yet installed, install and authorize it, then restart your AI agent and re-run `/descope-fga-schema`. See https://docs.descope.com/mcp/mcp-server#connecting for setup instructions.
 > If already installed, it may need authorization. Authorize the Descope MCP, then restart your AI agent and re-run `/descope-fga-schema`.
 
-**If the tools are found:** call `GetFGASchema` immediately as a connectivity probe before doing any other work. If this call returns an authorization error, output only the message below and end your turn:
+**If either shape is found:** call `GetFGASchema` immediately as a connectivity probe before doing any other work (bucket form: `access_control_read({ operation: "GetFGASchema", args: {} })`). If this call returns an authorization error, output only the message below and end your turn:
 
 > The Descope MCP is installed but not authorized. Authorize it, restart Claude Code, and re-run `/descope-fga-schema`.
 
