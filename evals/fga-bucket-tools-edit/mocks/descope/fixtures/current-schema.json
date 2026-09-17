@@ -1,0 +1,1 @@
+{"dsl":"model AuthZ 1.0\n\ntype User\n\ntype Project\n  relation owner: User\n  relation viewer: User\n  permission can_view: owner | viewer\n  permission can_edit: owner\n"}

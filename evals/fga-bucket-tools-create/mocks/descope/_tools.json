@@ -1,0 +1,33 @@
+{
+  "tools": [
+    {
+      "name": "list_operations",
+      "description": "List the operations available in this Descope project, grouped by bucket tool.",
+      "inputSchema": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "access_control_read",
+      "description": "Read-only access control operations for the current Descope project. Pass the operation name and its arguments. Call list_operations to see the available operation names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": { "type": "string" },
+          "args": { "type": "object" }
+        },
+        "required": ["operation", "args"]
+      }
+    },
+    {
+      "name": "access_control_write",
+      "description": "Access control write operations for the current Descope project. Pass the operation name and its arguments. Call list_operations to see the available operation names.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operation": { "type": "string" },
+          "args": { "type": "object" }
+        },
+        "required": ["operation", "args"]
+      }
+    }
+  ]
+}

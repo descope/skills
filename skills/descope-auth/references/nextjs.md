@@ -32,8 +32,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ## 2. Add Login Page
 
+An App Router `page.tsx` is a Server Component by default. `onSuccess` and `onError` are function props, so the page must be a Client Component (`'use client'`), or the `<Descope>` element must be moved into one.
+
 ```tsx
 // src/app/login/page.tsx
+'use client';
+
 import { Descope } from '@descope/nextjs-sdk';
 
 export default function LoginPage() {

@@ -36,3 +36,6 @@ dist/
 build/
 
 *.zip
+
+# Plugin evals
+evals/results/

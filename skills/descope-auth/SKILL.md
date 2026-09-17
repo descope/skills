@@ -28,6 +28,8 @@ Detect the user's framework and use the appropriate reference:
 
 ```tsx
 // src/app/login/page.tsx
+'use client';
+
 import { Descope } from '@descope/nextjs-sdk';
 
 export default function LoginPage() {
