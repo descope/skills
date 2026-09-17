@@ -1,0 +1,14 @@
+{
+  "tools": [
+    {
+      "name": "docs_search",
+      "description": "Search the Descope documentation. Returns matching pages with titles, URLs and snippets.",
+      "inputSchema": { "type": "object", "properties": { "query": { "type": "string" } }, "required": ["query"] }
+    },
+    {
+      "name": "docs_ask_question",
+      "description": "Ask a question about Descope and get an answer grounded in the current documentation.",
+      "inputSchema": { "type": "object", "properties": { "question": { "type": "string" } }, "required": ["question"] }
+    }
+  ]
+}
