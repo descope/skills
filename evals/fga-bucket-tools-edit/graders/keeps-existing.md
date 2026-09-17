@@ -1,4 +1,4 @@
 ---
 type: regex
-pattern: relation viewer: User
+pattern: "relation viewer: User"
 ---

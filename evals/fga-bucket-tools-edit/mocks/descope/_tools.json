@@ -2,16 +2,16 @@
   "tools": [
     {
       "name": "list_operations",
-      "description": "List the operations available through the Descope Management bucket tools. Returns operation names grouped by bucket (access_control_read, access_control_write, ...).",
+      "description": "List the operations available in this Descope project, grouped by bucket tool.",
       "inputSchema": { "type": "object", "properties": {} }
     },
     {
       "name": "access_control_read",
-      "description": "Read-only FGA (fine-grained authorization) operations for the current Descope project. Dispatch by operation name. Operations: GetFGASchema (args: {}), DryRunSchema (args: {dsl: string}). Example: access_control_read({operation: \"DryRunSchema\", args: {dsl: \"model AuthZ 1.0 ...\"}}).",
+      "description": "Read-only access control operations for the current Descope project. Pass the operation name and its arguments. Call list_operations to see the available operation names.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "operation": { "type": "string", "enum": ["GetFGASchema", "DryRunSchema"] },
+          "operation": { "type": "string" },
           "args": { "type": "object" }
         },
         "required": ["operation", "args"]
@@ -19,11 +19,11 @@
     },
     {
       "name": "access_control_write",
-      "description": "Write FGA (fine-grained authorization) operations for the current Descope project. Dispatch by operation name. Operations: CreateFGASchema (args: {dsl: string}). This is irreversible.",
+      "description": "Access control write operations for the current Descope project. Pass the operation name and its arguments. Call list_operations to see the available operation names.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "operation": { "type": "string", "enum": ["CreateFGASchema"] },
+          "operation": { "type": "string" },
           "args": { "type": "object" }
         },
         "required": ["operation", "args"]
