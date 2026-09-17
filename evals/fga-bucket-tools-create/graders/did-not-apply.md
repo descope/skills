@@ -1,7 +1,7 @@
 ---
 type: regex
 target: mock_calls
-pattern: CreateFGASchema
+pattern: access_control_write
 match: not_contains
 arm: both
 ---
