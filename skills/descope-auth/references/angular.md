@@ -16,15 +16,6 @@ Add Descope's type definitions to `tsconfig.json`:
 }
 ```
 
-## Project ID Configuration
-
-Angular has no single built-in convention for exposing build-time env vars (unlike
-Next.js's `NEXT_PUBLIC_` prefix or CRA's `REACT_APP_` prefix). Get your Project ID
-from https://app.descope.com/settings/project and supply it to
-`DescopeAuthModule.forRoot({ projectId: ... })` below via whatever config mechanism
-your Angular project already uses for environment-specific values — typically
-`src/environments/environment.ts`.
-
 ## 1. Register the Descope Angular Module
 
 ```typescript
