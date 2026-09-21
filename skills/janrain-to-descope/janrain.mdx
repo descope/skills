@@ -1,0 +1,127 @@
+---
+title: From Janrain
+seoTitle: Migrate Janrain Users to Descope | Descope Documentation
+description: This guide covers how to migrate your Janrain (Akamai Identity Cloud) users and authentication to Descope.
+keywords: 'migration, janrain, akamai identity cloud, migration guides'
+---
+
+# Janrain Migration Guide
+
+Janrain was acquired by Akamai in 2019 and is officially called Akamai Identity Cloud. This guide uses the name Janrain throughout, since that is still how most existing customers refer to it. Akamai has announced Identity Cloud will reach end of life on December 31, 2027, and stopped adding new features at the end of 2024.
+
+Want a faster, guided migration? The Janrain to Descope Migration Skill, available for AI coding agents, walks through this process interactively.
+
+One thing worth knowing up front: based on Akamai's own published feature list for Janrain, the platform has never supported passkeys, the modern, passwordless sign-in method built into phones and computers (Face ID, Touch ID, Windows Hello, and similar), at any point across two separate versions of Hosted Login. Since the platform is now in maintenance mode and won't gain new features before shutting down, this isn't expected to change. Moving to Descope is a genuine opportunity to add this, not just move your existing setup somewhere else.
+
+## Which Janrain product are you using?
+
+Janrain has two different login products, and they need different migration approaches. Before following the rest of this guide, confirm which one applies to you.
+
+- **Hosted Login**, the current, standard product. If your site redirects users to a Janrain-hosted page to sign in, you're on this. The rest of this guide is written for this product.
+- **The JavaScript SDK, also called Capture**, an older product. If your sign-in form is rendered directly on your own page using JavaScript files like `janrain-init.js`, and calls like `janrain.capture.ui.renderScreen`, you're on this instead. Akamai still supports it for existing customers, but no longer offers it to new ones.
+
+  If this is you, and you use social login, there's something worth knowing about, though it's less urgent than it might sound: Akamai's documentation states the dashboard used to manage social login settings for this SDK stopped working March 31, 2026, with apps still in active use continuing to work normally on the same general timeline as everything else, through the end of 2027. Per Akamai's own documentation, customers with an Akamai contract can still request changes after that date by submitting a support ticket; customers without a contract can no longer make changes to their social apps at all. This is stated in Akamai's documentation but hasn't been independently verified, so treat the date as likely accurate but worth confirming directly with Akamai if your timeline depends on it. Separately, per Akamai's own documentation, your access token is only valid for one hour with no way to refresh it from the browser, so if your site keeps users signed in longer than that today, you've likely already built your own server-side session handling. Keep that in mind, since your migration will look different from a Hosted Login migration. Reach out for guidance specific to this setup before starting.
+
+## If you have users in more than one region
+
+If your users are spread across regions (for example, separate groups in the US, Europe, and Asia), each region is its own separate environment in Janrain, with its own web address and its own credentials. There's no single export that reaches across all of them. You'll need to repeat the export and import process once per region.
+
+## Janrain and Descope Terminology
+
+| Janrain | Descope |
+|---|---|
+| Entity | User record |
+| Entity Type | The user database itself. No exact equivalent, closest is a Descope Project. |
+| Hosted Login | Flow |
+| profiles (a user's connected social logins) | Custom OAuth Providers |
+| roles | Roles and Permissions |
+| Two-factor authentication | A one-time code step in a Flow |
+
+Janrain lets each customer customize their own set of stored fields. The table above describes Janrain's typical setup. If your account has custom fields, confirm the actual field names before mapping them.
+
+## Full Migration
+
+Janrain stores passwords as bcrypt hashes, the same format Descope accepts. In principle, this means your users' existing passwords can be carried over with no reset required.
+
+**This needs to be confirmed for your specific account before relying on it.** Akamai's documentation shows an example of a password being returned when reading a user's record, but we have not found independent confirmation elsewhere that this works the same way for every account. Before promising your users a password-free migration, test this directly against your own account, or check with Akamai support.
+
+**If password hashes cannot be read out of your account:** don't wait for users to log in gradually over time to get migrated. Given Janrain's shutdown timeline, this usually leaves too little time to reach everyone. Instead, plan for users to reset their password the first time they sign in after the migration.
+
+### Prerequisites
+
+- Access to your Janrain account with an API client that has read access to your user records.
+- Your Descope Project ID and a Descope Management Key.
+
+### Step 1: Get an export credential
+
+In the Janrain Console, under Manage Properties, create a new API client and give it read-only access to user records (the `direct_read_access` feature). This does not need write access.
+
+### Step 2: Export your users
+
+Call Janrain's export endpoint, asking for one batch of users at a time, then repeat using the last user's ID from the previous batch to get the next one. Unlike some providers, this approach does not slow down as your user count grows, Janrain's own documentation describes it working the same way past 100,000 users.
+
+If you have more than about 100,000 users, let Akamai know ahead of your export, so it doesn't compete with your site's regular traffic.
+
+### Step 3: Map your fields
+
+| Janrain field | Descope field | Notes |
+|---|---|---|
+| email | email and loginId | Must be unique per user |
+| givenName | givenName | Direct match |
+| familyName | familyName | Direct match |
+| displayName | displayName | Direct match |
+| password | Descope's password field | Bcrypt format, direct match, but confirm it can actually be read out of your account first |
+| profiles (connected social logins) | Not directly imported | Users reconnect their social login the first time they sign in after migration |
+| roles | Descope roles | Confirm this can actually be read out of your account first, this is documented less clearly than passwords |
+
+Before importing, make sure any custom field you want to carry over (for example, keeping a copy of a user's original Janrain ID) is created in the Descope Console first. If it isn't created ahead of time, that data is silently dropped during import with no error shown.
+
+### Step 4: Import into Descope
+
+Import your mapped users into Descope. Before doing this, turn on password sign-in in the Descope Console if you're importing passwords, otherwise the import will fail.
+
+Don't assume a full batch of exported users always fits into one import call cleanly. For a batch where every user has a hashed password (the normal case), no exact limit is documented, so start with a smaller batch, around 100 to 250 users, and only increase it once you've confirmed it works reliably. Separately, any batch that includes even one user needing a plaintext temporary password instead of a hash is capped at 100 users total, regardless of the rest of the batch, so keep those users in their own dedicated batch rather than mixing them in.
+
+After importing, check a sample of users to confirm their information, and any custom fields, came through correctly.
+
+## JIT Migration
+
+Given Janrain's shutdown timeline, we generally recommend the Full Migration approach above over waiting for users to log in gradually, since a gradual approach depends on every user logging back in before the shutdown date.
+
+If you still want to migrate this way, a first sign-in checks the user's credentials against your Janrain account, and if correct, creates them in Descope and signs them in going forward without needing their old Janrain login again.
+
+## Multi-tenancy
+
+Janrain has no built-in way to keep separate groups of users apart within the same account, the way Descope Tenants do. Most Janrain customers keep everyone in one shared user database, and can tell which site or app a user first signed up on, since Janrain keeps a record of that. Some customers instead keep a fully separate user database per brand or business unit, when they need to be kept completely apart.
+
+If you plan to use Descope Tenants, check which of these two setups you actually have before assuming your data maps cleanly, since Janrain wasn't built with that concept in mind.
+
+## Enterprise SSO
+
+If your Janrain account lets users sign in through an outside company's login system (often called enterprise SSO), Descope has an equivalent for this, configured per company.
+
+Whether this kind of login data is stored the same way as social logins in Janrain is unclear from Janrain's own documentation. If this applies to you, this should be checked directly against your account before assuming your enterprise SSO users' data will migrate the same way as social login users.
+
+## Other systems connected to Janrain
+
+Check whether anything else depends on Janrain sending it real-time updates, since these will stop working the moment Janrain shuts down, separate from the user migration itself.
+
+- **If another system listens for real-time sign-up or profile-update notifications from Janrain**, Descope has an equivalent, though it's worth knowing Descope's version isn't quite instant the way Janrain's is, it has some built-in delay.
+- **If you sync your users to Salesforce Marketing Cloud** through Janrain's Integration Bus, there currently isn't a ready-made Descope equivalent for this specific kind of sync. You'd need to build something custom, for example triggering your own sync from Descope's activity notifications.
+
+## What to know before switching over
+
+A few things worth knowing ahead of time, since they can otherwise cause confusion partway through:
+
+- **Signing a user into Janrain does not automatically sign them into your app.** Your app needs to keep track of a user's login on its own, Janrain doesn't do this for you.
+- **A user's email and name are not included automatically when they sign in.** You need to specifically ask for this information, otherwise it comes back empty.
+- **If a user signed up with a password, then later signed in with a social login using the same email, Janrain treats these as one account.** Make sure your migration handles this the same way, otherwise you could end up creating two separate accounts for the same person.
+- **There is no single way to cancel every old Janrain login session at once.** If you want to make sure old sessions stop working right after you switch over, this needs to be done one user at a time. If this matters to you, plan for it ahead of time.
+- **Two-factor authentication only works on the newer version of Hosted Login.** If you have it turned on, there's no simple "this user is enrolled" flag to migrate, only the phone number and email fields it depends on.
+- **If you track consent, like marketing opt-ins or terms of service acceptance, be extra careful with this data.** There's no confirmed way to export a full history of consent changes in bulk, only a current snapshot for each user. Acceptance of legal terms specifically has no confirmed timestamp, only whether a version was accepted, not when. Whether to carry your existing consent records forward, or ask users to reconfirm after migrating, is a legal decision for your own team to make, we can't make that call for you.
+- **If you sync your users to Salesforce Marketing Cloud, check whether deletions sync too.** Deleting a user in Janrain does not automatically delete them from Salesforce Marketing Cloud unless you've specifically turned that setting on. If you've had users request deletion in the past, worth double-checking their data actually got removed everywhere, not just in Janrain.
+- **If you want Akamai's own help with the export side of this migration, know that it only covers their side.** Per Akamai's own Migration Guide, they offer paid migration assistance for extracting your data, but it doesn't include setting up Descope, that part is separate.
+
+## Post Migration Verification
+
+Once your migration is complete, check the users, roles, and any custom fields in Descope against what you expected from your Janrain account, using the mapping table above as a checklist.
