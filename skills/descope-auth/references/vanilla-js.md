@@ -27,39 +27,67 @@ Or via CDN script tags, with no build step:
 Pin to whatever current versions are published on npm for `@descope/web-component`
 and `@descope/web-js-sdk` — the CDN URLs above are illustrative.
 
-## 1. Render a Flow with the Custom Element
+## 1. Initialize the SDK and Render a Flow
+
+Initialize the SDK first, check whether the visitor already has a valid session, and
+only render `<descope-wc>` when they don't. Call `sdk.refresh()` in the `success`
+handler so `autoRefresh` picks up the new session immediately.
 
 ```html
 <!DOCTYPE html>
 <html>
   <head>
     <script src="https://descopecdn.com/npm/@descope/web-component@4.3.3/dist/index.js"></script>
+    <script src="https://descopecdn.com/npm/@descope/web-js-sdk@1.53.0/dist/index.umd.js"></script>
   </head>
   <body>
-    <descope-wc project-id="<project-id>" flow-id="sign-up-or-in"></descope-wc>
+    <p id="container"></p>
 
     <script>
-      const wcElement = document.querySelector('descope-wc');
+      // The UMD build exposes a global `Descope(...)` factory function — not `createSdk`.
+      const sdk = Descope({ projectId: '<project-id>' });
 
-      wcElement.addEventListener('success', (e) => {
-        console.log('Authenticated:', e.detail);
+      const sessionToken = sdk.getSessionToken();
+      const needsAuth = !sessionToken || sdk.isSessionTokenExpired(sessionToken);
+
+      if (needsAuth) {
+        const container = document.getElementById('container');
+        container.innerHTML = '<descope-wc project-id="<project-id>" flow-id="sign-up-or-in"></descope-wc>';
+        const wcElement = document.querySelector('descope-wc');
+
+        wcElement.addEventListener('success', (e) => {
+          console.log('Authenticated:', e.detail);
+          sdk.refresh(); // required for autoRefresh to pick up the new session
+          window.location.href = '/dashboard';
+        });
+
+        wcElement.addEventListener('error', (e) => {
+          console.error('Auth failed:', e.detail.errorMessage);
+        });
+
+        wcElement.addEventListener('ready', () => {
+          // remove/hide a loading indicator
+        });
+      } else {
         window.location.href = '/dashboard';
-      });
-
-      wcElement.addEventListener('error', (e) => {
-        console.error('Auth failed:', e.detail.errorMessage);
-      });
-
-      wcElement.addEventListener('ready', () => {
-        // remove/hide a loading indicator
-      });
+      }
     </script>
   </body>
 </html>
 ```
 
-When using the SDK's `autoRefresh` feature, call `sdk.refresh()` inside your
-`success` handler.
+If you're loading the SDK via npm/a bundler instead of the CDN script tag, the
+equivalent initialization is:
+
+```javascript
+import createSdk from '@descope/web-js-sdk';
+
+const sdk = createSdk({ projectId: '<project-id>' });
+```
+
+`createSdk`/`Descope` accepts the same options as `AuthProvider` in the React SDK:
+`baseUrl`, `baseCdnUrl`, `persistTokens` (default `true`), `autoRefresh` (default
+`true`), `sessionTokenViaCookie`, `storeLastAuthenticatedUser`.
 
 ### Useful `<descope-wc>` attributes
 
@@ -77,27 +105,15 @@ Full attribute list, `errorTransformer`/`logger`/`onScreenUpdate` properties, an
 `context` object shape are in the
 [`@descope/web-component` docs](https://www.npmjs.com/package/@descope/web-component).
 
-## 2. Initialize the Client SDK for Session Management
+## 2. Persist the Session Across Every Page
 
-```javascript
-import createSdk from '@descope/web-js-sdk';
-// or, via the UMD build loaded from a <script> tag: window.createSdk / global `sdk`
-
-const sdk = createSdk({ projectId: '<project-id>' });
-```
-
-`createSdk` accepts the same options as `AuthProvider` in the React SDK: `baseUrl`,
-`baseCdnUrl`, `persistTokens` (default `true`), `autoRefresh` (default `true`),
-`sessionTokenViaCookie`, `storeLastAuthenticatedUser`.
-
-### Persist the session across every page
-
-On every authenticated page (in a `<script>` tag near the top), call `refresh()` so
-the session stays valid as the user navigates:
+On every authenticated page (in a `<script>` tag near the top), initialize the SDK
+and call `refresh()` so the session stays valid as the user navigates:
 
 ```html
 <script src="https://descopecdn.com/npm/@descope/web-js-sdk@1.53.0/dist/index.umd.js"></script>
 <script>
+  const sdk = Descope({ projectId: '<project-id>' });
   sdk.refresh({ skipIfNoSession: true }); // avoids a network call when no session exists yet
 </script>
 ```
