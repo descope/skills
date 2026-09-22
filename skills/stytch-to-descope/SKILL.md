@@ -41,8 +41,8 @@ Stytch is not only an authentication provider — it is a broader identity platf
 
 ## Part 1: MCP Check (BLOCKING)
 
-Before doing anything else, check whether the Descope Docs MCP is available by calling
-`search-descope-docs` with a simple query (e.g., "session validation").
+Before doing anything else, check whether the Descope MCP Server is available by calling
+`docs_search` (or `search-descope-docs` on the older standalone Docs MCP) with a simple query (e.g., "session validation").
 
 **If the tool is available:** proceed to Part 2 immediately.
 
@@ -61,7 +61,7 @@ they want to install it first:
 >
 > **Would you like to install the MCP before we continue, or proceed without it?**
 
-- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `search-descope-docs` again before proceeding.
+- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `docs_search` again before proceeding.
 - If they choose to proceed without it: continue, but flag any SDK-specific answers as "based on last known documentation — verify against the current SDK."
 
 Do not proceed to Part 2 until this step is resolved.
@@ -264,7 +264,7 @@ For each hit, record:
 Read `package.json` (or equivalent) for the exact framework version — this affects async
 behavior (Next.js 15 vs 14) and SDK compatibility.
 
-If the Descope Docs MCP is available, use `search-descope-docs` or `ask-question-about-descope`
+If the Descope Docs MCP is available, use `docs_search` or `docs_ask_question`
 to verify current SDK method names for anything you plan to reference in the plan.
 
 ---
@@ -695,7 +695,7 @@ Run before generating any import, wrapper type, or helper. Skipping produces cod
 compiles but fails at runtime.
 
 **1. Verify SDK exports before writing any import.**
-When the Docs MCP is available, use `ask-question-about-descope` to confirm the exact method name, option shape, and return type before writing any SDK call. This is faster and more reliable than reading type declarations. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
+When the Docs MCP is available, use `docs_ask_question` to confirm the exact method name, option shape, and return type before writing any SDK call. This is faster and more reliable than reading type declarations. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
 
 When the Descope MCP server is unavailable: resolve the package's type declarations (`node_modules/<pkg>/dist/types/` or its `package.json` `types` field) and confirm the exact exported name and signature. For Go, run `go doc`. For Python, check the SDK stubs.
 

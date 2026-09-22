@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "descope": {
+      "type": "http",
+      "url": "https://mcp.descope.org/mcp"
+    }
+  }
+}
