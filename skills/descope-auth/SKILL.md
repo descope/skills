@@ -17,12 +17,13 @@ Detect the user's framework and use the appropriate reference:
 | `react` (no Next.js) | `references/react.md` |
 | `@angular/core` in package.json | `references/angular.md` |
 | No frontend framework (plain HTML/JS) | `references/vanilla-js.md` |
+| Native Android app (`com.android.application` in `build.gradle(.kts)`, not Flutter/React Native) | `references/kotlin.md` |
 | Python/Node.js backend only | `references/backend.md` |
 
 ## Quick Start (all frameworks)
 
 1. Get Project ID from https://app.descope.com/settings/project
-2. Set environment variable: `NEXT_PUBLIC_DESCOPE_PROJECT_ID=<your-id>`
+2. Configure the Project ID per the framework reference (e.g. `NEXT_PUBLIC_DESCOPE_PROJECT_ID=<your-id>` for Next.js, `Descope.setup(...)` for Android)
 3. Follow framework-specific reference
 4. **Verify**: After setup, confirm the `<Descope>` component renders the login form. Check the browser console — a missing or invalid Project ID produces a clear `Could not load flows` error.
 
@@ -43,7 +44,7 @@ export default function LoginPage() {
 }
 ```
 
-For React SPA or backend-only setups, see the framework-specific references below.
+For React SPA, Android, or backend-only setups, see the framework-specific references below.
 
 ## Valid Flow IDs (CRITICAL - do not invent others)
 
@@ -69,7 +70,7 @@ For React SPA or backend-only setups, see the framework-specific references belo
 ## DO NOT (Security Guardrails)
 
 - DO NOT parse JWTs manually - always use SDK's `validateSession()`
-- DO NOT store tokens in localStorage - SDK handles this securely
+- DO NOT store tokens in localStorage (web) or plain SharedPreferences (Android) - SDK handles this securely
 - DO NOT invent flow IDs - only use IDs from the table above
 - DO NOT skip server-side validation - always validate on backend
 - DO NOT expose DESCOPE_MANAGEMENT_KEY in client code
@@ -80,4 +81,5 @@ For React SPA or backend-only setups, see the framework-specific references belo
 - `references/react.md` - React SPA integration
 - `references/angular.md` - Angular integration
 - `references/vanilla-js.md` - Vanilla JavaScript / plain HTML integration
+- `references/kotlin.md` - Kotlin / Android integration (Native Flows)
 - `references/backend.md` - Backend session validation
