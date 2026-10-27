@@ -19,6 +19,7 @@ Integrate Descope authentication into applications with support for passwordless
 **Frameworks supported:**
 - Next.js (App Router with middleware)
 - React (SPA with protected routes)
+- Kotlin / Android (Native Flows with session management)
 - Node.js (backend session validation)
 - Python (backend session validation)
 
@@ -513,6 +514,7 @@ skills/
 │   └── references/
 │       ├── nextjs.md - Next.js App Router patterns
 │       ├── react.md - React SPA patterns
+│       ├── kotlin.md - Kotlin / Android patterns
 │       └── backend.md - Node.js/Python validation
 ├── auth0-to-descope/
 │   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
