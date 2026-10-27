@@ -96,14 +96,15 @@ To verify, confirm `onReady()` fires. With `DescopeLogger.debugLogger` enabled, 
 appear in Logcat prefixed `[DescopeAndroid]`.
 
 Magic Link, browser-based OAuth and SSO need a verified
-[Android App Link](https://developer.android.com/training/app-links) to return to the app.
+[Android App Link](https://developer.android.com/training/app-links) (or a custom-scheme link)
+to return to the app.
 Set the matching `*Redirect` property below, and pass the incoming link to
 `Descope.handleUri(uri)` in the activity that receives it.
 
 Optional `DescopeFlow` properties: `oauthNativeProvider` (native Sign in with Google, e.g.
 `OAuthProvider.Google`), `oauthRedirect`, `ssoRedirect`, `magicLinkRedirect`,
-`externalAuthRedirect` (each redirect also has a `*CustomScheme` variant), `clientInputs`,
-`sessionProvider`, `hooks`, `presentation`.
+`externalAuthRedirect` (`oauthRedirect`, `ssoRedirect` and `externalAuthRedirect` also have a
+`*CustomScheme` variant), `clientInputs`, `sessionProvider`, `hooks`, `presentation`, `sdk`.
 
 ## 3. Check the Session on Launch
 
@@ -198,7 +199,7 @@ the token server-side. See `references/backend.md`.
 
 ## Session Manager API
 
-`Descope.sessionManager` members:
+Main `Descope.sessionManager` members:
 
 - `session` — the current `DescopeSession?` (`sessionJwt`, `refreshJwt`, `sessionToken`,
   `refreshToken`, `user`, `claims`, `roles()`, `permissions()`)
@@ -207,7 +208,7 @@ the token server-side. See `references/backend.md`.
 - `addListener(listener)` / `removeListener(listener)`. `Listener` has
   `onUpdateTokens(session)` and `onUpdateUser(session)`.
 
-Call these from the main thread.
+Call the non-suspend members from the main thread.
 
 `Descope.auth` has `me`, `tenants`, `refreshSession`, `migrateSession` and `revokeSessions`.
 
