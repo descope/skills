@@ -17,7 +17,7 @@ dependencies {
 }
 ```
 
-Requires `minSdk` 24+.
+Requires `minSdk` 24+. `0.23.0` is the version this reference was verified against, not necessarily the latest. Check the latest release on [Maven Central](https://central.sonatype.com/artifact/com.descope/descope-kotlin) and pin that exact version. 
 
 ## 1. Initialize the SDK in the Application Class
 
