@@ -88,6 +88,10 @@ class LoginActivity : AppCompatActivity() {
 }
 ```
 
+Declare `LoginActivity` in `AndroidManifest.xml` with
+`android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode"`. Otherwise
+rotating the device or switching dark mode recreates the activity and restarts the flow.
+
 `DescopeFlow.hosted(flowId)` runs a Descope-hosted flow. Use a flow ID from the Valid Flow
 IDs table in SKILL.md. For a self-hosted flow, use `DescopeFlow("<flow-url>")`. The
 listener's fourth method, `onNavigation(uri)`, is optional.
