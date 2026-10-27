@@ -96,15 +96,15 @@ To verify, confirm `onReady()` fires. With `DescopeLogger.debugLogger` enabled, 
 appear in Logcat prefixed `[DescopeAndroid]`.
 
 Magic Link, browser-based OAuth and SSO need a verified
-[Android App Link](https://developer.android.com/training/app-links) (or a custom-scheme link)
-to return to the app.
+[Android App Link](https://developer.android.com/training/app-links) to return to the app.
 Set the matching `*Redirect` property below, and pass the incoming link to
 `Descope.handleUri(uri)` in the activity that receives it.
 
 Optional `DescopeFlow` properties: `oauthNativeProvider` (native Sign in with Google, e.g.
 `OAuthProvider.Google`), `oauthRedirect`, `ssoRedirect`, `magicLinkRedirect`,
 `externalAuthRedirect` (`oauthRedirect`, `ssoRedirect` and `externalAuthRedirect` also have a
-`*CustomScheme` variant), `clientInputs`, `sessionProvider`, `hooks`, `presentation`, `sdk`.
+`*CustomScheme` variant, a less secure fallback for browsers that ignore App Links),
+`clientInputs`, `sessionProvider`, `hooks`, `presentation`, `sdk`.
 
 ## 3. Check the Session on Launch
 
