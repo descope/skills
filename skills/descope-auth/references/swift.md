@@ -221,8 +221,10 @@ Some methods need app setup:
 - **Magic Link**: the email link has to open the app as a
   [Universal Link](https://developer.apple.com/documentation/xcode/supporting-universal-links-in-your-app)
   (Associated Domains capability with `applinks:<your-domain>`). Pass the link to
-  `Descope.handleURL(url)`, in `.onOpenURL` (SwiftUI) or
-  `application(_:continue:restorationHandler:)` (UIKit). Set `flow.magicLinkRedirect` only
+  `Descope.handleURL(url)`, in `.onOpenURL` (SwiftUI) or, for UIKit, with
+  `userActivity.webpageURL` in `scene(_:continue:)` and in `scene(_:willConnectTo:options:)`
+  (`connectionOptions.userActivities`, for cold launch) when the app has a `SceneDelegate`,
+  otherwise in `application(_:continue:restorationHandler:)`. Set `flow.magicLinkRedirect` only
   to override the redirect URL configured in the flow or project.
 - **Native Sign in with Apple**: set `flow.oauthNativeProvider = .apple`, add the Sign in
   with Apple capability, and set the app's Bundle ID as the Client ID of the Apple provider
@@ -243,7 +245,8 @@ import DescopeKit
 struct RootView: View {
     @State private var isLoggedIn = Self.hasValidSession()
 
-    // HomeView is the app's logged-in screen
+    // HomeView is the app's logged-in screen. Its logout button must call logout()
+    // (section 5) and then onLogout, or the Keychain session survives and relaunch signs back in.
 
     var body: some View {
         if isLoggedIn {

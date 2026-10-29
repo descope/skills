@@ -71,7 +71,7 @@ For React SPA, Android, iOS, or backend-only setups, see the framework-specific 
 ## DO NOT (Security Guardrails)
 
 - DO NOT parse JWTs manually - always use SDK's `validateSession()`
-- DO NOT store tokens in localStorage (web) plain SharedPreferences (Android), or UserDefaults (iOS) - SDK handles this securely
+- DO NOT store tokens in localStorage (web), plain SharedPreferences (Android), or UserDefaults (iOS) - SDK handles this securely
 - DO NOT invent flow IDs - only use IDs from the table above
 - DO NOT skip server-side validation - always validate on backend
 - DO NOT expose DESCOPE_MANAGEMENT_KEY in client code
