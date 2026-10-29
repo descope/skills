@@ -45,7 +45,11 @@ handler so `autoRefresh` picks up the new session immediately.
 
     <script>
       // The UMD build exposes a global `Descope(...)` factory function — not `createSdk`.
-      const sdk = Descope({ projectId: '<project-id>' });
+      // `persistTokens: true` is required here: unlike the React SDK's `AuthProvider`
+      // (which defaults it to `true`), the vanilla JS SDK has no default — without it,
+      // `sdk.getSessionToken`/`getRefreshToken`/`getIdToken` won't exist on `sdk` at all
+      // and calling them throws `TypeError: sdk.getSessionToken is not a function`.
+      const sdk = Descope({ projectId: '<project-id>', persistTokens: true, autoRefresh: true });
 
       const sessionToken = sdk.getSessionToken();
       const needsAuth = !sessionToken || sdk.isSessionTokenExpired(sessionToken);
@@ -82,12 +86,24 @@ equivalent initialization is:
 ```javascript
 import createSdk from '@descope/web-js-sdk';
 
-const sdk = createSdk({ projectId: '<project-id>' });
+const sdk = createSdk({ projectId: '<project-id>', persistTokens: true });
 ```
 
-`createSdk`/`Descope` accepts the same options as `AuthProvider` in the React SDK:
-`baseUrl`, `baseCdnUrl`, `persistTokens` (default `true`), `autoRefresh` (default
-`true`), `sessionTokenViaCookie`, `storeLastAuthenticatedUser`.
+`createSdk`/`Descope` accepts the same option names as `AuthProvider` in the React
+SDK — `baseUrl`, `baseCdnUrl`, `persistTokens`, `autoRefresh`, `sessionTokenViaCookie`,
+`storeLastAuthenticatedUser` — **but their defaults differ.** `AuthProvider` defaults
+`persistTokens`/`autoRefresh` to `true` itself and passes that through; the underlying
+`createSdk`/`Descope` factory does not apply that default — an omitted `persistTokens`
+is treated as falsy. Concretely, this means:
+
+- `sdk.getSessionToken()`, `sdk.getRefreshToken()`, and `sdk.getIdToken()` only exist
+  on the returned object when `persistTokens: true` was passed. Without it, calling
+  any of them throws `TypeError: sdk.getSessionToken is not a function`.
+- `sdk.refresh()` also won't persist the refreshed tokens to storage/cookies without
+  `persistTokens: true`, even though the call itself succeeds.
+
+**Always pass `persistTokens: true` explicitly** when initializing the SDK for vanilla
+JS/HTML, on every page that calls any of the above.
 
 ### Useful `<descope-wc>` attributes
 
@@ -113,7 +129,7 @@ and call `refresh()` so the session stays valid as the user navigates:
 ```html
 <script src="https://descopecdn.com/npm/@descope/web-js-sdk@1.53.0/dist/index.umd.js"></script>
 <script>
-  const sdk = Descope({ projectId: '<project-id>' });
+  const sdk = Descope({ projectId: '<project-id>', persistTokens: true });
   sdk.refresh({ skipIfNoSession: true }); // avoids a network call when no session exists yet
 </script>
 ```
