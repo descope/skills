@@ -46,10 +46,10 @@ handler so `autoRefresh` picks up the new session immediately.
     <script>
       // The UMD build exposes a global `Descope(...)` factory function — not `createSdk`.
       // `persistTokens: true` is required here: unlike the React SDK's `AuthProvider`
-      const sdk = Descope({ projectId: '<project-id>', persistTokens: true, autoRefresh: true });
+      // (which defaults it to `true`), the vanilla JS SDK has no default — without it,
       // `sdk.getSessionToken`/`getRefreshToken`/`getIdToken` won't exist on `sdk` at all
       // and calling them throws `TypeError: sdk.getSessionToken is not a function`.
-      const sdk = Descope({ projectId: '<project-id>', persistTokens: true });
+      const sdk = Descope({ projectId: '<project-id>', persistTokens: true, autoRefresh: true });
 
       const sessionToken = sdk.getSessionToken();
       const needsAuth = !sessionToken || sdk.isSessionTokenExpired(sessionToken);
