@@ -22,7 +22,7 @@ Spring resource server) or calls Microsoft Graph to manage B2C users.
 
 | Frontend setup (Decision 1) | Token the API validates | Validate with |
 |---|---|---|
-| Inbound App + Resource (default for B2C apps with scoped APIs) | Inbound App **access token**: `iss` = `https://api.descope.com/v1/apps/<ProjectID>`, `aud` = Resource, `scope` = space-separated | Standard JWT validation using `issuer` and `jwks_uri` from the Inbound App discovery document. Confirm with the Docs MCP whether the Descope backend SDK's session validation accepts Inbound App tokens before using it for these. |
+| Inbound App + Resource (default for B2C apps with scoped APIs) | Inbound App **access token**: `iss` = `https://api.descope.com/v1/apps/<ProjectID>`, `aud` = Resource, `scope` = space-separated | Descope backend SDK with the audience set to the Resource (see the SDK table below), or standard JWT validation using `issuer` and `jwks_uri` from the discovery document |
 | Plain Descope SDK / embedded Flow | Descope **session token** (`DS`): `iss` = `https://api.descope.com/<ProjectID>`, `aud` = project ID | Descope backend SDK (`validateSession`) |
 | Federated App via OIDC library | ID/access tokens from the project-level OIDC endpoints | Standard JWT validation with `https://api.descope.com/<ProjectID>` |
 
@@ -32,6 +32,19 @@ apps. Check `azp` if only some clients may call the API.
 
 Keep the B2C scope **names** (`tasks.read`) on the Descope Resource so only the claim name changes
 (`scp` → `scope`).
+
+**Descope backend SDKs and Inbound App tokens** (checked in SDK source; all accept them because
+they are signed with the project keys; none checks `scope`):
+
+| SDK | Issuer check | `aud` check | Use |
+|---|---|---|---|
+| Node `@descope/node-sdk` (2.20.0) | Yes — project ID as last/second-to-last path segment, so `/v1/apps/<ProjectID>` passes | Only when `audience` is passed | `validateSession(token, { audience: RESOURCE })` |
+| Python `descope` (2.16.1) | None | Without `audience`, expects the project ID → Inbound App tokens are rejected | `validate_session(token, audience=RESOURCE)` |
+| .NET `Descope` | None (`ValidateIssuer = false`) | None (`ValidateAudience = false`) | `ValidateSessionAsync(token)` **plus** an explicit `aud` (and `iss`) check |
+| Java `java-sdk` | None | None | `validateSessionWithToken(token)` **plus** an explicit `aud` (and `iss`) check |
+
+Skipping the `aud` check in .NET/Java accepts tokens issued for other apps and Resources in the
+same project.
 
 ---
 
@@ -317,13 +330,13 @@ become **Inbound Apps with client credentials** (not Access Keys):
 POST https://api.descope.com/oauth2/v1/apps/token
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=client_credentials&client_id=<inbound-app-client-id>&client_secret=<secret>&scope=tasks.read
+grant_type=client_credentials&client_id=<inbound-app-client-id>&client_secret=<secret>&scope=tasks.read&resource=https://api.example.com
 ```
 
 The token's `sub` is the app ID (no user). The API validates it like any Inbound App access token.
 B2C client-credentials tokens may carry app permissions in `roles` (Entra-style) rather than
 `scp` — check how the API authorizes daemons today and map those checks to Inbound App scopes.
-Confirm the exact token request parameters (scope format, resource) with the Docs MCP.
+`resource` selects the Resource (the token endpoint accepts one value); scope names alone do not.
 
 ---
 

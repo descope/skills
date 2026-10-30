@@ -117,8 +117,16 @@ default OIDC application), and the backend validates the session token.
 
 Configure hosted login with the Inbound App's `issuer` and `clientId` (both on the Inbound App
 settings page; do not construct the issuer). When a custom issuer is set, the React SDK's
-default `scope` is `openid` — set `scope` explicitly to include the Resource scopes. Verify the
-exact way to request Resource scopes (scope names vs. resource indicator) with the Docs MCP.
+default `scope` is `openid` — set `scope` explicitly to include the Resource scopes. The
+Resource itself is selected only by the RFC 8707 `resource` parameter (the backend does not infer
+it from scope names): pass it to `loginWithRedirect({ resource: '<Resource identifier>' })`
+(forwarded to `oidc-client-ts`). Up to 50 `resource` values are accepted at `/authorize` (the
+token's `aud` lists them all); the token endpoint accepts one. Resource indicators are gated by
+project/app settings — make sure the Inbound App is allowed to request the Resource.
+
+After login the SDK stores the OIDC **access token** as the session token, so
+`useSession().sessionToken` (React) / `getSessionToken()` is the Inbound App access token to send
+to the API.
 
 ### Descope OIDC endpoints
 
@@ -397,10 +405,10 @@ import { AuthProvider } from '@descope/react-sdk';
 
 | MSAL | Descope |
 |---|---|
-| `instance.loginRedirect(loginRequest)` | `useDescope().oidc.loginWithRedirect()` |
+| `instance.loginRedirect(loginRequest)` | `useDescope().oidc.loginWithRedirect({ resource: '<Resource>' })` |
 | `useIsAuthenticated()` | `useSession().isAuthenticated` (+ `isSessionLoading`) |
 | `useMsal().accounts[0]` / `idTokenClaims` | `useUser().user` |
-| `acquireTokenSilent({ scopes })` → `accessToken` | `useSession().sessionToken` (the SDK refreshes it) — verify which token is exposed with `oidcConfig` via the Docs MCP |
+| `acquireTokenSilent({ scopes })` → `accessToken` | `useSession().sessionToken` — with `oidcConfig` this is the Inbound App access token; the SDK refreshes it |
 | `AuthenticatedTemplate` / `UnauthenticatedTemplate` | Conditional render on `isAuthenticated` |
 | `MsalAuthenticationTemplate` | Guard component that calls `loginWithRedirect()` |
 | `instance.logoutRedirect()` | `useDescope().oidc.logout({ post_logout_redirect_uri })` |
@@ -432,7 +440,7 @@ DescopeAuthModule.forRoot({
 |---|---|
 | `canActivate: [MsalGuard]` | `canActivate: [descopeAuthGuard]` with `data: { descopeFallbackUrl: '/login' }` |
 | `MsalInterceptor` + `protectedResourceMap` | `descopeInterceptor` via `provideHttpClient(withInterceptors([descopeInterceptor]))`, with `pathsToIntercept` in `forRoot` (attaches `Bearer <session token>`, refreshes and retries on 401/403) |
-| `MsalService.loginRedirect()` | `descopeAuthService.descopeSdk.oidc.loginWithRedirect()` |
+| `MsalService.loginRedirect()` | `descopeAuthService.descopeSdk.oidc.loginWithRedirect({ resource: '<Resource>' })` |
 | `MsalService.instance.getActiveAccount()` | `DescopeAuthService.user$` / `getSessionToken()` |
 | `MsalBroadcastService.inProgress$` / account events | `DescopeAuthService.session$` / `user$` |
 | `MsalRedirectComponent` bootstrap | Remove |
@@ -478,8 +486,8 @@ const sdk = createSdk({
   oidcConfig: { issuer: '...', clientId: '...', scope: 'openid profile email tasks.read' },
 });
 
-// login button
-sdk.oidc.loginWithRedirect();
+// login button — `resource` selects the Resource (sets the token's aud)
+sdk.oidc.loginWithRedirect({ resource: 'https://api.example.com' });
 
 // on every page load (handles the redirect back)
 await sdk.oidc.finishLoginIfNeed();
@@ -520,6 +528,7 @@ builder.Services
         o.ResponseType = "code";
         o.Scope.Add("email");
         o.Scope.Add("tasks.read");                                // Resource scopes, if any
+        o.Resource = builder.Configuration["Descope:Resource"];   // RFC 8707 resource → token aud
         o.SaveTokens = true;
         o.MapInboundClaims = false;                               // keep claim names as issued
     });
@@ -529,7 +538,8 @@ Remove `AddMicrosoftIdentityUI`, `MicrosoftIdentity/Account/*` routes, policy-sp
 challenge code (`EditProfile`, `ResetPassword`), and `AzureAdB2C` config.
 
 **Node.js (`msal-node` `ConfidentialClientApplication` or `passport-azure-ad` `OIDCStrategy`):**
-replace with `openid-client` (discovery from the Descope issuer, same callback route).
+replace with `openid-client` (discovery from the Descope issuer, same callback route; add
+`resource` to the authorization request when the API is a Descope Resource).
 
 **Python (`msal` `ConfidentialClientApplication`, Flask/Django):** replace with Authlib or
 another OIDC client using the Descope issuer.

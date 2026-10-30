@@ -198,12 +198,18 @@ Who calls the API?
 **Embedded Flow + scoped API:** an embedded Flow (B2C iframe users, or on request) issues a
 Descope **session token** — `aud` is the project ID and there is no `scope` claim. Either keep
 hosted login through the Inbound App for apps whose API checks scopes, or map the API's scope
-checks to roles/permissions in the session token. Confirm with the Docs MCP whether an embedded
-Flow can issue Inbound App tokens before promising scopes.
+checks to roles/permissions in the session token. An embedded Flow cannot mint Inbound App
+access tokens: its `thirdPartyAppId` / `applicationScopes` / `thirdPartyAppStateId` start options
+only supply consent context or finish an OAuth authorize that is already in progress — the token
+always comes from the OAuth `/token` exchange.
 
 Descope-hosted login with an Inbound App uses the Inbound App's `issuer` and `clientId` in
 `oidcConfig` (the issuer is shown on the Inbound App settings page — do not construct it).
-Verify the current `oidcConfig` shape with the Docs MCP before writing code.
+**The frontend must send the Resource as an RFC 8707 `resource` parameter** — scope names alone
+do not select a Resource, so without it the token's `aud` will not be the Resource. Put the
+scope names in `oidcConfig.scope` and pass `resource` to `oidc.loginWithRedirect({ resource })`.
+The Inbound App must be allowed to request that Resource (resource indicators are gated by
+project/app settings).
 
 Do not proceed until both decisions are resolved.
 
@@ -612,9 +618,10 @@ ID. Descope session tokens carry the project ID unless a JWT Template changes it
 ### Validate Inbound App tokens with the issuer and keys from discovery
 Issuer is `https://api.descope.com/v1/apps/<ProjectID>` (custom client IDs:
 `/v1/apps/customized/<ProjectID>`); read `issuer` and `jwks_uri` from the discovery document
-rather than hardcoding. Confirm with the Docs MCP whether the Descope backend SDK's session
-validation accepts Inbound App tokens; otherwise use standard JWT validation (examples in
-`backend-sdks.md`).
+rather than hardcoding. All Descope backend SDKs accept Inbound App tokens (same project signing
+keys), but they differ: Node checks the issuer and checks `aud` only when `audience` is passed;
+Python rejects them unless `audience=<Resource>` is passed; .NET and Java check neither issuer
+nor `aud` — the app must verify `aud` itself. No SDK checks `scope`. See `backend-sdks.md`.
 
 ### Secrets and keys are not exportable
 Graph returns `****` for identity provider client secrets and marks policy key values as not
