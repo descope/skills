@@ -249,6 +249,34 @@ Guides self-service migrations from **PingOne for Customers / PingOne CIAM** to 
 
 
 <details>
+<summary><b>azure-ad-b2c-to-descope</b> — Migrate applications from Azure AD B2C to Descope</summary>
+
+Guides self-service migrations from **Azure AD B2C** to Descope across any language or framework. Detects how the app reaches B2C (MSAL redirect/popup, server-side OIDC, embedded iframe sign-in, ROPC), replaces MSAL and `Microsoft.Identity.Web` with the Descope SDK or a standard OIDC library (hosted login by default), keeps B2C-style scoped API access via Inbound Apps + Resources, optionally reads the B2C tenant through read-only Microsoft Graph, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope Docs MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from Azure AD B2C to Descope"
+- "We're moving off B2C" / "B2C end of sale"
+- "Our app uses @azure/msal-react / @azure/msal-angular / Microsoft.Identity.Web with b2clogin.com — switch to Descope"
+- "How do B2C user flows / custom policies / API connectors / identity providers map to Descope?"
+
+**Covers:**
+- MSAL replacement for React, Angular, Next.js, Vue, plain JS; server-side web apps (.NET, Node, Python, Java); native apps
+- App registrations → Inbound Apps + Resources (same scope names, `scp` → `scope`), client-credentials apps → Inbound Apps
+- User flows and custom policies → Flows; API connectors / REST technical profiles → HTTP Connectors
+- Token claim mapping (`oid`, `emails`, `tfp`, `extension_*`) and JWT Templates
+- User export via Microsoft Graph, password strategies (no hash export; JIT via ROPC), social and enterprise SSO user import without duplicates
+- Enterprise IdPs → tenant SSO with a per-connection cutover inventory (custom domain, secrets, certificates, MFA behavior)
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- SDK replacement across all auth touchpoints in the codebase
+- Descope Flow, Inbound App/Resource, tenant SSO, and Console configuration guidance
+
+**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
+<details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
 
 Author, edit, and apply Descope FGA schemas using the ReBAC/ABAC DSL. Validates changes via dry run before applying, warns on data loss, and requires user confirmation before modifying live schema. Requires the Descope Management MCP.
@@ -409,6 +437,27 @@ Help me migrate our Okta Identity Providers (per-tenant SSO) to Descope
 </details>
 
 <details>
+<summary><b>azure-ad-b2c-to-descope examples</b></summary>
+
+```
+Migrate my React app from @azure/msal-react and Azure AD B2C to Descope
+```
+
+```
+Our ASP.NET Core API uses Microsoft.Identity.Web with AzureAdB2C — how do we validate Descope tokens instead?
+```
+
+```
+How do our B2C custom policies and API connectors map to Descope Flows?
+```
+
+```
+We have enterprise customers on SAML through B2C — what changes for their IT admins when we move to Descope?
+```
+
+</details>
+
+<details>
 <summary><b>descope-terraform examples</b></summary>
 
 ```
@@ -527,6 +576,13 @@ skills/
 │       ├── implementation-nuances.md - Per-framework patterns, OIDC path, scp/scope, gotchas
 │       ├── flows-and-widgets.md - Okta→Descope lingo map, Flow/Widget guides, console-vs-code
 │       └── backend-sdks.md - Python and Java backend migration patterns
+├── azure-ad-b2c-to-descope/
+│   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
+│   └── references/
+│       ├── implementation-nuances.md - B2C feature mapping, claims, user/SSO migration, framework sections
+│       ├── flows-and-widgets.md - B2C→Descope lingo map, Flow/Widget guides, console-vs-code
+│       ├── backend-sdks.md - .NET, Node.js, Python, Java API validation patterns
+│       └── b2c-detection-patterns.md - Code search, read-only Graph discovery, SSO inventory template
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
