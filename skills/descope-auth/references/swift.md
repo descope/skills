@@ -230,7 +230,16 @@ Some methods need app setup:
   with Apple capability, and set the app's Bundle ID as the Client ID of the Apple provider
   in the [Descope Console](https://app.descope.com/settings/authentication/social).
 - **Passkeys**: add an Associated Domains entry `webcredentials:<domain>`, matching the
-  domain configured in the Descope Console's Passkeys settings.
+  domain configured in the Descope Console's Passkeys settings. Inside a flow, passkeys run
+  through WebAuthn in the flow's web view, not through `Descope.passkey`. Calling
+  `Descope.passkey` directly (a custom native UI without a flow) requires iOS 15+.
+
+`applinks:` and `webcredentials:` entries only work if the domain serves an
+[`apple-app-site-association`](https://developer.apple.com/documentation/xcode/supporting-associated-domains)
+file over HTTPS at `https://<your-domain>/.well-known/apple-app-site-association`, listing
+the app ID (`<TeamID>.<BundleID>`) under `applinks` and/or `webcredentials`. Adding the
+entitlement in Xcode is not enough, and the file can't be added from the app project, so tell
+the user to host it.
 
 Optional `DescopeFlow` properties: `oauthNativeProvider`, `magicLinkRedirect`, `clientInputs`,
 `sessionProvider`, `hooks` (e.g. `.setTransparentBody`), `requestTimeoutInterval`, `descope`.
@@ -321,11 +330,16 @@ Use `.allSessions` to sign the user out on every device.
 
 ## 6. Call Your Backend
 
-To send the session to your API, call
-`try await request.setAuthorizationHTTPHeaderField(from: Descope.sessionManager)` on a
-`URLRequest`. It refreshes the session if needed and sets the
-`Authorization: Bearer` header. Always validate the token server-side. See
-`references/backend.md`.
+To send the session to your API, set the header on the `URLRequest`:
+
+```swift
+var request = URLRequest(url: url) // must be var, the call below mutates the request
+try await request.setAuthorizationHTTPHeaderField(from: Descope.sessionManager)
+let (data, response) = try await URLSession.shared.data(for: request)
+```
+
+It refreshes the session if needed and sets the `Authorization: Bearer` header. Always
+validate the token server-side. See `references/backend.md`.
 
 ## Session Manager API
 
