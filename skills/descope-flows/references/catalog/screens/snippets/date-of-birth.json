@@ -1,0 +1,171 @@
+{
+ "screen": {
+  "screenId": "SCIDTaiVrSzt6VCcoIBJk31pZVB1z",
+  "interactions": [
+   {
+    "id": "rFu4TyV616",
+    "type": "button",
+    "label": "Continue",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "ZZOkMIygSk",
+     "JvD6Y5HHdU",
+     "rFu4TyV616",
+     "QtQKs0fMeq"
+    ],
+    "linkedNodes": {}
+   },
+   "ZZOkMIygSk": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "When were you born?",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "ZZOkMIygSk"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "JvD6Y5HHdU": {
+    "type": {
+     "resolvedName": "DateInput"
+    },
+    "isCanvas": false,
+    "props": {
+     "name": "form.dateOfBirth",
+     "label": "Date of birth",
+     "label-type": "static",
+     "years-range": "1900-2099",
+     "format": "MM/DD/YYYY",
+     "size": "md",
+     "type": "date",
+     "placeholder": "Enter date",
+     "full-width": true,
+     "required": true,
+     "bordered": true,
+     "disable-calendar": false,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "utc-time": true,
+     "id": "JvD6Y5HHdU"
+    },
+    "displayName": "Date Input",
+    "custom": {
+     "type": "input"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "rFu4TyV616": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "rFu4TyV616"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "QtQKs0fMeq": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "QtQKs0fMeq"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Date of birth",
+  "screenId": "SCIDTaiVrSzt6VCcoIBJk31pZVB1z",
+  "inputKeys": [
+   "form.dateOfBirth"
+  ],
+  "allInputKeys": [
+   "form.dateOfBirth"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "rFu4TyV616",
+     "taskId": "<next task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "DateInput is a custom input: name it `form.<key>` and read it as `form.<key>` (here `form.dateOfBirth`).",
+  "It posts a number, epoch milliseconds, not a `YYYY-MM-DD` string. With `utc-time: true` the number is UTC midnight of the chosen day, so the date is the same in every time zone; without it, it is local midnight in the user's browser and can read as the day before in UTC.",
+  "In a scriptlet: `const dob = new Date(Number(value));` then use `dob.getUTCFullYear()`, `dob.getUTCMonth()` (0-11) and `dob.getUTCDate()`; an age check compares those with today's UTC date. Check for an empty value (`\"\"`) first.",
+  "`format` (`MM/DD/YYYY`) only changes how the date is shown and typed; `years-range` limits the years the calendar offers.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

@@ -1,0 +1,265 @@
+{
+ "screen": {
+  "screenId": "SC6iUuGeCWXSF3dGzMNA2EYnu96wA",
+  "interactions": [
+   {
+    "id": "riYvhGtQsB",
+    "type": "oneTimeCode",
+    "label": "OTP code",
+    "icon": "",
+    "subType": ""
+   },
+   {
+    "id": "11PCO9duW1",
+    "type": "button",
+    "label": "Verify",
+    "icon": "",
+    "subType": ""
+   },
+   {
+    "id": "resend",
+    "type": "button",
+    "label": "Resend code",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "wY1WrA3F2O",
+     "8RtGLIQUlu",
+     "riYvhGtQsB",
+     "9O97rIxJb7",
+     "n_oqnUDwRh"
+    ],
+    "linkedNodes": {}
+   },
+   "wY1WrA3F2O": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Enter the code",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "wY1WrA3F2O"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "8RtGLIQUlu": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "We sent a code to {{sentTo.maskedEmail}}",
+     "italic": false,
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": true,
+     "link-target-blank": true,
+     "id": "8RtGLIQUlu"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "riYvhGtQsB": {
+    "type": {
+     "resolvedName": "CodeInput"
+    },
+    "isCanvas": false,
+    "props": {
+     "name": "code",
+     "type": "tel",
+     "label": "Code",
+     "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+     "size": "md",
+     "fullWidth": false,
+     "required": true,
+     "bordered": true,
+     "digits": 6,
+     "data-auto-submit": true,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "id": "riYvhGtQsB"
+    },
+    "displayName": "One Time Code",
+    "custom": {
+     "type": "oneTimeCode"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "9O97rIxJb7": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "9O97rIxJb7"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "n_oqnUDwRh": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "0",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "start",
+     "direction": "row",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "n_oqnUDwRh"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "11PCO9duW1",
+     "resend"
+    ],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "11PCO9duW1": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Verify",
+     "full-width": false,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "11PCO9duW1"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "n_oqnUDwRh"
+   },
+   "resend": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "link",
+     "color": "primary",
+     "children": "Resend code",
+     "full-width": false,
+     "formNoValidate": true,
+     "data-type": "button",
+     "id": "resend"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "n_oqnUDwRh"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Verify code",
+  "screenId": "SC6iUuGeCWXSF3dGzMNA2EYnu96wA",
+  "inputKeys": [],
+  "allInputKeys": [
+   "code"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "riYvhGtQsB",
+     "taskId": "<verify-code-otp-email task>"
+    },
+    {
+     "interactionId": "11PCO9duW1",
+     "taskId": "<verify-code-otp-email task>"
+    },
+    {
+     "interactionId": "resend",
+     "taskId": "<send-otp task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "{{sentTo.maskedEmail}} is filled in by the send step (sentTo.maskedPhone for SMS).",
+  "Code posts context key `code`; verify-code-otp-email reads `code` and the login id the send step saved (tmpExternalId), so the code screen needs no email input.",
+  "With data-auto-submit true the code field itself is an interaction (id = its props.id) and submits when the last digit is typed: give it a next rule like the Verify button. Drop the prop (and its rule) to submit only with the button.",
+  "Every interaction needs a next rule: an unconnected one fails the flow at runtime (NextTaskNotFound).",
+  "formNoValidate on Resend skips the required-field check so it works with an empty code.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

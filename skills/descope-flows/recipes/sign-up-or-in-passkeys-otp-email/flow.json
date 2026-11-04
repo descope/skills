@@ -1,0 +1,1504 @@
+{
+  "flowId": "sign-up-or-in-passkeys-otp-email",
+  "metadata": {
+    "componentsVersion": "2.1.13",
+    "description": "Sign in with a passkey if the user has one, else sign up or in with an email OTP and offer to add a passkey on devices that support it.",
+    "name": "Sign up or in - passkeys or OTP",
+    "sharedInteractions": [
+      {
+        "id": "0.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "1",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "1"
+            }
+          ]
+        },
+        "view": {
+          "x": -228,
+          "y": 12
+        }
+      },
+      "0": {
+        "action": "logged-in",
+        "id": "0",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 4128,
+          "y": 636
+        }
+      },
+      "1": {
+        "id": "1",
+        "inputKeys": [
+          "email"
+        ],
+        "name": "Welcome",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "6Cy2f8gQ_7",
+              "taskId": "3"
+            },
+            {
+              "interactionId": "C_nrfXQJJp",
+              "taskId": "2"
+            }
+          ]
+        },
+        "screenId": "SC2i3xZfmAJLBh85y4evgtzzKkzdf",
+        "type": "screen",
+        "view": {
+          "x": 264,
+          "y": 12
+        },
+        "allInputKeys": [
+          "email"
+        ],
+        "calculatedInputKeys": true
+      },
+      "10": {
+        "action": "webauthn-update-user-start",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "10.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "10",
+        "name": "Update User / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "10.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3648,
+          "y": 600
+        }
+      },
+      "10.end": {
+        "action": "webauthn-update-user-finish",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "10.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "10.end",
+        "name": "Update User / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3648,
+          "y": 600
+        }
+      },
+      "11": {
+        "id": "11",
+        "name": "Sign In with Passkey",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "Q86IXDdAAn",
+              "taskId": "2"
+            },
+            {
+              "interactionId": "6IU4qIgA7r",
+              "taskId": "12"
+            }
+          ]
+        },
+        "screenId": "SC2kvtgqQEF3L3dOgsPfHGGqtsjVN",
+        "type": "screen",
+        "view": {
+          "x": 1236,
+          "y": 252
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      },
+      "12": {
+        "action": "sign-in-otp-email",
+        "arguments": {
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "12",
+        "name": "Sign In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "13"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1716,
+          "y": 324
+        }
+      },
+      "13": {
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "13",
+        "name": "Verify OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "12"
+            },
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "14"
+            }
+          ]
+        },
+        "screenId": "SC2kvtgq5ZNtIGNRQOP9owcJ0qkXU",
+        "type": "screen",
+        "view": {
+          "x": 2196,
+          "y": 216
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "14": {
+        "action": "verify-code-otp-email",
+        "id": "14",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3168,
+          "y": 312
+        }
+      },
+      "2": {
+        "action": "webauthn-sign-up-or-in-start",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "2.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "2",
+        "name": "Sign Up or In / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "2.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1716,
+          "y": 72
+        }
+      },
+      "2.end": {
+        "action": "webauthn-sign-up-or-in-finish",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "2.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "2.end",
+        "name": "Sign Up or In / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1716,
+          "y": 72
+        }
+      },
+      "3": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "not-empty",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "unauthUser.loginIds"
+                }
+              },
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "unauthUser.webauthn"
+                }
+              }
+            ],
+            "interactionId": "cpuagck79yr",
+            "name": "User exists and with Passkeys"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "User does not exist"
+          }
+        ],
+        "id": "3",
+        "name": "Check user",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "cpuagck79yr",
+              "taskId": "11"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "5"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 744,
+          "y": 240
+        }
+      },
+      "5": {
+        "action": "sign-up-or-in-otp-email",
+        "arguments": {
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "5",
+        "name": "Sign Up or In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "6"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1236,
+          "y": 468
+        }
+      },
+      "6": {
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "6",
+        "name": "Verify OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "5"
+            },
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "7"
+            }
+          ]
+        },
+        "screenId": "SC2kvrIQyBQnz7FBHukWGcrn9zJaX",
+        "type": "screen",
+        "view": {
+          "x": 1716,
+          "y": 468
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "7": {
+        "action": "verify-code-otp-email",
+        "id": "7",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "15"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 2196,
+          "y": 540
+        }
+      },
+      "9": {
+        "id": "9",
+        "name": "Add Passkeys",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "6Cy2f8gQ_7",
+              "taskId": "10"
+            },
+            {
+              "interactionId": "Hn4sW8vQ2c",
+              "taskId": "0"
+            }
+          ]
+        },
+        "screenId": "SC2kvre1zENur8v8nbpit1M4MDeI0",
+        "type": "screen",
+        "view": {
+          "x": 3168,
+          "y": 576
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      },
+      "15": {
+        "id": "15",
+        "name": "Can this device use passkeys?",
+        "type": "condition",
+        "conditions": [
+          {
+            "interactionId": "r7kd2m9xq4w",
+            "name": "Supports passkeys",
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "device.webAuthnSupport"
+                }
+              }
+            ]
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Else"
+          }
+        ],
+        "next": {
+          "rules": [
+            {
+              "interactionId": "r7kd2m9xq4w",
+              "taskId": "9"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "0"
+            }
+          ]
+        },
+        "view": {
+          "x": 2688,
+          "y": 540
+        }
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC2i3xZfmAJLBh85y4evgtzzKkzdf",
+      "interactions": [
+        {
+          "id": "6Cy2f8gQ_7",
+          "type": "button",
+          "label": "Next",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "C_nrfXQJJp",
+          "type": "input",
+          "label": "Email",
+          "icon": "passkey",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6Cy2f8gQ_7": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "Next",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6Cy2f8gQ_7",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "C_nrfXQJJp": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Email Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "autoComplete": "webauthn",
+            "bordered": true,
+            "copy-to-clipboard": false,
+            "data-errormessage-pattern-mismatch": "Must be a valid email",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": true,
+            "id": "C_nrfXQJJp",
+            "label": "Email",
+            "label-type": "static",
+            "max": 100,
+            "name": "email",
+            "pattern": "^[\\w\\.\\%\\+\\-]+@[\\w\\.\\-]+\\.[A-Za-z]{2,}$",
+            "placeholder": "Email",
+            "required": false,
+            "size": "md",
+            "type": "email"
+          },
+          "type": {
+            "resolvedName": "EmailInput"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "s124VbabZJ",
+            "C_nrfXQJJp",
+            "6Cy2f8gQ_7",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "s124VbabZJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Welcome",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "s124VbabZJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvrIQyBQnz7FBHukWGcrn9zJaX",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedEmail}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter Code",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fyz-aN6hyx": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "thNbUTWOGY",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fyz-aN6hyx",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oOOUcyEOVr": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "oOOUcyEOVr",
+            "justify": "center",
+            "paddingX": "5",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "oOOUcyEOVr",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "thNbUTWOGY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fyz-aN6hyx"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "thNbUTWOGY",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "3",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "oneTimeCodeId",
+            "thNbUTWOGY",
+            "oOOUcyEOVr"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvre1zENur8v8nbpit1M4MDeI0",
+      "interactions": [
+        {
+          "id": "6Cy2f8gQ_7",
+          "type": "button",
+          "label": "Add a passkey",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "Hn4sW8vQ2c",
+          "type": "button",
+          "label": "Not now",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "0hlvnQDdq_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Sign in faster next time with a passkey",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "0hlvnQDdq_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6Cy2f8gQ_7": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": false,
+            "children": "Add a passkey",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6Cy2f8gQ_7",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "0hlvnQDdq_",
+            "6Cy2f8gQ_7",
+            "Hn4sW8vQ2c",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "Hn4sW8vQ2c": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": false,
+            "children": "Not now",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "Hn4sW8vQ2c",
+            "shape": "",
+            "size": "md",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvtgq5ZNtIGNRQOP9owcJ0qkXU",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedEmail}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter Code",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fyz-aN6hyx": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "thNbUTWOGY",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fyz-aN6hyx",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oOOUcyEOVr": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "oOOUcyEOVr",
+            "justify": "center",
+            "paddingX": "5",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "oOOUcyEOVr",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "thNbUTWOGY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fyz-aN6hyx"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "thNbUTWOGY",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "3",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "oneTimeCodeId",
+            "thNbUTWOGY",
+            "oOOUcyEOVr"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvtgqQEF3L3dOgsPfHGGqtsjVN",
+      "interactions": [
+        {
+          "id": "6IU4qIgA7r",
+          "type": "button",
+          "label": "Send me One Time Password",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "Q86IXDdAAn",
+          "type": "button",
+          "label": "",
+          "icon": "passkey",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "0hlvnQDdq_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Sign in with your passkey",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "0hlvnQDdq_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6IU4qIgA7r": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": false,
+            "children": "Send me One Time Password",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6IU4qIgA7r",
+            "shape": "",
+            "size": "md",
+            "variant": "outline"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "OoU1SFwwUd": {
+          "custom": {},
+          "displayName": "Divider",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "OR",
+            "id": "OoU1SFwwUd",
+            "italic": false,
+            "mode": "primary",
+            "variant": "body1",
+            "vertical": false
+          },
+          "type": {
+            "resolvedName": "Divider"
+          }
+        },
+        "Q86IXDdAAn": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Passkey Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "",
+            "color": "primary",
+            "data-type": "biometrics",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "Q86IXDdAAn",
+            "size": "md",
+            "st-label-spacing": "10px",
+            "startIcon": "passkey",
+            "startIconColorText": true,
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "PasskeyButton"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "0hlvnQDdq_",
+            "Q86IXDdAAn",
+            "OoU1SFwwUd",
+            "6IU4qIgA7r",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    }
+  ]
+}

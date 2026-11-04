@@ -1,0 +1,233 @@
+{
+ "screen": {
+  "screenId": "SC4QItBuYdI787fEy2skYgitDJwqM",
+  "interactions": [
+   {
+    "id": "UMvSPmSGYB",
+    "type": "button",
+    "label": "Continue with Google",
+    "icon": "google",
+    "subType": "social"
+   },
+   {
+    "id": "0XuzRKuZ7G",
+    "type": "button",
+    "label": "Continue with email",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "bJPwxYQDQX",
+     "UMvSPmSGYB",
+     "8GGRVi42Px",
+     "b-bOSseE6C",
+     "0XuzRKuZ7G",
+     "AukaglyrKS"
+    ],
+    "linkedNodes": {}
+   },
+   "bJPwxYQDQX": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Sign in or sign up",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "bJPwxYQDQX"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "UMvSPmSGYB": {
+    "type": {
+     "resolvedName": "GoogleButton"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "outline",
+     "color": "primary",
+     "children": "Continue with Google",
+     "full-width": true,
+     "formNoValidate": true,
+     "data-type": "social",
+     "startIcon": "google",
+     "data-descope-provider": "google",
+     "startIconColorText": false,
+     "st-label-spacing": "10px",
+     "aria-label": "Sign in with Google",
+     "id": "UMvSPmSGYB"
+    },
+    "displayName": "Google Button",
+    "custom": {
+     "type": "button",
+     "subType": "social"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "8GGRVi42Px": {
+    "type": {
+     "resolvedName": "Divider"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "or",
+     "italic": false,
+     "variant": "body1",
+     "vertical": false,
+     "mode": "primary",
+     "id": "8GGRVi42Px"
+    },
+    "displayName": "Divider",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "b-bOSseE6C": {
+    "type": {
+     "resolvedName": "EmailInput"
+    },
+    "isCanvas": false,
+    "props": {
+     "label": "Email",
+     "label-type": "static",
+     "size": "md",
+     "placeholder": "Email",
+     "full-width": true,
+     "max": 100,
+     "required": true,
+     "bordered": true,
+     "copy-to-clipboard": false,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "name": "email",
+     "type": "email",
+     "pattern": "^[\\w\\.\\%\\+\\-']+@[\\w\\.\\-]+\\.[A-Za-z]{2,}$",
+     "data-errormessage-pattern-mismatch": "Must be a valid email",
+     "autoComplete": null,
+     "id": "b-bOSseE6C"
+    },
+    "displayName": "Email Input",
+    "custom": {
+     "type": "input"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "0XuzRKuZ7G": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue with email",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "0XuzRKuZ7G"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "AukaglyrKS": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "AukaglyrKS"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Welcome",
+  "screenId": "SC4QItBuYdI787fEy2skYgitDJwqM",
+  "inputKeys": [
+   "email"
+  ],
+  "allInputKeys": [
+   "email"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "UMvSPmSGYB",
+     "taskId": "<oauth-start task>"
+    },
+    {
+     "interactionId": "0XuzRKuZ7G",
+     "taskId": "<sign-up-or-in-otp-email task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "One screen, two interactions: each button gets its own next rule.",
+  "GoogleButton has formNoValidate true, so it works while the required email field is empty.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}
