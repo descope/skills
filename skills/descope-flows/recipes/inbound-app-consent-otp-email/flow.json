@@ -1,0 +1,1673 @@
+{
+  "flowId": "inbound-app-consent-otp-email",
+  "metadata": {
+    "componentsVersion": "2.2.9",
+    "description": "Sign in with a one-time code by email if needed, then ask the user to authorize the inbound app's scopes unless consent was already given.",
+    "name": "Inbound app consent - OTP email",
+    "sharedInteractions": [
+      {
+        "id": "0.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "1",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "1"
+            }
+          ]
+        },
+        "view": {
+          "x": -216,
+          "y": -12
+        }
+      },
+      "0": {
+        "action": "logged-in",
+        "id": "0",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 4716,
+          "y": 120
+        }
+      },
+      "1": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.loggedIn"
+                }
+              }
+            ],
+            "interactionId": "6pwt4omq1gd",
+            "name": "True"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "False"
+          }
+        ],
+        "id": "1",
+        "name": "Is the user logged in?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "6pwt4omq1gd",
+              "taskId": "14"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "7"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 276,
+          "y": -12
+        }
+      },
+      "10": {
+        "action": "verify-code-otp-email",
+        "id": "10",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "4"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 2208,
+          "y": 324
+        }
+      },
+      "13": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "inboundApp.verified"
+                }
+              }
+            ],
+            "interactionId": "xnkdbzy0uti",
+            "name": "True"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "False"
+          }
+        ],
+        "id": "13",
+        "name": "Is inbound app verified?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "xnkdbzy0uti",
+              "taskId": "5"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "15"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 3192,
+          "y": -180
+        }
+      },
+      "14": {
+        "action": "loadUser",
+        "id": "14",
+        "name": "Load User",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "4"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1248,
+          "y": 12
+        }
+      },
+      "15": {
+        "allInputKeys": [
+          "thirdPartyAppApproveScopes"
+        ],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "project.name",
+          "thirdPartyApp.name"
+        ],
+        "id": "15",
+        "name": "Consent Screen - Unverified App",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "_Z6xPaS9jy",
+              "taskId": "6"
+            },
+            {
+              "interactionId": "6N3cb_5t3T",
+              "taskId": "0"
+            }
+          ]
+        },
+        "screenId": "SC35bGPJGHtlsSnPJMuRipLGuayvy",
+        "type": "screen",
+        "view": {
+          "x": 3624,
+          "y": -60
+        },
+        "inputKeys": []
+      },
+      "4": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-false",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "thirdPartyApp.user.consented"
+                }
+              }
+            ],
+            "interactionId": "szxmq7woocb",
+            "name": "False"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "True"
+          }
+        ],
+        "id": "4",
+        "name": "Is consent already granted?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "szxmq7woocb",
+              "taskId": "13"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 2700,
+          "y": 12
+        }
+      },
+      "5": {
+        "allInputKeys": [
+          "thirdPartyAppApproveScopes"
+        ],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "project.name",
+          "thirdPartyApp.name"
+        ],
+        "id": "5",
+        "name": "Consent Screen - Verified App",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "_Z6xPaS9jy",
+              "taskId": "6"
+            },
+            {
+              "interactionId": "6N3cb_5t3T",
+              "taskId": "0"
+            }
+          ]
+        },
+        "screenId": "SC30d8BhYl66qARWFmjoGqazNrKif",
+        "type": "screen",
+        "view": {
+          "x": 3636,
+          "y": -252
+        },
+        "inputKeys": []
+      },
+      "6": {
+        "action": "create-consent",
+        "id": "6",
+        "name": "Update user consent",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 4116,
+          "y": -120
+        }
+      },
+      "7": {
+        "allInputKeys": [
+          "email"
+        ],
+        "calculatedInputKeys": true,
+        "id": "7",
+        "inputKeys": [
+          "email"
+        ],
+        "name": "Welcome Screen",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "3TVRPM-NqM",
+              "taskId": "8"
+            }
+          ]
+        },
+        "screenId": "SC30d8BlK0lwva5GRdUYnAI4S8CC7",
+        "type": "screen",
+        "view": {
+          "x": 756,
+          "y": 204
+        }
+      },
+      "8": {
+        "action": "sign-up-or-in-otp-email",
+        "arguments": {
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "8",
+        "name": "Sign Up or In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "9"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1248,
+          "y": 228
+        }
+      },
+      "9": {
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "9",
+        "name": "Verify OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "pnOqEGpL1b",
+              "taskId": "7"
+            },
+            {
+              "interactionId": "resend",
+              "taskId": "8"
+            },
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "10"
+            }
+          ]
+        },
+        "screenId": "SC30d8BmHvDqoE7uwUS5UzVKkXOJw",
+        "type": "screen",
+        "view": {
+          "x": 1728,
+          "y": 204
+        },
+        "inputKeys": []
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC30d8BhYl66qARWFmjoGqazNrKif",
+      "interactions": [
+        {
+          "id": "6N3cb_5t3T",
+          "type": "button",
+          "label": "Cancel",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "_Z6xPaS9jy",
+          "type": "button",
+          "label": "Authorize",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6N3cb_5t3T": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "children": "Cancel",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6N3cb_5t3T",
+            "shape": "",
+            "size": "md",
+            "variant": "outline"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "EQIG9X08-e": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "u8HvnRL4YV"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#FFFFFFFF",
+            "backgroundImageUrl": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "EQIG9X08-e",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "OHS3uAG0xM",
+          "props": {
+            "align": "center",
+            "children": "Connect {{project.name}} with {{thirdPartyApp.name}}\n\n",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "left",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "OHS3uAG0xM": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "OHS3uAG0xM",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "qIfDVKm2T2",
+            "OHS3uAG0xM",
+            "Zgp3CGaHAw",
+            "EQIG9X08-e",
+            "woAD652rBY"
+          ],
+          "props": {
+            "align": "center",
+            "background": "#FFFFFFFF",
+            "backgroundImageUrl": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "Zgp3CGaHAw": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "_FBvzhJtOx"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "Zgp3CGaHAw",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "_FBvzhJtOx": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "Zgp3CGaHAw",
+          "props": {
+            "children": "{{thirdPartyApp.name}} will be able to:\n\n",
+            "full-width": false,
+            "id": "_FBvzhJtOx",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "left",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "_Z6xPaS9jy": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "children": "Authorize",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "_Z6xPaS9jy",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "ojc6ht-R78": {
+          "custom": {},
+          "displayName": "Inbound App Logo",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "qIfDVKm2T2",
+          "props": {
+            "id": "ojc6ht-R78",
+            "size": "md"
+          },
+          "type": {
+            "resolvedName": "ThirdPartyAppLogo"
+          }
+        },
+        "qIfDVKm2T2": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "ojc6ht-R78"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "qIfDVKm2T2",
+            "justify": "center",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "u8HvnRL4YV": {
+          "custom": {},
+          "displayName": "Inbound App Scopes",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "EQIG9X08-e",
+          "props": {
+            "id": "u8HvnRL4YV",
+            "name": "thirdPartyAppApproveScopes",
+            "size": "md",
+            "st-gap": "0em",
+            "variant": "checkbox"
+          },
+          "type": {
+            "resolvedName": "ScopesList"
+          }
+        },
+        "woAD652rBY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "_Z6xPaS9jy",
+            "1sMmkeVxVT",
+            "6N3cb_5t3T"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "#FFFFFFFF",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "woAD652rBY",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC30d8BlK0lwva5GRdUYnAI4S8CC7",
+      "interactions": [
+        {
+          "id": "3TVRPM-NqM",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "3TVRPM-NqM": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "RP8Dj8wg6E",
+          "props": {
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "3TVRPM-NqM",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "Ek1mWE2Mag": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Email Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "RP8Dj8wg6E",
+          "props": {
+            "bordered": true,
+            "copy-to-clipboard": false,
+            "data-errormessage-pattern-mismatch": "Must be a valid email",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": true,
+            "id": "Ek1mWE2Mag",
+            "label": "",
+            "label-type": "static",
+            "max": 100,
+            "name": "email",
+            "pattern": "^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$",
+            "placeholder": "Email address *",
+            "required": true,
+            "size": "md",
+            "type": "email"
+          },
+          "type": {
+            "resolvedName": "EmailInput"
+          }
+        },
+        "FTAR1uG31j": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "UTdxgyTBPh",
+            "GyGw_AJiyl"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FTAR1uG31j",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "1",
+            "spaceBetween": "0.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "GyGw_AJiyl": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FTAR1uG31j",
+          "props": {
+            "children": "By continuing, I agree to the Company's [Privacy Statement](https://www.example.com/privacy) and [Terms of Service](https://www.example.com/terms)\n\n",
+            "full-width": false,
+            "id": "GyGw_AJiyl",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "JMZqBmza1C": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "RP8Dj8wg6E",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "JMZqBmza1C",
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "U9D2pHfkJp",
+            "FTAR1uG31j",
+            "RP8Dj8wg6E"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "RP8Dj8wg6E": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "Ek1mWE2Mag",
+            "3TVRPM-NqM",
+            "JMZqBmza1C"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "RP8Dj8wg6E",
+            "justify": "center",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "U9D2pHfkJp": {
+          "custom": {},
+          "displayName": "Logo",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "alt": "Logo",
+            "height": "100px",
+            "id": "U9D2pHfkJp"
+          },
+          "type": {
+            "resolvedName": "Logo"
+          }
+        },
+        "UTdxgyTBPh": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FTAR1uG31j",
+          "props": {
+            "children": "Welcome!",
+            "full-width": false,
+            "id": "UTdxgyTBPh",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h3"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC30d8BmHvDqoE7uwUS5UzVKkXOJw",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "pnOqEGpL1b",
+          "type": "button",
+          "label": "Choose another authentication method",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedEmail}}",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter Code",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fyz-aN6hyx": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "thNbUTWOGY",
+          "props": {
+            "color": "error",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fyz-aN6hyx",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oOOUcyEOVr": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend",
+            "pnOqEGpL1b"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "oOOUcyEOVr",
+            "justify": "center",
+            "paddingX": "5",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "digits": 6,
+            "full-width": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "Code"
+          }
+        },
+        "pnOqEGpL1b": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "oOOUcyEOVr",
+          "props": {
+            "children": "Choose another authentication method",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "pnOqEGpL1b",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "oOOUcyEOVr",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "thNbUTWOGY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fyz-aN6hyx"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "thNbUTWOGY",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "3",
+            "spaceBetween": "1",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "oneTimeCodeId",
+            "thNbUTWOGY",
+            "oOOUcyEOVr"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1.5",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC35bGPJGHtlsSnPJMuRipLGuayvy",
+      "interactions": [
+        {
+          "id": "6N3cb_5t3T",
+          "type": "button",
+          "label": "Cancel",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "_Z6xPaS9jy",
+          "type": "button",
+          "label": "Authorize",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6N3cb_5t3T": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "children": "Cancel",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6N3cb_5t3T",
+            "shape": "",
+            "size": "md",
+            "variant": "outline"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "EQIG9X08-e": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "u8HvnRL4YV"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#FFFFFFFF",
+            "backgroundImageUrl": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "EQIG9X08-e",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "OHS3uAG0xM",
+          "props": {
+            "align": "center",
+            "children": "Connect {{project.name}} with {{thirdPartyApp.name}}\n\n",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "left",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "NpV0qhppf_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "VqlMUvC3Yz",
+          "props": {
+            "children": "Using this application may put your data at risk\n\n",
+            "full-width": false,
+            "id": "NpV0qhppf_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "OHS3uAG0xM": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "OHS3uAG0xM",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "qIfDVKm2T2",
+            "OHS3uAG0xM",
+            "Zgp3CGaHAw",
+            "EQIG9X08-e",
+            "woAD652rBY",
+            "VqlMUvC3Yz"
+          ],
+          "props": {
+            "align": "center",
+            "background": "#FFFFFFFF",
+            "backgroundImageUrl": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "VqlMUvC3Yz": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "XGFJtHqtkn",
+            "NpV0qhppf_"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "#D0021B1F",
+            "backgroundImageUrl": "",
+            "border-radius": "sm",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "VqlMUvC3Yz",
+            "justify": "start",
+            "paddingX": "2",
+            "paddingY": "2",
+            "spaceBetween": "2",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "XGFJtHqtkn": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "VqlMUvC3Yz",
+          "props": {
+            "children": "Warning: Unverified Application\n\n",
+            "full-width": false,
+            "id": "XGFJtHqtkn",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "Zgp3CGaHAw": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "_FBvzhJtOx"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "Zgp3CGaHAw",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "_FBvzhJtOx": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "Zgp3CGaHAw",
+          "props": {
+            "children": "{{thirdPartyApp.name}} will be able to:\n\n",
+            "full-width": false,
+            "id": "_FBvzhJtOx",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "left",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "_Z6xPaS9jy": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "woAD652rBY",
+          "props": {
+            "children": "Authorize",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "_Z6xPaS9jy",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "ojc6ht-R78": {
+          "custom": {},
+          "displayName": "Inbound App Logo",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "qIfDVKm2T2",
+          "props": {
+            "id": "ojc6ht-R78",
+            "size": "md"
+          },
+          "type": {
+            "resolvedName": "ThirdPartyAppLogo"
+          }
+        },
+        "qIfDVKm2T2": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "ojc6ht-R78"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "qIfDVKm2T2",
+            "justify": "center",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "u8HvnRL4YV": {
+          "custom": {},
+          "displayName": "Inbound App Scopes",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "EQIG9X08-e",
+          "props": {
+            "id": "u8HvnRL4YV",
+            "name": "thirdPartyAppApproveScopes",
+            "size": "md",
+            "st-gap": "0em",
+            "variant": "checkbox"
+          },
+          "type": {
+            "resolvedName": "ScopesList"
+          }
+        },
+        "woAD652rBY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "_Z6xPaS9jy",
+            "1sMmkeVxVT",
+            "6N3cb_5t3T"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "#FFFFFFFF",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "woAD652rBY",
+            "justify": "start",
+            "paddingX": "1",
+            "paddingY": "1",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    }
+  ]
+}

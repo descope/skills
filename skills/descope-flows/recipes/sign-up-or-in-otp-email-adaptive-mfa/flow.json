@@ -1,0 +1,1978 @@
+{
+  "flowId": "sign-up-or-in-otp-email-adaptive-mfa",
+  "metadata": {
+    "name": "Sign up or in - OTP email, adaptive MFA (SMS)",
+    "description": "Sign up or in with a one-time code by email; ask for an SMS code only when the fingerprint risk score is high. Users without a verified phone add one.",
+    "componentsVersion": "2.1.13",
+    "sharedInteractions": [
+      {
+        "id": "8.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "0",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "0"
+            }
+          ]
+        },
+        "view": {
+          "x": -120,
+          "y": 156
+        }
+      },
+      "0": {
+        "id": "0",
+        "name": "Welcome Screen",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "S-VOZ5i7gc",
+              "taskId": "19"
+            }
+          ]
+        },
+        "screenId": "SC3L30IpSBASWChbPK64cXL5CZOJy",
+        "type": "screen",
+        "view": {
+          "x": 372,
+          "y": 156
+        },
+        "inputKeys": [
+          "email"
+        ],
+        "allInputKeys": [
+          "email"
+        ],
+        "calculatedInputKeys": true
+      },
+      "12": {
+        "id": "12",
+        "name": "User Information",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "siB9_TIhxh",
+              "taskId": "7"
+            }
+          ]
+        },
+        "screenId": "SC3L30IsKy9EzN9GB8qYG1VFCw8ld",
+        "type": "screen",
+        "view": {
+          "x": 2328,
+          "y": 180
+        },
+        "inputKeys": [
+          "fullName"
+        ],
+        "allInputKeys": [
+          "fullName"
+        ],
+        "calculatedInputKeys": true
+      },
+      "19": {
+        "action": "sign-up-or-in-otp-email",
+        "arguments": {
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "19",
+        "name": "Sign Up or In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "20"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 744,
+          "y": 12
+        }
+      },
+      "20": {
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "20",
+        "name": "Verify OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "pnOqEGpL1b",
+              "taskId": "0"
+            },
+            {
+              "interactionId": "resend",
+              "taskId": "19"
+            },
+            {
+              "interactionId": "xFKyTBaTQn",
+              "taskId": "0"
+            },
+            {
+              "interactionId": "L1T9iO4p5U",
+              "taskId": "21"
+            }
+          ]
+        },
+        "screenId": "SC3L30IrwrKVgODVaHj89KUg14sIQ",
+        "type": "screen",
+        "view": {
+          "x": 1116,
+          "y": -72
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "21": {
+        "action": "verify-code-otp-email",
+        "id": "21",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "4"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1488,
+          "y": 24
+        }
+      },
+      "4": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "authInfo.firstSeen"
+                }
+              }
+            ],
+            "interactionId": "iw9wg6crpmd",
+            "name": "New user"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Existing user"
+          }
+        ],
+        "id": "4",
+        "name": "Is new user?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "iw9wg6crpmd",
+              "taskId": "12"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "22"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 1860,
+          "y": 156
+        }
+      },
+      "7": {
+        "action": "update-user-properties",
+        "arguments": {
+          "userPropertiesDefinitions": {
+            "type": "inline",
+            "value": [
+              {
+                "key": "displayName",
+                "type": "context",
+                "value": "form.fullName"
+              }
+            ]
+          }
+        },
+        "id": "7",
+        "name": "Update User / Properties",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "22"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 2844,
+          "y": 204
+        }
+      },
+      "8": {
+        "action": "logged-in",
+        "id": "8",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 6252,
+          "y": 324
+        }
+      },
+      "22": {
+        "id": "22",
+        "name": "Has a verified phone?",
+        "type": "condition",
+        "conditions": [
+          {
+            "interactionId": "p3vhd8kq2zt",
+            "name": "Verified phone",
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.verifiedPhone"
+                }
+              }
+            ]
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "No verified phone"
+          }
+        ],
+        "next": {
+          "rules": [
+            {
+              "interactionId": "p3vhd8kq2zt",
+              "taskId": "23"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "28"
+            }
+          ]
+        },
+        "view": {
+          "x": 3300,
+          "y": 324
+        }
+      },
+      "23": {
+        "action": "risk",
+        "id": "23",
+        "name": "Fingerprint / Assess",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "24"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3792,
+          "y": 108
+        }
+      },
+      "24": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "greater-than",
+                "predicate": {
+                  "type": "inline",
+                  "value": 0.5
+                },
+                "target": {
+                  "type": "context",
+                  "value": "riskInfo.riskScore"
+                }
+              }
+            ],
+            "interactionId": "qr4yixkox3r",
+            "name": "High risk"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Low risk"
+          }
+        ],
+        "id": "24",
+        "name": "Is risk high?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "qr4yixkox3r",
+              "taskId": "25"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "8"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 4284,
+          "y": 108
+        }
+      },
+      "25": {
+        "action": "sign-in-otp-sms",
+        "arguments": {
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "25",
+        "name": "Sign In / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "26"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 4776,
+          "y": -108
+        }
+      },
+      "26": {
+        "id": "26",
+        "name": "Verify SMS code",
+        "type": "screen",
+        "screenId": "SC3L30Io92JNDMb7j7ea8OpWXtxDG",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "25"
+            },
+            {
+              "interactionId": "L1T9iO4p5U",
+              "taskId": "27"
+            }
+          ]
+        },
+        "view": {
+          "x": 5268,
+          "y": -108
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "sentTo.maskedPhone"
+        ]
+      },
+      "27": {
+        "action": "verify-code-otp-sms",
+        "id": "27",
+        "name": "Verify Code / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "8"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 5760,
+          "y": -108
+        }
+      },
+      "28": {
+        "id": "28",
+        "name": "Add a phone",
+        "type": "screen",
+        "screenId": "SC3L30IoxybqyNlwsUE7cn1IQfdYA",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "Gefwx7KcHi",
+              "taskId": "29"
+            }
+          ]
+        },
+        "view": {
+          "x": 3792,
+          "y": 540
+        },
+        "inputKeys": [
+          "phone"
+        ],
+        "allInputKeys": [
+          "phone"
+        ],
+        "calculatedInputKeys": true
+      },
+      "29": {
+        "action": "update-user-otp-sms",
+        "arguments": {
+          "addToLoginIDs": {
+            "type": "inline",
+            "value": ""
+          },
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "onMergeUseExisting": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "29",
+        "name": "Update User / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "30"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 4284,
+          "y": 540
+        }
+      },
+      "30": {
+        "id": "30",
+        "name": "Verify phone",
+        "type": "screen",
+        "screenId": "SC3L30Iopbs9dFT1xJiKAbd7TME1d",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "pnOqEGpL1b",
+              "taskId": "28"
+            },
+            {
+              "interactionId": "resend",
+              "taskId": "29"
+            },
+            {
+              "interactionId": "L1T9iO4p5U",
+              "taskId": "31"
+            }
+          ]
+        },
+        "view": {
+          "x": 4776,
+          "y": 540
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "sentTo.maskedPhone"
+        ]
+      },
+      "31": {
+        "action": "verify-code-otp-sms",
+        "id": "31",
+        "name": "Verify Code / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "8"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 5268,
+          "y": 540
+        }
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC3L30IpSBASWChbPK64cXL5CZOJy",
+      "interactions": [
+        {
+          "id": "S-VOZ5i7gc",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "Qoa9gtU5VO": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "Qoa9gtU5VO",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "kRB1FT-sEd",
+            "Hq7Ek2LmZa",
+            "_NgHTEULyr",
+            "S-VOZ5i7gc",
+            "Qoa9gtU5VO"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "S-VOZ5i7gc": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "S-VOZ5i7gc",
+            "mode": "primary",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "UNgw4es4HZ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "_NgHTEULyr",
+          "props": {
+            "children": "and",
+            "full-width": false,
+            "id": "UNgw4es4HZ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "_NgHTEULyr": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "tqPxnOAEw2",
+            "ecYaE1yoII",
+            "UNgw4es4HZ",
+            "pxkTtHb8KF"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "_NgHTEULyr",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "1",
+            "spaceBetween": "1.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ecYaE1yoII": {
+          "custom": {},
+          "displayName": "Link",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "_NgHTEULyr",
+          "props": {
+            "children": "Privacy Statement",
+            "full-width": false,
+            "href": "REPLACE_WITH_PRIVACY_URL",
+            "id": "ecYaE1yoII",
+            "italic": false,
+            "mode": "primary",
+            "target": "_blank",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Link"
+          }
+        },
+        "kRB1FT-sEd": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Welcome!",
+            "full-width": false,
+            "id": "kRB1FT-sEd",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h3"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "pxkTtHb8KF": {
+          "custom": {},
+          "displayName": "Link",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "_NgHTEULyr",
+          "props": {
+            "children": "Terms of Service",
+            "full-width": false,
+            "href": "REPLACE_WITH_TERMS_URL",
+            "id": "pxkTtHb8KF",
+            "italic": false,
+            "mode": "primary",
+            "target": "_blank",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Link"
+          }
+        },
+        "tqPxnOAEw2": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "_NgHTEULyr",
+          "props": {
+            "children": "By continuing, I agree to the Company's",
+            "full-width": false,
+            "id": "tqPxnOAEw2",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "Hq7Ek2LmZa": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Email Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "copy-to-clipboard": false,
+            "data-errormessage-pattern-mismatch": "Must be a valid email",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": true,
+            "id": "Hq7Ek2LmZa",
+            "label": "Email",
+            "label-type": "static",
+            "max": 100,
+            "name": "email",
+            "pattern": "^[\\w\\.\\%\\+\\-]+@[\\w\\.\\-]+\\.[A-Za-z]{2,}$",
+            "placeholder": "Email",
+            "required": true,
+            "size": "md",
+            "type": "email"
+          },
+          "type": {
+            "resolvedName": "EmailInput"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L30IrwrKVgODVaHj89KUg14sIQ",
+      "interactions": [
+        {
+          "id": "L1T9iO4p5U",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "pnOqEGpL1b",
+          "type": "button",
+          "label": "Choose another authentication method",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "xFKyTBaTQn",
+          "type": "button",
+          "label": "Use a different email",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "xFKyTBaTQn",
+            "pnOqEGpL1b"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "L1T9iO4p5U": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digits number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "L1T9iO4p5U",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "QW6CWy1Z9D": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fpDoUMsBUm",
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "QW6CWy1Z9D",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent an email containing a 6-digit code to {{sentTo.maskedEmail}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter it below\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fpDoUMsBUm": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fpDoUMsBUm",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "pnOqEGpL1b": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Choose another authentication method",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "pnOqEGpL1b",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "xFKyTBaTQn": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Use a different email",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "xFKyTBaTQn",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "L1T9iO4p5U",
+            "QW6CWy1Z9D",
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L30IsKy9EzN9GB8qYG1VFCw8ld",
+      "interactions": [
+        {
+          "id": "siB9_TIhxh",
+          "type": "button",
+          "label": "Submit",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "AkuwxXsOev": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "AkuwxXsOev",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "FhQDLJsMKA": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Full Name Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "full-width": true,
+            "id": "FhQDLJsMKA",
+            "label": "Full name",
+            "max": 100,
+            "name": "fullName",
+            "placeholder": "Full name",
+            "required": false,
+            "size": "md",
+            "type": "text"
+          },
+          "type": {
+            "resolvedName": "FullNameInput"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "Zd5fFmYLHk",
+            "FhQDLJsMKA",
+            "siB9_TIhxh",
+            "AkuwxXsOev"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "Zd5fFmYLHk": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "To complete your sign up, please provide the following information",
+            "full-width": false,
+            "id": "Zd5fFmYLHk",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "siB9_TIhxh": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Submit",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "siB9_TIhxh",
+            "mode": "primary",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L30IoxybqyNlwsUE7cn1IQfdYA",
+      "interactions": [
+        {
+          "id": "Gefwx7KcHi",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "Gefwx7KcHi": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "Gefwx7KcHi",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "children": "Add a phone number for sign-in codes\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "UGk5ydN5aD",
+            "Gefwx7KcHi",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "UGk5ydN5aD": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Phone Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "country-input-label": "Code",
+            "country-input-placeholder": "Code",
+            "data-errormessage-missing-value": "Required",
+            "data-errormessage-pattern-mismatch-too-short": "Please enter a valid phone",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "default-code": "autoDetect",
+            "full-width": true,
+            "id": "UGk5ydN5aD",
+            "label": "Phone",
+            "label-type": "static",
+            "maxlength": "20",
+            "minlength": "6",
+            "name": "phone",
+            "phone-input-placeholder": "Phone",
+            "size": "md",
+            "type": "tel",
+            "variant": "countrySelection"
+          },
+          "type": {
+            "resolvedName": "Phone"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L30Io92JNDMb7j7ea8OpWXtxDG",
+      "interactions": [
+        {
+          "id": "L1T9iO4p5U",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "L1T9iO4p5U": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digits number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "L1T9iO4p5U",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "QW6CWy1Z9D": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fpDoUMsBUm"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "QW6CWy1Z9D",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedPhone}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter it below\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fpDoUMsBUm": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fpDoUMsBUm",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "L1T9iO4p5U",
+            "QW6CWy1Z9D",
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L30Iopbs9dFT1xJiKAbd7TME1d",
+      "interactions": [
+        {
+          "id": "L1T9iO4p5U",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "pnOqEGpL1b",
+          "type": "button",
+          "label": "Use a different number",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend",
+            "pnOqEGpL1b"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "L1T9iO4p5U": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digits number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "L1T9iO4p5U",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "QW6CWy1Z9D": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fpDoUMsBUm"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "QW6CWy1Z9D",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedPhone}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter it below\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fpDoUMsBUm": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fpDoUMsBUm",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "pnOqEGpL1b": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Use a different number",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "pnOqEGpL1b",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "L1T9iO4p5U",
+            "QW6CWy1Z9D",
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    }
+  ]
+}

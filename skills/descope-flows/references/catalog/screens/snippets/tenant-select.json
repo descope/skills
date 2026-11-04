@@ -1,0 +1,163 @@
+{
+ "screen": {
+  "screenId": "SC5Zvwik3vRxwkJgkrFPvFAiVJNgE",
+  "interactions": [
+   {
+    "id": "KdWwE_4shE",
+    "type": "button",
+    "label": "Continue",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "BCT_pymQkM",
+     "4aMOMaQhTf",
+     "KdWwE_4shE",
+     "FECXhZ9e95"
+    ],
+    "linkedNodes": {}
+   },
+   "BCT_pymQkM": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Select a tenant",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "BCT_pymQkM"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "4aMOMaQhTf": {
+    "type": {
+     "resolvedName": "TenantSwitcherComboBox"
+    },
+    "isCanvas": false,
+    "props": {
+     "data": [],
+     "label": "",
+     "placeholder": "Tenants",
+     "name": "userSelectedTenant",
+     "size": "md",
+     "full-width": true,
+     "required": false,
+     "bordered": true,
+     "item-label-path": "data-name",
+     "item-value-path": "data-id",
+     "data-errormessage-value-missing": "Please select tenant.",
+     "id": "4aMOMaQhTf"
+    },
+    "displayName": "Tenant Switcher",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "KdWwE_4shE": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "KdWwE_4shE"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "FECXhZ9e95": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "FECXhZ9e95"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Tenant selector",
+  "screenId": "SC5Zvwik3vRxwkJgkrFPvFAiVJNgE",
+  "inputKeys": [],
+  "allInputKeys": [
+   "userSelectedTenant"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "KdWwE_4shE",
+     "taskId": "<next task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "TenantSwitcherComboBox posts `userSelectedTenant`, the tenant the session is for. Leave `data` empty: the runtime fills the list with the signed-in user's tenants, but only when the screen task's allInputKeys contains userSelectedTenant, so keep allInputKeys as given.",
+  "Place it after the user is identified (after verify / OAuth exchange, before the End step); the actions that follow (SSO, consent, the JWT) read userSelectedTenant from the context.",
+  "Matches the Tenant selector screens of the content templates shared-sso-domain-across-multiple-tenants, impersonate-within-tenant and agentic-hub-tenant-consent.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

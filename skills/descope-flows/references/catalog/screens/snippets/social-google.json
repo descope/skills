@@ -1,0 +1,139 @@
+{
+ "screen": {
+  "screenId": "SCarIp3okaJayBoMBxFm24oa37UMZ",
+  "interactions": [
+   {
+    "id": "mHv63azFBK",
+    "type": "button",
+    "label": "Continue with Google",
+    "icon": "google",
+    "subType": "social"
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "pwI8d_ZPRh",
+     "mHv63azFBK",
+     "cRMYvIFhhn"
+    ],
+    "linkedNodes": {}
+   },
+   "pwI8d_ZPRh": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Welcome",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "pwI8d_ZPRh"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "mHv63azFBK": {
+    "type": {
+     "resolvedName": "GoogleButton"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "outline",
+     "color": "primary",
+     "children": "Continue with Google",
+     "full-width": true,
+     "formNoValidate": true,
+     "data-type": "social",
+     "startIcon": "google",
+     "data-descope-provider": "google",
+     "startIconColorText": false,
+     "st-label-spacing": "10px",
+     "aria-label": "Sign in with Google",
+     "id": "mHv63azFBK"
+    },
+    "displayName": "Google Button",
+    "custom": {
+     "type": "button",
+     "subType": "social"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "cRMYvIFhhn": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "cRMYvIFhhn"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Social login",
+  "screenId": "SCarIp3okaJayBoMBxFm24oa37UMZ",
+  "inputKeys": [],
+  "allInputKeys": [],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "mHv63azFBK",
+     "taskId": "<oauth-start task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "GoogleButton is a Button preset with data-descope-provider google and custom.subType social. The content templates point its rule at an oauth-start task with an empty defaultProvider argument, so the provider comes from the pressed button (oauth-start reads `provider` first, then defaultProvider). The Google provider must be enabled in the project.",
+  "Other providers: AppleButton, MicrosoftButton, GithubButton, FacebookButton, ... (components.md).",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

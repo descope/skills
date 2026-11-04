@@ -1,0 +1,1775 @@
+{
+ "notMirroredToUnauthUser": [
+  "user.loggedIn",
+  "user.passwordExpired",
+  "user.passwordExpiresAt",
+  "user.recoveryEmail",
+  "user.recoveryPhone",
+  "user.verifiedRecoveryEmail",
+  "user.verifiedRecoveryPhone"
+ ],
+ "sections": [
+  {
+   "keys": [
+    {
+     "description": "A JSON web token used for session authentication and authorization purposes.",
+     "key": "authInfo.sessionJwt",
+     "type": "string"
+    },
+    {
+     "description": "A JSON web token used for obtaining a new sessionJwt after expiration.",
+     "key": "authInfo.refreshJwt",
+     "type": "string"
+    },
+    {
+     "description": "The domain that the cookie is valid for, used for cross-domain authentication.",
+     "key": "authInfo.cookieDomain",
+     "type": "string"
+    },
+    {
+     "description": "The path that the cookie is valid for, used for limiting cookie access to specific paths.",
+     "key": "authInfo.cookiePath",
+     "type": "string"
+    },
+    {
+     "description": "The maximum duration for which the cookie is valid, in seconds.",
+     "key": "authInfo.cookieMaxAge",
+     "type": "number"
+    },
+    {
+     "description": "The date and time at which the cookie expires, used for setting an explicit expiration date.",
+     "key": "authInfo.cookieExpiration",
+     "type": "number"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user is logging in for the first time.",
+     "key": "authInfo.firstSeen",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "A unique identifier for a user.",
+     "key": "user.userId",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Will be set to true if this user is a test user.",
+     "key": "user.test",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "All unique identifiers for a user. Usually an email and/or phone.",
+     "key": "user.loginIds",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's name.",
+     "key": "user.name",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's given name.",
+     "key": "user.givenName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's middle name.",
+     "key": "user.middleName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's family name.",
+     "key": "user.familyName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's email address.",
+     "key": "user.email",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The domain of the user's email address.",
+     "key": "user.emailDomain",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's phone number.",
+     "key": "user.phone",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user's email address has been verified.",
+     "key": "user.verifiedEmail",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user's phone number has been verified.",
+     "key": "user.verifiedPhone",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's recovery email address.",
+     "key": "user.recoveryEmail",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's recovery phone number.",
+     "key": "user.recoveryPhone",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user's recovery email address has been verified.",
+     "key": "user.verifiedRecoveryEmail",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user's recovery phone number has been verified.",
+     "key": "user.verifiedRecoveryPhone",
+     "type": "boolean"
+    },
+    {
+     "description": "An array of tenants associated with the user.",
+     "key": "user.userTenants",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "All project level roles associated with this user",
+     "key": "user.project.roles",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "key": "user.idpGroups",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The Application Client ID associated with the flow.",
+     "key": "app.clientId",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "All project level permissions associated with this user",
+     "key": "user.project.permissions",
+     "type": "string"
+    },
+    {
+     "description": "The tenant level user roles",
+     "key": "user.tenant.roles",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's picture.",
+     "key": "user.picture",
+     "type": "string"
+    },
+    {
+     "description": "Indicates whether the user has valid outbound token.",
+     "key": "user.outbound.token.valid",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the device supports Passkeys (WebAuthn).",
+     "key": "device.webAuthnSupport",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether the device supports OAuth (Social). Users coming from mobile web-views (as opposed to browsers) will be blocked by some OAuth providers.",
+     "key": "device.oauthSupport",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The URL of the application that triggered the flow.",
+     "key": "startOptions.redirectURL",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant input that was provided to the flow.",
+     "key": "startOptions.tenant",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Embedded OTP code",
+     "key": "embeddedCode",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Google.",
+     "key": "user.oauth.google",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Facebook.",
+     "key": "user.oauth.facebook",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Microsoft.",
+     "key": "user.oauth.microsoft",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Gitlab.",
+     "key": "user.oauth.gitlab",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Github.",
+     "key": "user.oauth.github",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Apple.",
+     "key": "user.oauth.apple",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Discord.",
+     "key": "user.oauth.discord",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Linkedin.",
+     "key": "user.oauth.linkedin",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Whether the user has signed in with Slack.",
+     "key": "user.oauth.slack",
+     "type": "boolean"
+    }
+   ],
+   "section": "Authentication result and user (`authInfo.*`, `user.*`)",
+   "source": "authInfoConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "The unique identifier associated with the user's most recent login session.",
+     "key": "lastAuth.loginId",
+     "type": "string"
+    },
+    {
+     "description": "The method used for the user's most recent authentication, such as a password or biometric authentication.",
+     "key": "lastAuth.authMethod",
+     "options": [
+      "otp-email",
+      "otp-sms",
+      "magiclink-email",
+      "magiclink-sms",
+      "enchantedlink",
+      "totp",
+      "oauth",
+      "sso/saml",
+      "sso/oidc",
+      "webauthn",
+      "password"
+     ],
+     "type": "string"
+    },
+    {
+     "description": "The tenant ID associated with the user's most recent authentication.",
+     "key": "lastAuth.tenantId",
+     "type": "string"
+    },
+    {
+     "description": "The SSO tenant ID used in the user's most recent authentication, relevant when multiple SSO configurations exist per tenant.",
+     "key": "lastAuth.ssoTenantId",
+     "type": "string"
+    },
+    {
+     "description": "The SSO ID used in the user's most recent authentication, relevant when multiple SSO configurations exist per tenant.",
+     "key": "lastAuth.ssoId",
+     "type": "string"
+    }
+   ],
+   "section": "Last authentication on this device (`lastAuth.*`)",
+   "source": "authStateConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "key": "currentAuth.loginId",
+     "type": "string"
+    },
+    {
+     "key": "currentAuth.authMethod",
+     "options": [
+      "otp-email",
+      "otp-sms",
+      "magiclink-email",
+      "magiclink-sms",
+      "enchantedlink",
+      "totp",
+      "oauth",
+      "sso/saml",
+      "sso/oidc",
+      "webauthn",
+      "password"
+     ],
+     "type": "string"
+    }
+   ],
+   "section": "Current authentication (`currentAuth.*`)",
+   "source": "currentAuthStateConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "customClaim": true,
+     "description": "The hostname of the user's email provider, used for authentication purposes.",
+     "key": "mailProviderHost",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The SSO configuration admin link, used to setup SSO configuration for the tenant admin.",
+     "key": "adminLinks.ssoConfiguration",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Get JWT claim value by name (e.g. 'jwtClaims.myClaimName')",
+     "key": "jwtClaims.<name>",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The URL to which the user will be redirected after authentication.",
+     "key": "redirectURL",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Get cookie value by name (e.g. 'cookies.myCookieName')",
+     "key": "cookies.<name>",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "IdP Groups (SSO JIT / SCIM)",
+     "key": "idpGroups",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "IdP SAML Attributes",
+     "key": "idpSAMLAttributes",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "IdP OIDC Claims",
+     "key": "idpOIDCClaims",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The email form input.",
+     "key": "form.email",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The domain of the email form input.",
+     "key": "form.emailDomain",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The phone form input.",
+     "key": "form.phone",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The picture uploaded by the \"Take Photo\" component.",
+     "key": "form.photo",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The authentication provider used for authentication purposes.",
+     "key": "provider",
+     "options": [
+      "google",
+      "facebook",
+      "microsoft",
+      "gitlab",
+      "github",
+      "apple",
+      "discord",
+      "linkedin",
+      "slack"
+     ],
+     "type": "string"
+    },
+    {
+     "description": "The tenant associated with a user account.",
+     "key": "tenant",
+     "type": "string"
+    },
+    {
+     "description": "SSO ID",
+     "key": "ssoId",
+     "type": "string"
+    },
+    {
+     "description": "A random persistent number between 1-100 assigned to the client, that will help you split the flow for A/B testing.",
+     "key": "abTestingKey",
+     "type": "abtesting"
+    },
+    {
+     "customClaim": true,
+     "description": "The custom login ID form input.",
+     "key": "form.externalId",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The display name form input.",
+     "key": "form.displayName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The given name form input.",
+     "key": "form.givenName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The middle name form input.",
+     "key": "form.middleName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The family name form input.",
+     "key": "form.familyName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The invitees form input.",
+     "key": "form.invitees",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The impersonate ID selected from the form input.",
+     "key": "form.impersonateId",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant name form input.",
+     "key": "form.tenantName",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The self provision domains form input.",
+     "key": "form.selfProvisionDomains",
+     "type": "string"
+    },
+    {
+     "description": "The IdP metadata URL form input.",
+     "key": "form.idpMetadataURL",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant domain form input.",
+     "key": "form.tenantDomain",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The entity ID form input.",
+     "key": "form.entityId",
+     "type": "string"
+    },
+    {
+     "description": "The IDP URL form input.",
+     "key": "form.idpURL",
+     "type": "string"
+    },
+    {
+     "description": "The IdP certificate form input.",
+     "key": "form.idpCert",
+     "type": "string"
+    },
+    {
+     "description": "Mark this device as trusted.",
+     "key": "form.trustThisDevice",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The geographic location (country) of a user.",
+     "key": "geo.country",
+     "options": [
+      "<country name, e.g. United States>",
+      "Embargoed Countries (US EAR)",
+      "Sanctioned Countries (US EAR)",
+      "European Union"
+     ],
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The city of a user.",
+     "key": "geo.city",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The IP address of the user who initiated the current request",
+     "key": "ipAddress",
+     "type": "ipaddress"
+    },
+    {
+     "customClaim": true,
+     "description": "The Autonomous System Number (ASN) of the user's network for the current request",
+     "key": "asn",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The TLS fingerprint (JA4) of the user who initiated the current request",
+     "key": "ja4",
+     "type": "string"
+    },
+    {
+     "description": "The number of failed password attempts made by the user.",
+     "key": "failedPasswordAttempts",
+     "type": "number"
+    },
+    {
+     "description": "The number of remaining OTP code entry attempts.",
+     "key": "remainingOTPAttempts",
+     "type": "number"
+    },
+    {
+     "description": "The number of failed security question verification attempts made by the user.",
+     "key": "failedSQAttempts",
+     "type": "number"
+    },
+    {
+     "description": "Indicates whether the authentication request was initiated by an identity provider (IdP).",
+     "key": "idpInitiated",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether flow has started with an external token (from invite of embedded link) to be verified.",
+     "key": "externalToken",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether single sign-on (SSO) is enabled for a user tenant, by user's email domain or tenant id",
+     "key": "ssoEnabled",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether single sign-on (SSO) is enabled based on the logged in user's email domain or tenant id. Should be used after login actions such as sign up / in.",
+     "key": "ssoEnabledIgnoreUser",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether the email domain is of type disposable or burner email, need to run action \"Check if Disposable Email used\" prior to this condition",
+     "key": "isDisposableEmail",
+     "type": "boolean"
+    },
+    {
+     "description": "Indicates whether the email domain is of type free email provider, like gmail.com, need to run action \"Check if Free Email used\" prior to this condition",
+     "key": "isFreeEmailProvider",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The Application ID associated with the flow.",
+     "key": "ssoAppId",
+     "type": "string"
+    },
+    {
+     "description": "Indicates whether the user is already logged in.",
+     "key": "user.loggedIn",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The time the user was created.",
+     "key": "user.createdTime",
+     "type": "time"
+    },
+    {
+     "customClaim": true,
+     "description": "The user's status. Such as \"disabled\", \"enabled\" or \"invited\".",
+     "key": "user.status",
+     "options": [
+      "enabled",
+      "disabled",
+      "invited"
+     ],
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user has TOTP set.",
+     "key": "user.totp",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user has ever logged in with SSO.",
+     "key": "user.sso",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user has ever provisioned or updated by SCIM.",
+     "key": "user.scim",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user has a Passkey (WebAuthn) set.",
+     "key": "user.webauthn",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user has ever logged in with a password and also still has one stored.",
+     "key": "user.password",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the user's password has expired, either explicitly or based on project expiration settings.",
+     "key": "user.passwordExpired",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "The date (epoch seconds) when the user's password expires based on project expiration settings, or 0 if no expiration is configured.",
+     "key": "user.passwordExpiresAt",
+     "type": "number"
+    },
+    {
+     "customClaim": true,
+     "description": "All user tenant names as array.",
+     "key": "user.tenantNames",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The number of tenants this user is part of.",
+     "key": "user.tenantCount",
+     "type": "number"
+    },
+    {
+     "customClaim": true,
+     "description": "Tenants the associated user belongs to. A user can belong to multiple organizations.",
+     "key": "user.tenantIds",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Last country user logged in from",
+     "key": "user.lastAuth.country",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Latest countries user logged in from",
+     "key": "user.lastAuth.countries",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Last city user logged in from",
+     "key": "user.lastAuth.city",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Latest cities user logged in from",
+     "key": "user.lastAuth.cities",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Last IP user logged in from",
+     "key": "user.lastAuth.ip",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Latest IPS user logged in from",
+     "key": "user.lastAuth.ips",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Last time user logged in",
+     "key": "user.lastAuth.time",
+     "type": "time"
+    },
+    {
+     "customClaim": true,
+     "description": "The time now in milliseconds since 1/1/1970.",
+     "key": "time.now",
+     "type": "time"
+    },
+    {
+     "customClaim": true,
+     "description": "The full URI where the flow is used. Such as \"https://app.domain.com/path?q=v#fragment\".",
+     "key": "device.location.uri",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The origin where the flow is used. Such as \"https://app.domain.com\".",
+     "key": "device.location.origin",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The scheme of the URL where the flow is used. Such as \"http\" or \"https\".",
+     "key": "device.location.scheme",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The hostname where the flow is used. Such as \"app.domain.com\".",
+     "key": "device.location.hostname",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The port where the flow is used. Such as \"3000\".",
+     "key": "device.location.port",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The path where the flow is used. Such as \"/path\".",
+     "key": "device.location.path",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The raw query string where the flow is used. Such as \"q=v\".",
+     "key": "device.location.rawQuery",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The fragment (the URI part after #) where the flow is used. Such as \"fragment\", in case the full URI is \"https://app.domain.com#fragment\".",
+     "key": "device.location.fragment",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The query object where the flow is used. Such as {\"q\": \"v\"}.",
+     "key": "device.location.query",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Project name that this flow runs in",
+     "key": "project.name",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The originating IP address of the request that triggered the flow",
+     "key": "sourceIP",
+     "type": "ipaddress"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant ID",
+     "key": "tenant.id",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant name",
+     "key": "tenant.name",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant domain.",
+     "key": "tenant.domain",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The tenant domains as array.",
+     "key": "tenant.domains",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether SSO is enforced for the tenant.",
+     "key": "tenant.enforceSSO",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the tenant is a subtenant.",
+     "key": "tenant.subtenant",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Specify login IDs that can bypass SSO authentication.",
+     "key": "tenant.enforceSSOExclusions",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Indicates whether the tenant is disabled.",
+     "key": "tenant.disabled",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Email domain that allows tenant self provisioning.",
+     "key": "tenant.selfProvisionDomain",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Array of email domains that allows tenant self provisioning.",
+     "key": "tenant.selfProvisionDomains",
+     "type": "string"
+    },
+    {
+     "description": "Indicates whether the tenant has valid outbound token.",
+     "key": "tenant.outbound.token.valid",
+     "type": "boolean"
+    },
+    {
+     "description": "Possibility of an e-mail scanner attempting to click a magic link detected",
+     "key": "isEmailScanner",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "OIDC resource values that were sent by the application in the request to Descope",
+     "key": "inbound.authorize.resource",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "OIDC scope values that were sent by the application in the request to Descope",
+     "key": "inbound.authorize.scope",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "key": "oauthRequest.redirectUrl",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The ID of the flow being executed. e.g. 'sign-up-or-in'.",
+     "key": "flowId",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "The unique ID of the specific flow execution.",
+     "key": "flowExecutionId",
+     "type": "string"
+    }
+   ],
+   "section": "Flow data: form inputs, request, geo, tenant, SSO, user attributes",
+   "source": "coreConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "A numerical value representing the risk score associated with a user's behavior or activity.",
+     "key": "riskInfo.riskScore",
+     "type": "number"
+    },
+    {
+     "description": "A numerical value representing the risk score associated with a user's SMS behavior or activity.",
+     "key": "riskInfo.smsRiskScore",
+     "type": "number"
+    },
+    {
+     "description": "Indicates whether a user is likely a bot based on their behavior or activity.",
+     "key": "riskInfo.botDetected",
+     "type": "boolean"
+    },
+    {
+     "description": "Indication of whether this device has been marked as trusted before or not.",
+     "key": "riskInfo.trustedDevice",
+     "type": "boolean"
+    },
+    {
+     "description": "Indication of whether this user has connected from two different countries and the time between those connections can't be made through conventional air travel.",
+     "key": "riskInfo.impossibleTravel",
+     "type": "boolean"
+    }
+   ],
+   "section": "Risk (`riskInfo.*`, needs a risk/fingerprint connector)",
+   "source": "riskConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "Indication of whether the end user is using a VPN.",
+     "key": "riskInfo.vpnDetected",
+     "type": "boolean"
+    },
+    {
+     "description": "Indication of whether the end user is using a device that hasn't been spotted before in your application.",
+     "key": "riskInfo.newDevice",
+     "type": "boolean"
+    }
+   ],
+   "section": "Risk, fingerprint connectors only",
+   "source": "fingerprintOnlyRiskConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "Indication of whether the end user is using a device that has been spotted before in your application.",
+     "key": "user.fingerprint.knownDevice",
+     "type": "boolean"
+    },
+    {
+     "description": "Indication of whether this device has been spotted before in your application.",
+     "key": "fingerprint.knownDevice",
+     "type": "boolean"
+    }
+   ],
+   "section": "Known device",
+   "source": "userFingerprintConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "Indication of whether the end user is using a device that has been spotted before in your application.",
+     "key": "user.descopeFingerprint.knownDevice",
+     "type": "boolean"
+    }
+   ],
+   "section": "Known device, Descope fingerprint only",
+   "source": "userDescopeFingerprintOnlyConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "customClaim": true,
+     "description": "Is request coming from a mobile device?",
+     "key": "userAgent.mobile",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Is request coming from a PC?",
+     "key": "userAgent.desktop",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Device type (present for iOS and Android devices)",
+     "key": "userAgent.device",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Raw User Agent header",
+     "key": "userAgent.raw",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Short agent name",
+     "key": "userAgent.name",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Operating system",
+     "key": "userAgent.os",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Operating system version",
+     "key": "userAgent.osVersion",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Is request coming from a Tablet?",
+     "key": "userAgent.tablet",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "URL provided in case of a bot",
+     "key": "userAgent.url",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Is request that originated the flow coming from a mobile device?",
+     "key": "sourceUserAgent.mobile",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Is request that originated the flow coming from a PC?",
+     "key": "sourceUserAgent.desktop",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "Device type (present for iOS and Android devices) of request that originated the flow",
+     "key": "sourceUserAgent.device",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Raw User Agent header of request that originated the flow",
+     "key": "sourceUserAgent.raw",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Short agent name of request that originated the flow",
+     "key": "sourceUserAgent.name",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Operating system of request that originated the flow",
+     "key": "sourceUserAgent.os",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Operating system version of request that originated the flow",
+     "key": "sourceUserAgent.osVersion",
+     "type": "string"
+    },
+    {
+     "customClaim": true,
+     "description": "Is request that originated the flow coming from a Tablet?",
+     "key": "sourceUserAgent.tablet",
+     "type": "boolean"
+    },
+    {
+     "customClaim": true,
+     "description": "URL that originated the flow provided in case of a bot",
+     "key": "sourceUserAgent.url",
+     "type": "string"
+    }
+   ],
+   "section": "User agent (`userAgent.*`)",
+   "source": "userAgentConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "Indicates whether the unauthenticated user is disabled.",
+     "key": "unauthUser.isDisabled",
+     "type": "boolean"
+    }
+   ],
+   "section": "Unauthenticated user extras",
+   "source": "unAuthUserConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "The redirect URI that was asked during the application dynamic client registration request",
+     "key": "inboundAppRegister.redirectURI",
+     "type": "string"
+    },
+    {
+     "description": "The scopes that were asked during the application dynamic client registration request",
+     "key": "inboundAppRegister.scopes",
+     "type": "string"
+    }
+   ],
+   "section": "Inbound app registration",
+   "source": "inboundAppRegisterConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "The type of the outbound application.",
+     "key": "outboundApp.type",
+     "type": "string"
+    },
+    {
+     "description": "Outbound Application ID",
+     "key": "outboundAppId",
+     "type": "string"
+    }
+   ],
+   "section": "Outbound apps",
+   "source": "outboundAppConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "key": "mcpClient.id",
+     "type": "string"
+    },
+    {
+     "key": "mcpClient.name",
+     "type": "string"
+    },
+    {
+     "key": "mcpClient.description",
+     "type": "string"
+    },
+    {
+     "key": "mcpClient.logo",
+     "type": "string"
+    },
+    {
+     "key": "mcpClient.scopes",
+     "type": "string"
+    },
+    {
+     "key": "mcpClient.verified",
+     "type": "boolean"
+    },
+    {
+     "key": "mcpClient.user.consented",
+     "type": "boolean"
+    },
+    {
+     "key": "mcpClient.tenant.consented",
+     "type": "boolean"
+    }
+   ],
+   "section": "Agentic hub / MCP client (`mcpClient.*`)",
+   "source": "agenticHubConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "The type of event that triggered the flow execution.",
+     "key": "triggeringEvent.type",
+     "type": "string"
+    },
+    {
+     "description": "The project ID where the event that triggered the flow execution occurred.",
+     "key": "triggeringEvent.projectId",
+     "type": "string"
+    },
+    {
+     "description": "The user ID associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.userId",
+     "type": "string"
+    },
+    {
+     "description": "The login IDs associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.loginIds",
+     "type": "string"
+    },
+    {
+     "description": "The tenants associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenants",
+     "type": "string"
+    },
+    {
+     "description": "Indicates whether the event that triggered the flow execution is related to SCIM operations.",
+     "key": "triggeringEvent.scim",
+     "type": "boolean"
+    },
+    {
+     "description": "The change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData",
+     "type": "string"
+    },
+    {
+     "description": "The tenant ID associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantId",
+     "type": "string"
+    },
+    {
+     "description": "The tenant name associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantName",
+     "type": "string"
+    },
+    {
+     "description": "The previous tenant name associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantPreviousName",
+     "type": "string"
+    },
+    {
+     "description": "The tenant domains associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantDomains",
+     "type": "string"
+    },
+    {
+     "description": "The previous tenant domains associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantPreviousDomains",
+     "type": "string"
+    },
+    {
+     "description": "The tenant names associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.tenantNames",
+     "type": "string"
+    },
+    {
+     "description": "The user IDs associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.userIds",
+     "type": "string"
+    },
+    {
+     "description": "The number of entities affected by the event that triggered the flow execution.",
+     "key": "triggeringEvent.count",
+     "type": "number"
+    },
+    {
+     "description": "The group ID associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.groupId",
+     "type": "string"
+    },
+    {
+     "description": "The group external ID associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.groupExternalId",
+     "type": "string"
+    },
+    {
+     "description": "The group display name associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.groupDisplayName",
+     "type": "string"
+    },
+    {
+     "description": "The role names associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.roleNames",
+     "type": "string"
+    },
+    {
+     "description": "The permissions added in the event that triggered the flow execution.",
+     "key": "triggeringEvent.addedPermissions",
+     "type": "string"
+    },
+    {
+     "description": "The permissions removed in the event that triggered the flow execution.",
+     "key": "triggeringEvent.removedPermissions",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM action associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.scimAction",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM request data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.scimRequest",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM result data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.scimResult",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM error associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.scimError",
+     "type": "string"
+    },
+    {
+     "description": "The user ID associated with the triggering event.",
+     "key": "triggeringEvent.user.id",
+     "type": "string"
+    },
+    {
+     "description": "The user IDs associated with the triggering event.",
+     "key": "triggeringEvent.user.ids",
+     "type": "string"
+    },
+    {
+     "description": "The login IDs associated with the triggering event.",
+     "key": "triggeringEvent.user.loginIds",
+     "type": "string"
+    },
+    {
+     "description": "The tenants associated with the triggering event.",
+     "key": "triggeringEvent.user.tenants",
+     "type": "string"
+    },
+    {
+     "description": "Whether the user event was triggered via SCIM.",
+     "key": "triggeringEvent.user.scim",
+     "type": "boolean"
+    },
+    {
+     "description": "The change data associated with the triggering event.",
+     "key": "triggeringEvent.user.changeData",
+     "type": "string"
+    },
+    {
+     "description": "The tenant ID associated with the triggering event.",
+     "key": "triggeringEvent.tenant.id",
+     "type": "string"
+    },
+    {
+     "description": "The tenant name associated with the triggering event.",
+     "key": "triggeringEvent.tenant.name",
+     "type": "string"
+    },
+    {
+     "description": "The previous tenant name associated with the triggering event.",
+     "key": "triggeringEvent.tenant.previousName",
+     "type": "string"
+    },
+    {
+     "description": "The tenant domains associated with the triggering event.",
+     "key": "triggeringEvent.tenant.domains",
+     "type": "string"
+    },
+    {
+     "description": "The previous tenant domains associated with the triggering event.",
+     "key": "triggeringEvent.tenant.previousDomains",
+     "type": "string"
+    },
+    {
+     "description": "The tenant names associated with the triggering event.",
+     "key": "triggeringEvent.tenant.names",
+     "type": "string"
+    },
+    {
+     "description": "The group ID associated with the triggering event.",
+     "key": "triggeringEvent.group.id",
+     "type": "string"
+    },
+    {
+     "description": "The group external ID associated with the triggering event.",
+     "key": "triggeringEvent.group.externalId",
+     "type": "string"
+    },
+    {
+     "description": "The group display name associated with the triggering event.",
+     "key": "triggeringEvent.group.displayName",
+     "type": "string"
+    },
+    {
+     "description": "The tenants associated with the group event.",
+     "key": "triggeringEvent.group.tenants",
+     "type": "string"
+    },
+    {
+     "description": "Whether the group event was triggered via SCIM.",
+     "key": "triggeringEvent.group.scim",
+     "type": "boolean"
+    },
+    {
+     "description": "The roles affected by the triggering event. Each role contains id, name, addedPermissions, and removedPermissions.",
+     "key": "triggeringEvent.role.roles",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM action associated with the triggering event.",
+     "key": "triggeringEvent.scimEvent.action",
+     "type": "string"
+    },
+    {
+     "description": "The user ID associated with the SCIM event.",
+     "key": "triggeringEvent.scimEvent.userId",
+     "type": "string"
+    },
+    {
+     "description": "The login IDs associated with the SCIM event.",
+     "key": "triggeringEvent.scimEvent.loginIds",
+     "type": "string"
+    },
+    {
+     "description": "The tenants associated with the SCIM event.",
+     "key": "triggeringEvent.scimEvent.tenants",
+     "type": "string"
+    },
+    {
+     "description": "The change data associated with the SCIM event.",
+     "key": "triggeringEvent.scimEvent.changeData",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM request data associated with the triggering event.",
+     "key": "triggeringEvent.scimEvent.request",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM result data associated with the triggering event.",
+     "key": "triggeringEvent.scimEvent.result",
+     "type": "string"
+    },
+    {
+     "description": "The SCIM error associated with the triggering event.",
+     "key": "triggeringEvent.scimEvent.error",
+     "type": "string"
+    },
+    {
+     "description": "Which expiry window fired: '30d', '7d', or 'expired'.",
+     "key": "triggeringEvent.samlCertExpiryEvent.window",
+     "type": "string"
+    },
+    {
+     "description": "Days until the SAML IdP certificate expires (negative if already expired).",
+     "key": "triggeringEvent.samlCertExpiryEvent.daysUntilExpiry",
+     "type": "number"
+    },
+    {
+     "description": "The SAML IdP certificate's NotAfter timestamp (RFC3339).",
+     "key": "triggeringEvent.samlCertExpiryEvent.notAfter",
+     "type": "string"
+    },
+    {
+     "description": "The ID of the tenant SAML SSO settings entry.",
+     "key": "triggeringEvent.samlCertExpiryEvent.samlSettingsId",
+     "type": "string"
+    },
+    {
+     "description": "Display name of the tenant SAML SSO configuration.",
+     "key": "triggeringEvent.samlCertExpiryEvent.ssoConfigName",
+     "type": "string"
+    },
+    {
+     "description": "The IdP Entity ID configured on the tenant SAML SSO.",
+     "key": "triggeringEvent.samlCertExpiryEvent.idpEntityId",
+     "type": "string"
+    },
+    {
+     "description": "The IdP SSO URL configured on the tenant SAML SSO.",
+     "key": "triggeringEvent.samlCertExpiryEvent.idpSsoUrl",
+     "type": "string"
+    },
+    {
+     "description": "The ACS URL configured for the tenant SAML SSO.",
+     "key": "triggeringEvent.samlCertExpiryEvent.acsUrl",
+     "type": "string"
+    },
+    {
+     "description": "SHA-256 fingerprint of the SAML IdP certificate.",
+     "key": "triggeringEvent.samlCertExpiryEvent.certFingerprint",
+     "type": "string"
+    },
+    {
+     "description": "Subject DN of the SAML IdP certificate.",
+     "key": "triggeringEvent.samlCertExpiryEvent.certSubject",
+     "type": "string"
+    },
+    {
+     "description": "Issuer DN of the SAML IdP certificate.",
+     "key": "triggeringEvent.samlCertExpiryEvent.certIssuer",
+     "type": "string"
+    },
+    {
+     "description": "True if the expiring cert is in the additional certs slot (idpCerts); false if it's the primary cert (idpCert).",
+     "key": "triggeringEvent.samlCertExpiryEvent.isAdditional",
+     "type": "boolean"
+    },
+    {
+     "description": "The display name change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.display_name",
+     "type": "string"
+    },
+    {
+     "description": "The given name change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.given_name",
+     "type": "string"
+    },
+    {
+     "description": "The middle name change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.middle_name",
+     "type": "string"
+    },
+    {
+     "description": "The family name change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.family_name",
+     "type": "string"
+    },
+    {
+     "description": "The email change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.email",
+     "type": "string"
+    },
+    {
+     "description": "The verified email change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.verified_email",
+     "type": "boolean"
+    },
+    {
+     "description": "The phone change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.phone",
+     "type": "string"
+    },
+    {
+     "description": "The verified phone change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.verified_phone",
+     "type": "boolean"
+    },
+    {
+     "description": "The picture change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.picture",
+     "type": "string"
+    },
+    {
+     "description": "The login ID change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.login_id",
+     "type": "string"
+    },
+    {
+     "description": "The old login ID change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.old_login_id",
+     "type": "string"
+    },
+    {
+     "description": "The original login ID change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.original_login_id",
+     "type": "string"
+    },
+    {
+     "description": "The status change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.status",
+     "type": "string"
+    },
+    {
+     "description": "The logout time change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.logout_time",
+     "type": "number"
+    },
+    {
+     "description": "The logout token change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.logout_token",
+     "type": "string"
+    },
+    {
+     "description": "The logout device removed change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.logout_device_removed",
+     "type": "boolean"
+    },
+    {
+     "description": "The typed logout token change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.typed_logout_token",
+     "type": "string"
+    },
+    {
+     "description": "The invalidate JWT family change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.invalidate_jwt_family",
+     "type": "boolean"
+    },
+    {
+     "description": "The impersonate consent change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.impersonate_consent",
+     "type": "boolean"
+    },
+    {
+     "description": "The user expiration change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.user_expiration",
+     "type": "number"
+    },
+    {
+     "description": "The added tenants change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.added_tenants",
+     "type": "string"
+    },
+    {
+     "description": "The removed tenants change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.remove_tenant",
+     "type": "string"
+    },
+    {
+     "description": "The removed roles change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.removed_roles",
+     "type": "string"
+    },
+    {
+     "description": "The added roles change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.added_roles",
+     "type": "string"
+    },
+    {
+     "description": "The SSO apps change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.sso_apps",
+     "type": "string"
+    },
+    {
+     "description": "The using TOTP change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_totp",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Passkeys change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_passkeys",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Password change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_password",
+     "type": "boolean"
+    },
+    {
+     "description": "The using SAML change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_saml",
+     "type": "boolean"
+    },
+    {
+     "description": "The using SCIM change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_scim",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Push change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_push",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Google change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_google",
+     "type": "boolean"
+    },
+    {
+     "description": "The using GitHub change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_github",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Apple change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_apple",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Microsoft change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_microsoft",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Facebook change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_facebook",
+     "type": "boolean"
+    },
+    {
+     "description": "The using GitLab change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_gitlab",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Discord change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_discord",
+     "type": "boolean"
+    },
+    {
+     "description": "The using LinkedIn change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_linkedin",
+     "type": "boolean"
+    },
+    {
+     "description": "The using Slack change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.using_slack",
+     "type": "boolean"
+    },
+    {
+     "description": "The custom attributes change data associated with the event that triggered the flow execution.",
+     "key": "triggeringEvent.changeData.customAttributes",
+     "type": "string"
+    },
+    {
+     "description": "The Cloudflare Ray ID of the request that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.cfRay",
+     "type": "string"
+    },
+    {
+     "description": "The timestamp of the event that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.occurred",
+     "type": "time"
+    },
+    {
+     "description": "The X-Request-ID header of the request that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.externalRequestId",
+     "type": "string"
+    },
+    {
+     "description": "The ID of the user or API key that initiated the event that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.actorId",
+     "type": "string"
+    },
+    {
+     "description": "The IP address of the request that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.remoteAddress",
+     "type": "ipaddress"
+    },
+    {
+     "description": "The country of the request that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.country",
+     "type": "string"
+    },
+    {
+     "description": "The User-Agent header of the request that triggered the flow execution.",
+     "key": "triggeringEvent.metadata.userAgent",
+     "type": "string"
+    }
+   ],
+   "section": "Management flows: triggering event (`triggeringEvent.*`)",
+   "source": "managementFlowTriggeringEventConditionKeys"
+  },
+  {
+   "keys": [
+    {
+     "description": "Don't use: reads false unless `unauthUser.isDisabled` was tested earlier in the flow. Use `unauthUser.isDisabled`.",
+     "engineOnly": true,
+     "key": "user.isDisabled",
+     "type": "boolean"
+    },
+    {
+     "description": "Don't use: reads false unless `user.webauthn` was tested earlier in the flow. Use `user.webauthn`.",
+     "engineOnly": true,
+     "key": "user.webAuthn",
+     "type": "boolean"
+    }
+   ],
+   "section": "Keys not to use",
+   "source": "engine"
+  }
+ ]
+}
