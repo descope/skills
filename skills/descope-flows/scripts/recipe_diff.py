@@ -131,10 +131,18 @@ def task_changes(task, want):
             changes.append(f"argument {key} changed")
     have_err, want_err = as_dict(task.get("errorHandlingV2")), as_dict(want.get("errorHandlingV2"))
     for key in sorted(set(want_err) | set(have_err)):
-        a = (want_err.get(key) or {}).get("errorHandlingType") if isinstance(want_err.get(key), dict) else None
-        b = (have_err.get(key) or {}).get("errorHandlingType") if isinstance(have_err.get(key), dict) else None
-        if a != b:
-            changes.append(f"error {key} handling {a or 'none'} -> {b or 'none'}")
+        a, b = as_dict(want_err.get(key)), as_dict(have_err.get(key))
+        if a == b:
+            continue
+        if a.get("errorHandlingType") != b.get("errorHandlingType"):
+            changes.append(f"error {key} handling {a.get('errorHandlingType') or 'none'} -> "
+                           f"{b.get('errorHandlingType') or 'none'}")
+        if a.get("errorMessage") != b.get("errorMessage"):
+            # What the user sees on that error: an explicit message here can reveal whether an account exists.
+            changes.append(f"error {key} message {a.get('errorMessage')!r} -> {b.get('errorMessage')!r}")
+        rest = sorted(k for k in set(a) | set(b) if k not in ("errorHandlingType", "errorMessage") and a.get(k) != b.get(k))
+        if rest:
+            changes.append(f"error {key} {', '.join(rest)} changed")
     have_cond = {c.get("interactionId"): c for c in as_list(task.get("conditions")) if isinstance(c, dict)}
     want_cond = {c.get("interactionId"): c for c in as_list(want.get("conditions")) if isinstance(c, dict)}
     for key in want_cond:

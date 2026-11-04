@@ -107,7 +107,7 @@
             },
             {
               "interactionId": "UserDoesNotExists",
-              "taskId": "7"
+              "taskId": "5"
             }
           ]
         },
@@ -167,9 +167,6 @@
         }
       },
       "5": {
-        "contextKeys": [
-          "sentTo.maskedEmail"
-        ],
         "id": "5",
         "name": "Magic Link Sent",
         "next": {
@@ -207,27 +204,6 @@
         "view": {
           "x": 1128,
           "y": -168
-        },
-        "inputKeys": [],
-        "allInputKeys": [],
-        "calculatedInputKeys": true
-      },
-      "7": {
-        "id": "7",
-        "name": "No account",
-        "type": "screen",
-        "screenId": "SC3L1tziCP3BL0Xk4f78fzGZoo9XQ",
-        "next": {
-          "rules": [
-            {
-              "interactionId": "Yb4tF9gJzE",
-              "taskId": "0"
-            }
-          ]
-        },
-        "view": {
-          "x": 1128,
-          "y": 456
         },
         "inputKeys": [],
         "allInputKeys": [],
@@ -368,7 +344,7 @@
           "nodes": [],
           "parent": "ROOT",
           "props": {
-            "children": "We've sent a verification link to {{sentTo.maskedEmail}}",
+            "children": "If an account exists for this email, we've sent a sign-in link to it.",
             "full-width": false,
             "id": "hLL454bn-h",
             "italic": false,
@@ -729,119 +705,6 @@
           },
           "type": {
             "resolvedName": "ErrorMessage"
-          }
-        }
-      }
-    },
-    {
-      "screenId": "SC3L1tziCP3BL0Xk4f78fzGZoo9XQ",
-      "interactions": [
-        {
-          "id": "Yb4tF9gJzE",
-          "type": "button",
-          "label": "Use a different email",
-          "icon": "",
-          "subType": ""
-        }
-      ],
-      "contents": {
-        "ROOT": {
-          "custom": {},
-          "displayName": "Container",
-          "hidden": false,
-          "isCanvas": true,
-          "linkedNodes": {},
-          "nodes": [
-            "Kq3vN8sLpT",
-            "Wm7cR2xHdB",
-            "Yb4tF9gJzE"
-          ],
-          "props": {
-            "align": "center",
-            "background": "",
-            "data-editor-type": "container",
-            "direction": "column",
-            "id": "ROOT",
-            "justify": "center",
-            "paddingX": "4",
-            "paddingY": "8",
-            "spaceBetween": "4",
-            "st-items-grow": 0,
-            "width": "100%"
-          },
-          "type": {
-            "resolvedName": "Container"
-          }
-        },
-        "Kq3vN8sLpT": {
-          "custom": {},
-          "displayName": "Text",
-          "hidden": false,
-          "isCanvas": false,
-          "linkedNodes": {},
-          "nodes": [],
-          "parent": "ROOT",
-          "props": {
-            "children": "No account found",
-            "full-width": false,
-            "id": "Kq3vN8sLpT",
-            "isEnriched": true,
-            "italic": false,
-            "link-target-blank": true,
-            "mode": "primary",
-            "text-align": "center",
-            "variant": "h3"
-          },
-          "type": {
-            "resolvedName": "Text"
-          }
-        },
-        "Wm7cR2xHdB": {
-          "custom": {},
-          "displayName": "Text",
-          "hidden": false,
-          "isCanvas": false,
-          "linkedNodes": {},
-          "nodes": [],
-          "parent": "ROOT",
-          "props": {
-            "children": "There is no account for this email address. Check the address, or contact your administrator for access.",
-            "full-width": false,
-            "id": "Wm7cR2xHdB",
-            "isEnriched": true,
-            "italic": false,
-            "link-target-blank": true,
-            "mode": "primary",
-            "text-align": "center",
-            "variant": "body1"
-          },
-          "type": {
-            "resolvedName": "Text"
-          }
-        },
-        "Yb4tF9gJzE": {
-          "custom": {
-            "type": "button"
-          },
-          "displayName": "Button",
-          "hidden": false,
-          "isCanvas": false,
-          "linkedNodes": {},
-          "nodes": [],
-          "parent": "ROOT",
-          "props": {
-            "children": "Use a different email",
-            "color": "primary",
-            "data-type": "button",
-            "formNoValidate": false,
-            "full-width": true,
-            "id": "Yb4tF9gJzE",
-            "mode": "primary",
-            "size": "md",
-            "variant": "contained"
-          },
-          "type": {
-            "resolvedName": "Button"
           }
         }
       }

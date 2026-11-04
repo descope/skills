@@ -133,7 +133,9 @@ def check_screens(flow):
     if screens is not None and not isinstance(screens, list):
         add("error", "screen_bad_shape", "$.screens", "screens must be a list")
     screens = as_list(screens)
-    shared = {as_str(i.get("id")) for i in as_list(contents_dsl.get("sharedInteractions")) if isinstance(i, dict)}
+    # A subflow's exits: metadata.sharedInteractions (where the console writes them) or contents'.
+    shared = {as_str(i.get("id")) for i in as_list(contents_dsl.get("sharedInteractions"))
+              + as_list(metadata.get("sharedInteractions")) if isinstance(i, dict)}
     version = metadata.get("componentsVersion")
     if screens and not version:
         add("error", "components_version_missing", "$.metadata.componentsVersion",
@@ -363,6 +365,11 @@ def check_screens(flow):
         for field, want in (("inputKeys", keys_in), ("allInputKeys", keys_all)):
             have = task.get(field)
             if have is None:
+                if field == "allInputKeys" and task.get("calculatedInputKeys") and want:
+                    add("warning", "input_keys_mismatch", f"{tp}.{field}",
+                        f"screen task has calculatedInputKeys but no allInputKeys: the server sends the screen only "
+                        f"the inputs allInputKeys lists, so {sorted(want)} get no values from the flow; add "
+                        "allInputKeys (import doesn't compute it)", taskId=tid, screenId=sid)
                 continue
             if not isinstance(have, list) or not all(isinstance(k, str) for k in have):
                 add("warning", "input_keys_mismatch", f"{tp}.{field}", f"{field} must be a list of strings",

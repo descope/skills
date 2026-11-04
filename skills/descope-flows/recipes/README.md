@@ -15,7 +15,7 @@ Complete flows that import as-is. Pick the closest one, copy its `flow.json`, an
 | SSO for domains whose tenant has it, email OTP for everyone else | [sso-by-domain-or-otp-email](sso-by-domain-or-otp-email/README.md) | SSO (SAML/OIDC, IdP-initiated), OTP email |
 | Ask for missing profile fields (phone, name) after login | [sign-up-or-in-progressive-profiling](sign-up-or-in-progressive-profiling/README.md) | OTP email, OTP SMS (phone verification) |
 | Call the app's API after login, put its answer in the JWT | [sign-up-or-in-http-connector-claims](sign-up-or-in-http-connector-claims/README.md) | OTP email, Generic HTTP connector, custom claims |
-| Magic link sign-in for existing users only, with a message for unknown emails | [sign-in-magic-link](sign-in-magic-link/README.md) | Magic link email |
+| Magic link sign-in for existing users only (unknown emails get the same neutral screen) | [sign-in-magic-link](sign-in-magic-link/README.md) | Magic link email |
 | Custom logic in the flow (compute values, map roles) and claims from it | [sign-up-or-in-scriptlet-claims](sign-up-or-in-scriptlet-claims/README.md) | OTP email, scriptlet, custom claims |
 | Passkeys for returning users, email OTP otherwise, offer a passkey after login | [sign-up-or-in-passkeys-otp-email](sign-up-or-in-passkeys-otp-email/README.md) | Passkeys (WebAuthn), OTP email |
 | Re-verify a signed-in user before a sensitive action (step-up) | [step-up-otp-email](step-up-otp-email/README.md) | Step-up, OTP email |

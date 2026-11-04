@@ -14,7 +14,8 @@ What it checks (the action catalog is ../references/catalog/actions.json):
 - what import accepts but breaks at runtime: unknown actions, argument names the action doesn't have, missing
   required inputs, argument types other than inline/context, step ids (exchangeStepId, verifyStepId,
   finishStepId) naming no task, subflows without arguments.flowId, group actions used as tasks, "new-" screen
-  ids, empty dynamic values;
+  ids, empty dynamic values, a condition branch (ELSE included) with no next rule, a scriptlets.<x> condition key
+  (results land under scripts.<x>);
 - warnings for a password flow that dropped what the password recipes handle: the PasswordExpired route, the
   forgot-password path, the verified-email check after a password sign-up;
 - notes (info) for an action before any screen whose errors fall to automatic handling (the flow fails there) and
@@ -38,7 +39,7 @@ CATALOG = HERE.parent / "references" / "catalog" / "actions.json"
 CONTEXT_KEYS = HERE.parent / "references" / "catalog" / "context-keys.json"
 RECIPES = HERE.parent / "recipes"
 # Condition keys the reference can't list: form fields, step outputs, lists, claims, cookies, custom attributes.
-DYNAMIC_KEY_PREFIXES = ("form.", "connectors.", "scripts.", "scriptlets.", "lists.", "jwtClaims.", "cookies.",
+DYNAMIC_KEY_PREFIXES = ("form.", "connectors.", "scripts.", "lists.", "jwtClaims.", "cookies.",
                         "user.customAttributes.", "tenant.customAttributes.", "jq:")
 # Namespaces that mirror user.* (unauthUser before sign-in, authInfo.user after).
 USER_MIRRORS = ("unauthUser.", "authInfo.user.")
@@ -125,9 +126,15 @@ def check_condition_keys(tasks, conditions, keys, report):
             for j, atom in enumerate(atoms if isinstance(atoms, list) else []):
                 target = atom.get("target") if isinstance(atom, dict) else None
                 key = target.get("value") if isinstance(target, dict) and target.get("type") == "context" else None
+                path = f"$.tasks.{task_id}.conditions[{i}].atomicConditions[{j}]"
+                if isinstance(key, str) and key.startswith("scriptlets."):
+                    report.add("condition_key_unknown", f"{path}.target.value",
+                               f"Context key {key!r}: a scriptlet's result lands at scripts.<outputPath>, not under "
+                               f"scriptlets, so this is always empty; use 'scripts.{key[len('scriptlets.'):]}'.",
+                               task_id, "warning")
+                    continue
                 if not isinstance(key, str) or key.startswith(DYNAMIC_KEY_PREFIXES):
                     continue
-                path = f"$.tasks.{task_id}.conditions[{i}].atomicConditions[{j}]"
                 lookup = next(("user." + key[len(m):] for m in USER_MIRRORS if key.startswith(m)), key)
                 spec = keys.get(key) or keys.get(lookup)
                 if spec is None:
@@ -255,6 +262,22 @@ def check_dsl(dsl, actions, conditions, report, shared=()):
         if task_type == "automated" and task.get("action"):
             check_action(tasks, task_id, task, path, arguments, actions, groups, report)
             check_success_route(task_id, task, path, actions, shared, report)
+        if task_type == "condition":
+            check_condition_routes(task_id, task, path, shared, report)
+
+
+def check_condition_routes(task_id, task, path, shared, report):
+    """Every branch, ELSE included, needs a next rule (or, in a subflow, to be an exit the parent routes): a branch
+    that matches with no rule has no next task and fails the flow."""
+    next_ = task.get("next") if isinstance(task.get("next"), dict) else {}
+    routed = {r.get("interactionId") for r in next_.get("rules") or [] if isinstance(r, dict)}
+    branches = task.get("conditions") if isinstance(task.get("conditions"), list) else []
+    for i, branch in enumerate(branches):
+        iid = branch.get("interactionId") if isinstance(branch, dict) else None
+        if isinstance(iid, str) and iid and iid not in routed and f"{task_id}.{iid}" not in shared:
+            report.add("condition_branch_unconnected", f"{path}.next.rules",
+                       f"Condition branch {iid!r} (conditions[{i}]) has no next rule: when it matches the flow has "
+                       "no next task and fails. Add a rule for it.", task_id)
 
 
 # JSON types of the task fields the importer decodes strictly (Go domain.Task): a value of another type fails

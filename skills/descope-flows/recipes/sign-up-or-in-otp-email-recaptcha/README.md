@@ -45,7 +45,7 @@ General flow anatomy: [flow-structure](../../references/flow-structure.md).
   threshold in the flow, test `connectors.recaptcha-enterprise_assess.riskScore` less-than your value instead.
 - **Fail closed**: point the `ConnectorFailed` rule at `24` instead of `19`. Then a Google or connector outage blocks
   every sign-in.
-- **Challenge instead of block**: send `23`'s ELSE to a second factor (e.g. an SMS code, or a TOTP step from
+- **Challenge instead of block**: send `23`'s "Likely bot" branch (`k7rb2xqm9wd`) to a second factor (e.g. an SMS code, or a TOTP step from
   [sign-up-or-in-otp-email-totp-mfa](../sign-up-or-in-otp-email-totp-mfa/README.md)) instead of `24`.
 - **Teach the model**: after verification, a second `connector` task with `command: "annotate"` and `args` rows
   `annotation` = `LEGITIMATE`, `reason` = `PASSED_TWO_FACTOR` (the template's task `8`) reports the outcome to
