@@ -22,7 +22,7 @@ Spring resource server) or calls Microsoft Graph to manage B2C users.
 
 | Frontend setup (Decision 1) | Token the API validates | Validate with |
 |---|---|---|
-| Inbound App + Resource (default for B2C apps with scoped APIs) | Inbound App **access token**: `iss` = `https://api.descope.com/v1/apps/<ProjectID>`, `aud` = Resource, `scope` = space-separated | Descope backend SDK with the audience set to the Resource (see the SDK table below), or standard JWT validation using `issuer` and `jwks_uri` from the discovery document |
+| Inbound App + Resource (default for B2C apps with scoped APIs) | Inbound App **access token**: `iss` = the Inbound App issuer (`implementation-nuances.md` → Finding the Inbound App issuer), `aud` = Resource, `scope` = space-separated | Descope backend SDK with the audience set to the Resource (see the SDK table below), or standard JWT validation using `issuer` and `jwks_uri` from the discovery document |
 | Plain Descope SDK / embedded Flow | Descope **session token** (`DS`): `iss` = `https://api.descope.com/<ProjectID>`, `aud` = project ID | Descope backend SDK (`validateSession`) |
 | Federated App via OIDC library | ID/access tokens from the project-level OIDC endpoints | Standard JWT validation with `https://api.descope.com/<ProjectID>` |
 
@@ -33,15 +33,17 @@ apps. Check `azp` if only some clients may call the API.
 Keep the B2C scope **names** (`tasks.read`) on the Descope Resource so only the claim name changes
 (`scp` → `scope`).
 
-**Descope backend SDKs and Inbound App tokens** (checked in SDK source; all accept them because
-they are signed with the project keys; none checks `scope`):
+**Descope backend SDKs and Inbound App tokens.** All accept them (same project signing keys), and
+none checks `scope`. Checked in each SDK's source at the version shown (Python `_auth_base.py`
+`_decode_and_verify_token`; .NET `JwtValidator.cs`; Java `JwtUtils.getClaimsJws`; Node
+`validateJwt`) — re-check if the app pins a different major version.
 
 | SDK | Issuer check | `aud` check | Use |
 |---|---|---|---|
 | Node `@descope/node-sdk` (2.20.0) | Yes — project ID as last/second-to-last path segment, so `/v1/apps/<ProjectID>` passes | Only when `audience` is passed | `validateSession(token, { audience: RESOURCE })` |
-| Python `descope` (2.16.1) | None | Without `audience`, expects the project ID → Inbound App tokens are rejected | `validate_session(token, audience=RESOURCE)` |
-| .NET `Descope` | None (`ValidateIssuer = false`) | None (`ValidateAudience = false`) | `ValidateSessionAsync(token)` **plus** an explicit `aud` (and `iss`) check |
-| Java `java-sdk` | None | None | `validateSessionWithToken(token)` **plus** an explicit `aud` (and `iss`) check |
+| Python `descope` (2.17.0) | None | Without `audience`, only a token whose `aud` is the project ID passes → Inbound App tokens are rejected | `validate_session(token, audience=RESOURCE)` |
+| .NET `Descope` (1.11.0) | None (`ValidateIssuer = false`) | None (`ValidateAudience = false`) | `ValidateSessionAsync(token)` **plus** an explicit `aud` (and `iss`) check |
+| Java `java-sdk` (1.6.1) | None | None | `validateSessionWithToken(token)` **plus** an explicit `aud` (and `iss`) check |
 
 Skipping the `aud` check in .NET/Java accepts tokens issued for other apps and Resources in the
 same project.
@@ -69,7 +71,7 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
-        o.Authority = builder.Configuration["Descope:Issuer"];      // Inbound App issuer from the Console
+        o.Authority = builder.Configuration["Descope:Issuer"];      // Inbound App issuer — from a real token's iss, not the settings page
         // If the discovery document is not at {Authority}/.well-known/openid-configuration,
         // set o.MetadataAddress to the discovery URL shown in the Console.
         o.Audience = builder.Configuration["Descope:Resource"];     // Resource identifier
@@ -105,6 +107,8 @@ public class TasksController : ControllerBase { }
   "Resource": "https://api.example.com"
 }
 ```
+`Issuer` above is only the default form — use the real value (`implementation-nuances.md` → Finding
+the Inbound App issuer).
 
 ### Option B — Descope session tokens (plain SDK / embedded Flow)
 
@@ -148,7 +152,7 @@ validation if the project serves more than one app.
 
 | B2C (`Microsoft.Identity.Web`) | Descope |
 |---|---|
-| `User.GetObjectId()` / `oid` | `User.FindFirst("b2cObjectId")` (JWT Template) for legacy keys; `sub` for the Descope user ID |
+| `User.GetObjectId()` / `oid` | `User.FindFirst("oid")` — the JWT Template emits `oid` from `b2cObjectId` (keep `MapInboundClaims = false`). Descope's own user ID: `sub`, or `dsub` if `sub` is overridden |
 | `User.FindFirst("emails")` | `User.FindFirst("email")` (JWT Template) |
 | `User.FindFirst("tfp")` | Delete |
 | `User.FindFirst("extension_Role")` | `roles` claim, or the custom attribute via JWT Template |
@@ -384,8 +388,8 @@ builder.Services.AddAuthorization(o => o.AddPolicy("tasks.read", p => p.RequireA
 
 Match on the exact B2C issuer values (the `b2clogin.com`, custom-domain, and `tfp` variants the
 API sees), not a substring. Remove the B2C scheme only after every client has moved to Descope and
-remaining B2C sessions are revoked or expired — B2C refresh tokens slide (default 14-day lifetime,
-up to a 90-day sliding window; SPAs 24 hours).
+remaining B2C sessions are revoked or expired. Size that window from the tenant's real refresh
+token settings (`implementation-nuances.md` → Session behavior and token lifetimes).
 Same pattern in Node/Python: decode the unverified `iss`, then pick the verifier.
 
 ---
@@ -395,7 +399,7 @@ Same pattern in Node/Python: decode the unverified `iss`, then pick the verifier
 | Graph (B2C) | Descope |
 |---|---|
 | `POST /users` with `identities` | Create user (login ID = sign-in name) |
-| `PATCH /users/{id}` with `extension_<appId>_<name>` | Update user custom attributes |
+| `PATCH /users/{id}` with `extension_<appIdNoHyphens>_<name>` | Update user custom attributes |
 | `DELETE /users/{id}` | Delete user |
 | `GET /users?$filter=identities/any(...)` | Load / search users by login ID |
 | `POST /groups/{id}/members/$ref` (group-based roles) | Assign roles (per tenant if needed) |

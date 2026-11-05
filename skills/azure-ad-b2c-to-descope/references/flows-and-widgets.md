@@ -48,9 +48,15 @@ Sources:
 | **App registration with "Expose an API"** | **Resource** | Keep the same scope names. |
 | **App registration (client credentials)** | **Inbound App** (client credentials) | Not Access Keys. |
 | **Custom attribute** (`extension_*`, on `b2c-extensions-app`) | **Custom attribute** | Define before import. |
-| **Policy keys** | — | Descope manages signing keys; B2C secrets can't be exported. |
+| **Policy keys** | — | Descope manages its own signing keys; every other key is a credential to re-obtain (`implementation-nuances.md` → Policy key inventory). |
 | **Conditional Access** (require MFA / block) | **Flow conditions + risk connectors** | |
-| **Custom domain** (Azure Front Door) | **Custom domain** | |
+| **MFA** (SMS, email OTP, TOTP) | **MFA steps** in the Flow | Enrollments don't carry over. |
+| **`oid` / `sub`** (object ID) | **`b2cObjectId`** custom attribute, emitted as `oid` | `implementation-nuances.md` → User ID strategy. |
+| **Roles** (custom attribute, API connector, Graph groups) | **Roles and permissions** (per tenant if needed) | Policy steps that assign groups → Assigning roles and tenants in a Flow. |
+| **Per-customer IdP + `domain_hint` routing** | **Tenant SSO + email domains** | `tenant` parameter on hosted login. |
+| **Multi-tenant Entra** (`common` + allowlist) | **"Sign in with Microsoft" social login + Flow condition** | |
+| **Passkeys** via sample / partner | **Native passkeys** | Users re-enroll. |
+| **Custom domain** (Azure Front Door) | **Custom domain** (CNAME) | Front Door WAF and rules don't come with it — see `implementation-nuances.md` → Custom domain on Azure Front Door |
 
 ### Other Descope-specific terms
 
@@ -122,6 +128,24 @@ Access via Console → Flows → "Start from template". Search by method, use ca
 **Before writing any custom Flow configuration:** check whether a template already covers the
 use case. Most common patterns are available out of the box.
 
+### Assigning roles and tenants in a Flow
+
+Replaces B2C policy steps that put a user in a group or organization at sign-up or sign-in (an API
+connector, a REST technical profile, or a claims transformation that decides the group). Pick by
+how the B2C step decided:
+
+| B2C step decided the group by… | Flow pattern |
+|---|---|
+| The user's email domain | **Update User / Add Tenant** — joins the tenant whose email domains match (set the domains on the tenant) |
+| Nothing exists yet for this organization (first user creates it) | **Create Tenant** — sets name, tenant ID, self-provisioning domains and roles; values can use `{{}}` dynamic syntax |
+| A fixed default for everyone in a tenant | Tenant default roles — set once on the tenant, applied when a user is created in it; no Flow step |
+| Who invited the user | **User / Invite** — the invitee joins the inviter's tenants with the roles chosen in the action |
+| A rule in the Flow (a form answer, a claim from the IdP, a connector result) | A condition, then the Flow's role-assignment action. Flows can assign roles directly; confirm the exact action name in the Flow editor or with the Descope Docs MCP |
+| An external system (CRM, entitlement service) | Generic HTTP Connector to that system, then the condition + role-assignment step above. If the system should stay the source of truth, call it every login and put the result in a claim with **Custom Claims** instead of storing roles in Descope |
+
+Docs: [Add user to tenant](https://docs.descope.com/management/tenant-management/handling-tenants-in-flows/add-user-to-tenant),
+[Create tenant in a Flow](https://docs.descope.com/management/tenant-management/handling-tenants-in-flows/add-attributes-to-tenant).
+
 ### MFA enrollment specifically
 
 B2C user flows enroll MFA inline (phone or authenticator app) when MFA is set to "Always on" or
@@ -145,14 +169,9 @@ action runs a Flow under the hood. Customizable via Console → Widgets without 
 
 ### When to recommend a Widget
 
-Whenever the migration plan calls for building or migrating a custom:
-- Profile edit page → **User Profile Widget**
-- User management page (admin view) → **User Management Widget**
-- Role assignment UI → **Role Management Widget**
-- Tenant SSO setup page → **Tenant Profile Widget** (+ SSO Setup Suite)
-- Audit log view → **Audit Widget**
-
-Ask before writing code: *"Does a Widget cover this use case?"*
+Whenever the plan calls for building or migrating a custom profile page, user or role management
+page, tenant SSO settings page, audit view, or app launcher, ask before writing code: *"Does a Widget
+cover this?"* — the table below maps each page to its Widget.
 
 ### Widget types
 
@@ -160,9 +179,10 @@ Ask before writing code: *"Does a Widget cover this use case?"*
 
 | Widget | What it does |
 |---|---|
-| User Profile Widget | Edit name, email, avatar; manage MFA enrollment; manage connected accounts |
-| Applications Portal Widget | List accessible applications |
+| User Profile Widget | Edit profile info and picture; manage passkeys, password and authenticator app (TOTP) |
+| Applications Portal Widget | Tiles for the Federated Apps the user can access — the replacement for an Azure My Apps-style app launcher (`implementation-nuances.md` → App launcher portal). Also available in the hosted Admin Portal |
 | Outbound Applications Widget | Manage third-party OAuth connections (Outbound Apps) |
+| Tenant Switcher Widget | Lets a user who belongs to several tenants switch the current tenant — for B2C apps serving business users in more than one organization |
 
 **Admin-facing (for tenant admins within your app):**
 
@@ -172,7 +192,7 @@ Ask before writing code: *"Does a Widget cover this use case?"*
 | Role Management Widget | Create and assign roles within a tenant |
 | Access Key Management Widget | Create/revoke API access keys |
 | Audit Widget | View audit events per tenant |
-| Tenant Profile Widget | Edit tenant settings, configure SSO, manage SCIM |
+| Tenant Profile Widget | Edit tenant name, custom attributes and domains; SSO enforcement and exclusions; password and session policy; generate or revoke the tenant's SSO Setup Suite link |
 
 ### Widget vs. Flow component
 
@@ -186,9 +206,9 @@ Ask before writing code: *"Does a Widget cover this use case?"*
 
 ## SSO Setup Suite
 
-The SSO Setup Suite is a no-code Console wizard for SAML and OIDC SSO configuration.
-It guides tenant admins through per-tenant SSO setup with step-by-step instructions
-specific to common IdPs (Microsoft Entra ID, Okta, Google Workspace, etc.).
+A guided, link-based setup UI for one tenant's SSO: the tenant's IT admin opens a per-tenant link
+(generated in the Console or the Tenant Profile Widget) and follows IdP-specific steps (Entra ID,
+Okta, Google Workspace, …). Paid plans only — check the customer's plan before recommending it.
 
 ### When to recommend it
 
@@ -207,8 +227,8 @@ Key indicators:
 ### What it does
 
 - Generates per-tenant SAML metadata and ACS URL
-- Walks tenant admins through IdP-specific setup (Entra ID, Okta, Google, etc.)
-- Handles SCIM token generation for provisioning
+- Configures SAML or OIDC, attribute and group mapping, and SCIM provisioning (including the token)
+- Runs a connection test before the tenant goes live
 - Removes engineering involvement for SSO onboarding of new tenants
 
 ---
@@ -223,11 +243,11 @@ Key indicators:
 | Branding (logo, colors, fonts) | Styles |
 | RBAC model (create roles and permissions) | Authorization → RBAC |
 | Per-tenant SSO configuration | SSO (or SSO Setup Suite) |
-| Social OAuth providers | Authentication → Social |
+| Social OAuth providers | Authentication Methods → Social Login |
 | Email/SMS templates | Authentication method settings → Templates |
 | Session token lifetime and refresh settings | Project Settings → Session Management |
 | Custom JWT claims (profile fields, roles in token) | Project Settings → JWT Templates |
-| Custom tenant/user attributes | Project → Custom Attributes |
+| Custom tenant/user attributes | Users → Custom Attributes (user); Tenants → Custom Attributes (tenant) |
 | Connectors (Slack, Salesforce, HTTP webhooks, etc.) | Connectors |
 | M2M clients (client credentials) | Inbound Apps (client credentials) — not Access Keys |
 | Descopers (Console access control) | Company Settings → Descopers |
