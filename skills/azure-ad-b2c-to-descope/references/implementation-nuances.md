@@ -24,6 +24,7 @@
 - [MFA and Conditional Access](#mfa-and-conditional-access)
 - [Custom attributes](#custom-attributes)
 - [Roles and groups](#roles-and-groups)
+  - [Importing organizations](#importing-organizations)
 - [Page layouts → Flow styles](#page-layouts--flow-styles)
 - [Passkeys](#passkeys)
 - [Localization](#localization)
@@ -443,6 +444,18 @@ that process keeps running after cutover and needs its own replacement:
 **Exporting current memberships for the import:** read groups and members through Graph
 (`b2c-detection-patterns.md` → Read-Only Microsoft Graph Discovery), map each group to a Descope
 role (or a tenant, if the group is a customer organization), and include the roles in the import batch.
+
+#### Importing organizations
+
+Whether organizations came from groups or a custom attribute
+(`b2c-detection-patterns.md` → Customer organization discovery):
+1. Create one tenant per boundary group or distinct attribute value, before importing users. Keep
+   the B2C value (group ID or attribute value) on the tenant as a tenant custom attribute
+   (`b2cOrgId`), so the app's existing org claim and data keys can still be matched.
+2. Import each user with `userTenants` (`tenantId` plus `roleNames` for tenant roles from
+   combined groups); project-level roles go in `roleNames`.
+3. Keep the original attribute on the user (`customAttributes`) until the app reads the Descope
+   tenant instead.
 
 ### Page layouts → Flow styles
 

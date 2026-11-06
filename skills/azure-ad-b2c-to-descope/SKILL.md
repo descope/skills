@@ -331,7 +331,9 @@ App code reads tfp / acr?
 - Where do roles come from (custom attribute, app database via API connector, Graph groups,
   nowhere), and how do users get them (portal admin, Graph calls, a policy step, a sync job, the
   customer's IdP)? (`implementation-nuances.md` → Roles and groups)
-- Do any B2C "groups" or customer IdPs actually represent customer organizations? (They become Descope tenants.)
+- Do any B2C groups, custom attributes (for example `extension_CompanyId`), or customer IdPs
+  represent customer organizations? (They become Descope tenants; discovery checks both groups and
+  attributes either way — `b2c-detection-patterns.md` → Customer organization discovery.)
 
 **Enterprise SSO** (if enterprise IdPs are in use)
 - Does the B2C tenant use a custom domain, and are the existing customer IdPs configured with URLs on that domain or on `b2clogin.com`?
@@ -410,6 +412,10 @@ Also build, from the same sources:
 - **Sign-in methods** — the union of the tenant's identity providers, user flows' providers, and
   the IdPs custom policy journeys actually reach (`b2c-detection-patterns.md` → Sign-in method
   inventory).
+- **Customer organizations** — classify every group and org-like custom attribute as customer
+  boundary, role, both, or unclear, show the evidence, and confirm with `AskUserQuestion`
+  (`b2c-detection-patterns.md` → Customer organization discovery). Without Graph access, run
+  search group 14 and ask for the group list and attribute names.
 - **Policy keys** in use and their expiry (`implementation-nuances.md` → Policy key inventory).
 - **Session settings, SAML relying parties, fraud controls, localized strings** — read from the
   portal or policy XML (`b2c-detection-patterns.md` → Custom Policy XML Hints).

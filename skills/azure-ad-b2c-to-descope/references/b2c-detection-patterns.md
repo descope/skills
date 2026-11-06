@@ -76,6 +76,9 @@ grep -rln "TrustFrameworkPolicy" --include="*.xml" "${EXCL[@]}" . 2>/dev/null
 
 # 13. User IDs stored or parsed as GUIDs (new users get string IDs if the B2C ID is kept)
 grep -rniI "uniqueidentifier\|guid\.\(try\)\?parse\|uuid\.fromstring\|{[a-z]*:guid}\|\bguid [a-z]*id\b\|user_\?id.*\b\(uuid\|guid\)\b" "${EXCL[@]}" . 2>/dev/null
+
+# 14. Customer organization in claims and queries (org claim reads, tenant-scoped data access)
+grep -rniI "extension_[a-z]*\(org\|tenant\|company\|customer\|account\)\|\b\(org\|tenant\|company\|customer\)_\?id\b\|\b\(org\|tenant\|company\)\(id\|name\)\b" "${EXCL[@]}" . 2>/dev/null
 ```
 
 For each hit record: file:line, what it does, complexity (Low / Medium / High).
@@ -153,7 +156,7 @@ token from `https://login.microsoftonline.com/<b2c-tenant-id>/oauth2/v2.0/token`
 | Custom attributes | `GET https://graph.microsoft.com/v1.0/applications/<b2c-extensions-app object id>/extensionProperties` | `Application.Read.All` |
 | Conditional Access policies | `GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies` | `Policy.Read.All` |
 | Policy keys (metadata only) | `GET https://graph.microsoft.com/beta/trustFramework/keySets` | `TrustFrameworkKeySet.Read.All` |
-| Groups and members (for role import) | `GET https://graph.microsoft.com/v1.0/groups?$select=id,displayName`, then `GET .../groups/<id>/members?$select=id` | `GroupMember.Read.All` |
+| Groups and members (roles and organizations) | `GET https://graph.microsoft.com/v1.0/groups?$select=id,displayName,description`, then `GET .../groups/<id>/members?$select=id` | `GroupMember.Read.All` |
 | User count | `GET https://graph.microsoft.com/v1.0/users/$count` with header `ConsistencyLevel: eventual` | `User.Read.All` |
 | Users (for export) | See `implementation-nuances.md` → Exporting users from B2C | `User.Read.All` |
 
@@ -202,6 +205,47 @@ hold IdPs no policy uses). Build one list from all three:
 Record which policies offer each method. Enable each method once at project level in Descope, then
 show it only in the Flows that replace those policies.
 
+### Customer organization discovery
+
+B2C has no organization object. Customers model organizations with **groups**, a **custom
+attribute** (`extension_CompanyId`, `extension_TenantId`), customer IdPs, or their own database
+behind an API connector. Check all of them — a setup can use more than one, and the user's
+triage answer can be wrong.
+
+**Inputs:** groups (`groups?$select=id,displayName,description`) and members, joined to the user
+export for email domains; custom attributes (`extensionProperties`) and their values from the user
+export (list them in `$select`); relying party `OutputClaims`; search groups 6 and 14.
+
+**Candidates:** every group, and every custom attribute whose name suggests an organization
+(`org`, `tenant`, `company`, `customer`, `account`) or whose values pass the signals below.
+
+| Signal | Customer boundary (→ tenant) | Functional role (→ role) |
+|---|---|---|
+| Spread across users | Each user has one value / one group of the set — they partition users | Users hold several; memberships overlap |
+| Email domains | Most users with the same value share one email domain | Mixed domains |
+| Number of distinct values or groups | Grows with customers, often large | Small, fixed (`Admin`, `Editor`, `Billing`) |
+| Names / values | Company names or IDs (`Acme`, `C-1042`) | Job or permission names |
+| Link to SSO | Lines up with one customer IdP or `domain_hint` value | None |
+| Code usage | Filters data (`WHERE org_id = …`, tenant-scoped queries) | Allows or blocks actions (`IsInRole`, `[Authorize(Roles=…)]`) |
+| In the token | Sent as an org claim (`tenant_id`, `org`) | Sent as `roles` / `groups` |
+
+Classify each candidate:
+- **Boundary** → a Descope tenant per distinct value or group.
+- **Role** → a Descope role.
+- **Both** — combined names (`Acme-Admins`), or a user in a boundary group plus a role group →
+  tenant plus a **tenant role**.
+- **Profile data** — an org-like attribute that is free text (`CompanyName` typed at sign-up),
+  with spelling variants and no code filtering on it → keep as a custom attribute; ask before
+  turning it into tenants.
+- **Unclear** → ask.
+
+Multi-valued attributes (comma-separated IDs) or users in several boundary groups mean users in
+more than one organization — the Flow must pick the current tenant (`implementation-nuances.md`
+→ Picking the tenant at sign-in).
+
+Show the table of candidates with their evidence, then confirm with `AskUserQuestion` before the
+import mapping is set. Import order: `implementation-nuances.md` → Importing organizations.
+
 ---
 
 ## Out-of-Scope Detection
@@ -245,6 +289,12 @@ Stop and confirm scope if you find:
 ### Custom attributes
 | Graph name | Policy/token name | Used by app | Descope custom attribute |
 |---|---|---|---|
+
+### Customer organizations
+| Source (group / attribute) | Name | Distinct values | Evidence | Classification | Descope |
+|---|---|---|---|---|---|
+| Group set | `Acme`, `Globex`, … (212) | 212 | One group per user; 96% share an email domain; data filtered by group ID | Boundary | Tenants |
+| Attribute | `extension_Role` | 3 | `Admin` / `User` / `Viewer`; `IsInRole` checks | Role | Roles |
 
 ### Enterprise SSO connections
 | Customer | IdP | Protocol | Routing key (domain / `domain_hint` / slug) | Email domain(s) | ACS / redirect URL host | Signed requests / encrypted assertions | OIDC secret available outside B2C | MFA behavior | Cutover result |
