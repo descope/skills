@@ -136,7 +136,10 @@ the Resource):
 
 **Still required in the POC** — MSAL doesn't hide these:
 - Remove B2C policy logic: per-policy authorities, account filtering by policy name,
-  `AADB2C90118` handling, `tfp` / `acr` checks (SKILL.md Execution Phase 4d).
+  `AADB2C90118` handling, `tfp` / `acr` checks (SKILL.md Execution Phase 4d). B2C user flows
+  can't reset a password inside sign-in, so "Forgot password?" ends the sign-in with
+  `AADB2C90118` and the app restarts login on the password-reset policy; in Descope, reset is a
+  branch of the sign-in Flow, so the app never gets that error and the handler is dead code.
 - Backend validates Descope tokens: issuer, `aud` = Resource, `scp` → `scope` (`backend-sdks.md`).
 - Inbound App consent setup, the JWT Template claims, and logout through Descope's
   `end_session_endpoint` from discovery.
