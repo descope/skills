@@ -17,7 +17,10 @@
 
 Prefer `rg` when available. Exclude build output, vendored code, lockfiles and minified bundles —
 the broad claim searches (groups 4, 5, 8) otherwise flood with matches from them. `-I` skips binary
-files. The patterns work with macOS (BSD) and GNU grep.
+files. The patterns work with macOS (BSD) and GNU grep. Policy names and method names vary in case
+(`b2c_1_susi`, `AcquireTokenSilent`), so the B2C and call-site groups ignore case. If the repo
+holds custom policy XML or exported Graph / user data, exclude those folders from the code groups
+(2–6, 14) — group 12 reads the XML, and the exports aren't code.
 
 ```bash
 # An array, so it expands correctly in both bash and zsh (zsh doesn't word-split "$EXCL")
@@ -37,13 +40,13 @@ grep -rni "@azure/msal-browser\|@azure/msal-react\|@azure/msal-angular\|@azure/m
 grep -rnE "^msal([=<>~! ]|$)|[\"']msal([=<>~! ]|[\"'])" --include="requirements*.txt" --include="pyproject.toml" --include="Pipfile" . 2>/dev/null
 
 # 2. B2C authority, domains, and policy names
-grep -rn "b2clogin\.com\|onmicrosoft\.com\|knownAuthorities\|AzureAdB2C\|B2C_1_\|B2C_1A_\|SignUpSignInPolicyId\|ResetPasswordPolicyId\|EditProfilePolicyId\|b2cPolicies" "${EXCL[@]}" . 2>/dev/null
+grep -rni "b2clogin\.com\|onmicrosoft\.com\|knownAuthorities\|AzureAdB2C\|WithB2CAuthority\|/tfp/\|B2C_1_\|B2C_1A_\|SignUpSignInPolicyId\|ResetPasswordPolicyId\|EditProfilePolicyId\|b2cPolicies" "${EXCL[@]}" . 2>/dev/null
 
 # 3. MSAL call sites (login, token, logout, redirect handling)
-grep -rn "loginRedirect\|loginPopup\|acquireTokenSilent\|acquireTokenRedirect\|acquireTokenPopup\|handleRedirectPromise\|logoutRedirect\|logoutPopup\|MsalProvider\|MsalGuard\|MsalInterceptor\|MsalRedirectComponent\|useMsal\|useIsAuthenticated\|AuthenticatedTemplate\|MsalAuthenticationTemplate\|PublicClientApplication\|ConfidentialClientApplication\|AddMicrosoftIdentityWebApi\|AddMicrosoftIdentityWebApp\|AddMicrosoftIdentityUI" "${EXCL[@]}" . 2>/dev/null
+grep -rni "loginRedirect\|loginPopup\|getAuthCodeUrl\|acquireTokenByCode\|AcquireTokenByAuthorizationCode\|AcquireTokenInteractive\|AddOpenIdConnect\|UseOpenIdConnectAuthentication\|OnRedirectToIdentityProvider\|OnRemoteFailure\|acquireTokenSilent\|acquireTokenRedirect\|acquireTokenPopup\|handleRedirectPromise\|logoutRedirect\|logoutPopup\|MsalProvider\|MsalGuard\|MsalInterceptor\|MsalRedirectComponent\|useMsal\|useIsAuthenticated\|AuthenticatedTemplate\|MsalAuthenticationTemplate\|PublicClientApplication\|ConfidentialClientApplication\|AddMicrosoftIdentityWebApi\|AddMicrosoftIdentityWebApp\|AddMicrosoftIdentityUI" "${EXCL[@]}" . 2>/dev/null
 
 # 4. B2C-specific logic that becomes dead code
-grep -rn "AADB2C\|homeAccountId\|idTokenClaims\|\btfp\b\|\.acr\b\|protocolMode\|InteractionRequiredAuthError" "${EXCL[@]}" . 2>/dev/null
+grep -rni "AADB2C\|homeAccountId\|idTokenClaims\|\btfp\b\|\.acr\b\|protocolMode\|InteractionRequiredAuthError" "${EXCL[@]}" . 2>/dev/null
 
 # 5. Token claims that change
 grep -rn "\bscp\b\|RequiredScope\|VerifyUserHasAnyAcceptedScope\|GetObjectId\|\boid\b\|emails\[\|\"emails\"\|extension_\|\bidp\b\|identity/claims/scope" "${EXCL[@]}" . 2>/dev/null
@@ -119,6 +122,15 @@ Policy files chain: `TrustFrameworkBase.xml` → `TrustFrameworkLocalization.xml
 `TrustFrameworkExtensions.xml` → relying party files (`SignUpOrSignin.xml`, `PasswordReset.xml`,
 `ProfileEdit.xml`). Start from each relying party file (`<RelyingParty>` → `DefaultUserJourney`).
 
+Before mapping, match the XML to what's deployed and used:
+- **Deployed:** each file's `PolicyId` should appear in Graph's `trustFramework/policies` list. A
+  file that isn't there is a sample or an old copy — ask before mapping it.
+- **Called:** map a relying party policy only if an app calls it (search group 2 finds policy names
+  in code and config). List deployed policies no app calls in the plan as "not migrated — confirm".
+- **Complete:** journeys and technical profiles usually live in the Base and Extensions files. If
+  a relying party file's `BasePolicy` chain is missing, ask for those files before mapping its
+  journey.
+
 | XML element | What it tells you | Descope |
 |---|---|---|
 | `<UserJourney Id="…">` / `<OrchestrationStep>` | Steps of a login journey | Flow and its steps |
@@ -132,7 +144,7 @@ Policy files chain: `TrustFrameworkBase.xml` → `TrustFrameworkLocalization.xml
 | `JourneyFraming Enabled="true"` | Embedded (iframe) sign-in | Embedded Flow |
 | `PhoneFactor`, `TOTP` technical profiles | MFA | MFA steps |
 | `domain_hint` / `ClaimsProviderSelection` with `TargetClaimsExchangeId` per customer | Home realm discovery | Tenant email domains, or a tenant slug if the hint is a customer key |
-| `ParseDomain` claims transformation + orchestration steps with `<Precondition>`s on the domain claim | Home realm discovery from the typed email, rules inside the policy | Each domain in a precondition → email domain on that customer's tenant (Routing key) |
+| `ParseDomain` claims transformation, then a `LookupValue` transformation (domain → IdP), `ClaimTypeOnWhichToEnable` / `ClaimValueOnWhichToEnable` on each IdP technical profile, or orchestration steps with `<Precondition>`s on the domain claim | Home realm discovery from the typed email, rules inside the policy | Each domain in a precondition → email domain on that customer's tenant (Routing key) |
 | `<Domain>` element on a customer's `ClaimsProvider` | The value `domain_hint` matches for that IdP | Email domain or tenant slug, per Picking the tenant at sign-in |
 | `RestfulProvider` profile whose output claim names an IdP or org (`identityProvider`, `idp`, `orgId`), followed by a step chosen by that claim | Home realm discovery through the customer's API | `implementation-nuances.md` → Organization lookup through an API connector |
 | `amr` captured from a federated IdP + skip MFA precondition | MFA trusted from the customer IdP | Condition on `idpOIDCClaims.amr` |
@@ -244,6 +256,9 @@ Classify each candidate:
 - **Profile data** — an org-like attribute that is free text (`CompanyName` typed at sign-up),
   with spelling variants and no code filtering on it → keep as a custom attribute; ask before
   turning it into tenants.
+- **Other** — a group or attribute that marks a cohort, not an organization or a permission
+  (feature flag, beta program, mailing list): keep it as a boolean or list custom attribute if the
+  app reads it, otherwise drop it.
 - **Unclear** → ask.
 
 Multi-valued attributes (comma-separated IDs) or users in several boundary groups mean users in

@@ -97,13 +97,16 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
-- **Do not import users into production before dev/staging imports and sign-in tests pass.**
+- **Do not import users into production before dev/staging imports and sign-in tests pass.** With
+  only a production B2C directory, test in a Descope dev project with staff or synthetic accounts,
+  not a copy of real users.
 
 ---
 
 ## Part 1: MCP Check (BLOCKING)
 
-Before doing anything else, check whether the Descope Docs MCP is available by calling
+First run Part 1.5's quick grep (no questions). If it already says stop, stop there without
+asking about the MCP. Otherwise check whether the Descope Docs MCP is available by calling
 `search-descope-docs` with a simple query (e.g., "session validation").
 
 **If the tool is available:** proceed to Part 1.5.
@@ -133,12 +136,17 @@ Before triage, confirm the app uses Azure AD B2C. Quick check (case-insensitive)
 |---|---|
 | Any of the markers above — on any host, including a custom domain (`login.<company>.com/<tenant>.onmicrosoft.com/B2C_1A_…`) | Azure AD B2C — proceed |
 | `*.ciamlogin.com` (Entra External ID), or `login.microsoftonline.com/<tenant>` with no B2C policy (workforce Entra ID) | Stop: this skill does not cover it |
-| Another identity provider (IdentityServer / Duende, Auth0, Okta, Keycloak, Cognito, PingOne, a homegrown OIDC server) | Stop and name the matching skill if one exists (`auth0-to-descope`, `okta-cis-to-descope`, `pingone-to-descope`, `stytch-to-descope`, `workos-to-descope`); otherwise point to [docs.descope.com/migrate](https://docs.descope.com/migrate) |
+| Another identity provider (IdentityServer / Duende, Auth0, Okta, Keycloak, Cognito, PingOne, a homegrown OIDC server), including a generic OIDC library pointed at a non-Microsoft host | Stop and name the matching skill if one exists (`auth0-to-descope`, `okta-cis-to-descope`, `pingone-to-descope`, `stytch-to-descope`, `workos-to-descope`); otherwise point to [docs.descope.com/migrate](https://docs.descope.com/migrate) |
 | No identity provider visible — authority in Key Vault, app settings or a pipeline | Ask |
 
 When asking, use `AskUserQuestion`: "Which service does this app sign in with?" — Azure AD B2C /
 Microsoft Entra External ID / Microsoft Entra ID (workforce) / Other (name it). Proceed only on an
 explicit "Azure AD B2C". See `references/b2c-detection-patterns.md` → Out-of-Scope Detection.
+The code wins over the request: if the user says "B2C" but the repo shows another provider, ask.
+
+When stopping, say what you found and where to go:
+> This skill covers Azure AD B2C only. This app signs in with <provider> (`<file>:<line>`).
+> <Use the `<skill-name>` skill | See docs.descope.com/migrate>. No code was changed.
 
 ---
 
@@ -183,15 +191,22 @@ Login mode today?
 `loginPopup` / `acquireTokenPopup` users move to the redirect: Descope-hosted login is
 redirect-based.
 
-**POC with MSAL first — always offer it.** For MSAL.js (browser, React, Angular, Node) and
-MSAL.NET apps, ask:
+An app can match two branches (a server-side `msal-node` app that also renders sign-in in an
+iframe). The **target** decides: if sign-in must stay in the page, follow (c) for the login and
+use (b) only for what the server keeps doing (validating the session on each request); otherwise
+follow (b).
+
+**POC with MSAL first — offer it whenever the target is redirect login.** For MSAL.js (browser,
+React, Angular, Node) and MSAL.NET apps whose target is Descope-hosted login (Decision 0 (a) or
+(b)), ask:
 
 > "Do you want to start with a proof of concept that keeps MSAL and only changes its configuration
 > to point at Descope, then replace MSAL with the Descope SDK? Or replace MSAL straight away?"
 
 If yes, the plan runs the MSAL POC first and the SDK replacement afterwards, both before
-production cutover (`implementation-nuances.md` → MSAL POC first, then replace MSAL). Apps on
-`Microsoft.Identity.Web` or native MSAL go straight to their replacement — say so.
+production cutover (`implementation-nuances.md` → MSAL POC first, then replace MSAL). Skip it, and
+say why in the plan, for apps on `Microsoft.Identity.Web` or native MSAL, and when the target is an
+embedded Flow (Decision 0 (c)) — the POC would test a redirect login that never ships.
 
 Rule of thumb: **Descope-hosted login by default** — B2C users already redirect to
 `b2clogin.com`, so a hosted page is the smallest UX change. Use an embedded Flow only for B2C
@@ -311,7 +326,8 @@ How is the journey chosen?
 │                                           that app's Flow Hosting settings (one per app);
 │                                           embedded login sets the flowId prop
 │     Profile edit, change MFA, etc.       → User Profile Widget or an embedded Flow in the app,
-│                                           not a second hosted login
+│                                           not a second hosted login (server-rendered apps:
+│                                           implementation-nuances.md → Server-side web apps)
 ├── One policy branches on inputs         → One Flow with conditions on the same inputs
 │                                           (form fields, query params, connector results)
 └── Both                                  → Map each policy separately using the two rules above
@@ -688,7 +704,7 @@ Read `references/implementation-nuances.md` in two passes before writing code:
 ### Execution Phase 4b: Non-Code File Updates
 
 - **`appsettings*.json`** — remove the `AzureAdB2C` section; add a `Descope` section (`ProjectId`, Inbound App issuer/audience as needed).
-- **`.env*`** — remove `AZURE_AD_B2C_*` / `B2C_*` / `MSAL_*` variables; add `DESCOPE_PROJECT_ID` (+ framework-prefixed copies, e.g. `NEXT_PUBLIC_DESCOPE_PROJECT_ID`, `VITE_DESCOPE_PROJECT_ID`).
+- **`.env*`** — remove `AZURE_AD_B2C_*` / `B2C_*` / `MSAL_*` variables; add `DESCOPE_PROJECT_ID` (+ framework-prefixed copies in the app's own convention: `VITE_*` (Vite), `REACT_APP_*` (Create React App), `NEXT_PUBLIC_*` (Next.js)).
 - **Docker / CI / IaC** — update secrets and env declarations; remove B2C policy upload steps from pipelines.
 - **Custom policy XML and page layout templates** — keep them until cutover for rollback; delete after B2C is decommissioned.
 - **README / docs** — replace "create a B2C app registration and user flow" setup steps with Descope Console steps.

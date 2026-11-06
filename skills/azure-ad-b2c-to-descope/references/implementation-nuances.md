@@ -110,9 +110,9 @@ library before production cutover.
 
 | MSAL library | POC against Descope |
 |---|---|
-| `@azure/msal-browser`, `msal-react`, `msal-angular` | Yes — `system.protocolMode: "OIDC"` |
+| `@azure/msal-browser`, `msal-react`, `msal-angular` | Yes — `system.protocolMode: "OIDC"` (msal-browser 2.4.0+; 3.x+ preferred — msal-common 14 stops sending Microsoft telemetry parameters in OIDC mode) |
 | `@azure/msal-node` | Yes — `system.protocolMode: "OIDC"` |
-| MSAL.NET (`Microsoft.Identity.Client`) | Yes — `WithOidcAuthority(<issuer>)` on the app builder; check the installed version has it |
+| MSAL.NET (`Microsoft.Identity.Client`) | Yes — `WithOidcAuthority(<issuer>)` on the app builder, MSAL.NET **4.60.0+** (older versions only have the experimental `WithGenericAuthority`, client credentials only). Older apps upgrade the package for the POC, or skip it. `resource`: `.WithExtraQueryParameters(new Dictionary<string, string> { ["resource"] = "<Resource>" })` — untested against Descope; the POC confirms `aud` |
 | `Microsoft.Identity.Web` | No — built for Entra / B2C. Use the standard ASP.NET OpenID Connect or JwtBearer handler (Server-side web apps; `backend-sdks.md` → .NET / ASP.NET Core) |
 | MSAL Android / iOS | Not verified — go straight to the Descope native SDK |
 
@@ -138,6 +138,9 @@ the Resource):
   `tokenQueryParameters: { resource }` (token, sent as a query parameter). Untested against Descope —
   the POC must confirm the access token's `aud` is the Resource.
 
+MSAL shows `account.username` from the `preferred_username` claim; if it's blank in the POC, that's
+cosmetic — the SDK replacement reads the user from Descope.
+
 **Still required in the POC** — MSAL doesn't hide these:
 - Remove B2C policy logic: per-policy authorities, account filtering by policy name,
   `AADB2C90118` handling, `tfp` / `acr` checks (SKILL.md Execution Phase 4d). B2C user flows
@@ -151,7 +154,7 @@ the Resource):
 **POC checklist:** sign-in completes and returns to the app; the access token has the Inbound App
 `iss`, `aud` = the Resource and the expected `scope`; if the plan keeps the B2C ID, the access
 token's `oid` (and `sub`, when overridden) equals the user's `b2cObjectId` (User ID strategy →
-Overriding `sub`); silent token renewal works; logout ends the Descope session; the API accepts
+Overriding `sub`), and the ID token carries the same value wherever the frontend reads it; silent token renewal works; logout ends the Descope session; the API accepts
 the token. Then plan the SDK replacement (Execution Phase 4a).
 
 ### Hosted login by default
@@ -197,6 +200,11 @@ Inbound App Scopes component.
 [Consent flows](https://docs.descope.com/identity-federation/inbound-apps/consent-flows).
 
 #### Selecting the Resource (`resource` parameter)
+
+**Choosing the Resource identifier:** use a URL for the API that you control
+(`https://api.<company>.com`), not the B2C App ID URI (`https://<tenant>.onmicrosoft.com/<api>`),
+which names a tenant that's going away. Frontends that requested full-URI scopes
+(`https://<tenant>.onmicrosoft.com/<api>/tasks.read`) switch to the short names (`tasks.read`).
 
 Scope names alone don't select a Resource — only the RFC 8707 `resource` parameter does, and
 without it the token's `aud` isn't the Resource. Put the scope names in `oidcConfig.scope` (with a
@@ -469,6 +477,12 @@ that process keeps running after cutover and needs its own replacement:
 | A script or job syncs groups from another system (HR, CRM) | Same job, calling the Descope Management API instead of Graph |
 | The customer's IdP sends groups (SAML attribute or OIDC claim) | SSO group mapping on the tenant ([docs](https://docs.descope.com/auth-methods/sso/saml#group-mapping)); SCIM if they want users and groups pushed ahead of login |
 
+**App reads one `role` string** (`claims.role === 'Admin'`): with tenant roles, set the JWT
+Template's authorization claims to **Current Tenant, No Tenant Reference** — the current tenant's
+roles then sit in the root `roles` array — and change the check to `roles.includes('Admin')`. A
+single-string role claim isn't a documented template value; confirm with the Docs MCP before
+promising the backend no change.
+
 **Exporting current memberships for the import:** read groups and members through Graph
 (`b2c-detection-patterns.md` → Read-Only Microsoft Graph Discovery), map each group to a Descope
 role (or a tenant, if the group is a customer organization), and include the roles in the import batch.
@@ -694,6 +708,12 @@ B2C sets these per user flow (Properties → Session behavior) or per custom pol
 can behave differently. Descope sets them per project, with overrides per tenant, per Inbound App,
 and per Flow. Read every policy's values first; match them 1:1 (Match first, then enhance).
 
+**Start from the app's session.** Server apps often keep their own session (`express-session`, ASP.NET
+cookie auth, Flask session) whose lifetime ends before B2C's — a browser-session cookie, a short
+`ExpireTimeSpan`. That is what users experience; B2C's settings only matter when the app session
+ends and B2C signs the user in again silently. Read the app's session settings first, and don't let
+the migration make sessions longer than users have today.
+
 **Where to read them in B2C:**
 - User flows: Properties → web app session lifetime, web app session timeout, single sign-on
   configuration, "Enable keep me signed in session" (days). Token lifetimes: user flow → Properties
@@ -891,7 +911,8 @@ be listed explicitly in `$select`.
 #### Without Graph access
 
 The import can't start without this export. Put it in the plan as a blocking dependency with an
-owner, and pick one:
+owner, and pick one (default when the customer doesn't know: the admin runs the export — JIT-only
+loses users who never return):
 - **The customer's admin runs the export** — they create the app registration above, run the
   request (give them the exact `$select`, including every `extension_*` attribute), and hand over
   the JSON. You don't need tenant access.
@@ -940,6 +961,9 @@ claim name is chosen separately).
 `b2cObjectId` is set. A user who signs up after cutover never existed in B2C: they get only a
 Descope user ID, and `b2cObjectId` is empty unless the sign-up Flow fills it. Every strategy below
 must say what new users get.
+
+Default when the customer doesn't know: **Keep the B2C ID** — no data changes, and it can be
+switched later.
 
 | Strategy | What the token carries | Data change | New users | Watch out for |
 |---|---|---|---|---|
@@ -1003,6 +1027,9 @@ working, and rolling back to B2C during a phased rollout is safe. What the app t
       `{id:guid}` route constraints, GUID regexes, GUID-typed DTOs
 - [ ] Every downstream system that receives the user ID (CRM, analytics, support tools, SAML apps,
       webhooks) gets the same check
+- [ ] One source for the user ID: if the frontend writes it into records (an `owner` field from the
+      ID token) and the API reads it from the access token, both must carry the same value. Prefer
+      letting the API set it from its own token
 - [ ] Calls to the Descope Management API about a user use Descope's ID — `dsub` with the `sub`
       override, `sub` without it
 - [ ] The sign-up Flow fills `b2cObjectId` for new users, so `oid` / `sub` are never empty
@@ -1180,7 +1207,8 @@ sends MFA as an assertion attribute.
 `loginRequest` / `protectedResources` config files, `MsalProvider`, `PublicClientApplication`,
 `handleRedirectPromise`, MSAL event callbacks (`LOGIN_SUCCESS`, `AADB2C90118` handling).
 
-**Add:** `@descope/react-sdk`.
+**Add:** `@descope/react-sdk`. The examples use Vite (`import.meta.env.VITE_*`); match the app's
+build tool — Create React App reads `process.env.REACT_APP_*`, Next.js `process.env.NEXT_PUBLIC_*`.
 
 ```jsx
 import { AuthProvider } from '@descope/react-sdk';
@@ -1306,6 +1334,24 @@ import { Descope } from '@descope/react-sdk';
 
 Social login now works (B2C's iframe supported local accounts only).
 
+**Server-rendered apps (Express + EJS, ASP.NET MVC, Django templates):** there is no React tree, so
+use the web component and the web-js SDK on the page, and validate on the server:
+- Page: load `@descope/web-js-sdk` and `@descope/web-component`, render
+  `<descope-wc project-id="…" flow-id="sign-up-or-in">`, and call `sdk.refresh()` in the
+  `success` handler and at the top of every authenticated page (the HTML quickstart shows both).
+- Getting the session to the server: in production use **Manage in cookies** (Project Settings →
+  Session Management). Descope then sets the session token as an `HttpOnly`, `SameSite=Strict`
+  cookie (`DS`) on the custom domain, and the browser sends it with every request. This needs a
+  custom domain on the same site as the app. Without one (local development), send the session
+  token in the `Authorization` header from the page.
+- Server: validate on every request with the backend SDK (`validateSession`, or
+  `validateAndRefreshSession` when the refresh token reaches the server). Check the token's `exp`,
+  not the cookie's lifetime.
+- Logout: `sdk.logout()` on the page, then end the app's own session.
+- The app's own session (`express-session`, ASP.NET cookie auth) can go if it only held the B2C
+  claims; keep it if it holds app state, and end it on logout. Its lifetime is what users feel
+  today — see Session behavior → Start from the app's session.
+
 ### Server-side web apps
 
 **ASP.NET Core with `Microsoft.Identity.Web` (OIDC sign-in):** replace
@@ -1340,6 +1386,25 @@ builder.Services
 
 Remove `AddMicrosoftIdentityUI`, `MicrosoftIdentity/Account/*` routes, policy-specific
 challenge code (`EditProfile`, `ResetPassword`), and `AzureAdB2C` config.
+
+**ASP.NET Core with `AddOpenIdConnect` + MSAL.NET (no `Microsoft.Identity.Web`)** — the older B2C
+sample pattern: the OpenID Connect handler signs in, and an MSAL.NET `ConfidentialClientApplication`
+in `OnAuthorizationCodeReceived` redeems the code for API tokens into its own cache. Keep the
+handler and configure it as above. Then:
+- Delete the policy switching in `OnRedirectToIdentityProvider` (it rewrites the authority per
+  policy) and the `AADB2C90118` branch in `OnRemoteFailure`.
+- Use `ResponseType = "code"`; B2C samples often use the hybrid `code id_token`.
+- Drop MSAL.NET when it only fetched API tokens: with `SaveTokens = true` the handler keeps the
+  access token (`HttpContext.GetTokenAsync("access_token")`). Keep MSAL.NET only for the POC.
+- Keyed caches (`ClaimTypes.NameIdentifier` → token cache) follow the User ID strategy.
+- **Profile edit:** the User Profile Widget and embedded Flows need a Descope session in the
+  browser (web-js SDK). A server-rendered app on hosted login doesn't have one. Either sign the
+  user in again inside an embedded profile Flow on that page, or change simple fields (name) from
+  the server with the Management API and keep email or phone changes in a Flow, since they need
+  verification. Confirm the option with the Docs MCP before planning it.
+- ASP.NET Core 2.x / 3.x has the same handler options; the samples above use .NET 6+ syntax. Plan
+  the framework upgrade separately (those versions are out of support) — it doesn't block the
+  migration.
 
 **Node.js (`msal-node` `ConfidentialClientApplication` or `passport-azure-ad` `OIDCStrategy`):**
 replace with `openid-client` (discovery from the Descope issuer, same callback route; add
