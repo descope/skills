@@ -128,6 +128,9 @@ Policy files chain: `TrustFrameworkBase.xml` → `TrustFrameworkLocalization.xml
 | `JourneyFraming Enabled="true"` | Embedded (iframe) sign-in | Embedded Flow |
 | `PhoneFactor`, `TOTP` technical profiles | MFA | MFA steps |
 | `domain_hint` / `ClaimsProviderSelection` with `TargetClaimsExchangeId` per customer | Home realm discovery | Tenant email domains, or a tenant slug if the hint is a customer key |
+| `ParseDomain` claims transformation + orchestration steps with `<Precondition>`s on the domain claim | Home realm discovery from the typed email, rules inside the policy | Each domain in a precondition → email domain on that customer's tenant (Routing key) |
+| `<Domain>` element on a customer's `ClaimsProvider` | The value `domain_hint` matches for that IdP | Email domain or tenant slug, per Picking the tenant at sign-in |
+| `RestfulProvider` profile whose output claim names an IdP or org (`identityProvider`, `idp`, `orgId`), followed by a step chosen by that claim | Home realm discovery through the customer's API | `implementation-nuances.md` → Organization lookup through an API connector |
 | `amr` captured from a federated IdP + skip MFA precondition | MFA trusted from the customer IdP | Condition on `idpOIDCClaims.amr` |
 | `AuthenticationContextReferenceClaimPattern` | `acr` vs `tfp` policy claim | Delete consumers |
 | `<RelyingParty>` with `<Protocol Name="SAML2"/>`, `SubjectNamingInfo`, `Saml2AssertionIssuer` | B2C issues SAML to the customer's own SAML apps — check `NameID` source/format and output claim names | Descope SAML Federated App (`implementation-nuances.md` → B2C as a SAML IdP → Descope SAML app) |

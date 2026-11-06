@@ -495,11 +495,24 @@ in the repo. Then ask who owns membership after the migration:
   Management API (`user.addTenant`, `addTenantRoles`) or the User Management Widget. If the lookup
   was only "email domain → org", tenant email domains replace it outright.
 - **The customer's database.** Keep the lookup: a Flow HTTP Connector calls the same endpoint at
-  the same point (table above), and the result in `connectors.<contextKey>` drives conditions
-  and routing. The customer's service (or the endpoint itself) keeps Descope in sync by calling
+  the same point (table above), and the result in `connectors.<contextKey>` drives conditions.
+  The customer's service (or the endpoint itself) keeps Descope in sync by calling
   `user.addTenant` when membership changes. Update User / Add Tenant is documented as matching on
-  email domain only — don't plan on it to set the tenant from a connector result; check with the
-  Docs MCP before relying on it.
+  email domain only — don't plan on it to set the tenant from a connector result.
+
+**When the lookup picks the IdP (home realm discovery).** The API may return an IdP ID
+(`{"identityProvider": "AcmeOktaSAML"}`) rather than an org. Map each returned value to the
+Descope tenant that holds that customer's SSO connection (SSO inventory → Routing key). Then
+replace the lookup, in this order:
+1. **Email domains (default).** Turn the customer's "domain → customer" table into email domains on
+   each tenant. The runtime call goes away, and onboarding a customer stays a data change (Console,
+   Management API, or Tenant Profile Widget) with no Flow edit.
+2. **The app looks up, then passes the tenant.** When the domain alone doesn't identify the
+   customer, the app calls its lookup before login and passes the tenant ID or slug in the `tenant`
+   parameter (Picking the tenant at sign-in).
+3. **HTTP Connector inside the Flow** — only after the Docs MCP or Descope confirms a Flow can
+   start a specific tenant's SSO from a connector result. No documented Flow action does this
+   today.
 
 ### Page layouts → Flow styles
 
