@@ -416,6 +416,9 @@ Also build, from the same sources:
   boundary, role, both, or unclear, show the evidence, and confirm with `AskUserQuestion`
   (`b2c-detection-patterns.md` → Customer organization discovery). Without Graph access, run
   search group 14 and ask for the group list and attribute names.
+- **User-flow-only tenants** — no custom policies: read each user flow instead and get its
+  Application claims from the user or a real token (`b2c-detection-patterns.md` → Tenants with
+  only user flows).
 - **Policy keys** in use and their expiry (`implementation-nuances.md` → Policy key inventory).
 - **Session settings, SAML relying parties, fraud controls, localized strings** — read from the
   portal or policy XML (`b2c-detection-patterns.md` → Custom Policy XML Hints).

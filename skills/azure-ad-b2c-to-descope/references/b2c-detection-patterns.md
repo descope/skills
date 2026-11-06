@@ -245,6 +245,26 @@ more than one organization — the Flow must pick the current tenant (`implement
 
 Show the table of candidates with their evidence, then confirm with `AskUserQuestion` before the
 import mapping is set. Import order: `implementation-nuances.md` → Importing organizations.
+Organizations held in the customer's database: `implementation-nuances.md` → Organization lookup
+through an API connector. The claim the app reads: `implementation-nuances.md` → Keeping the app's
+organization claim.
+
+### Tenants with only user flows
+
+If `trustFramework/policies` returns nothing (or the user says they use only user flows), there
+is no policy XML: skip Custom Policy XML Hints and read each user flow instead.
+
+| What | Source |
+|---|---|
+| Sign-in methods | `b2cUserFlows?$expand=identityProviders` (Sign-in method inventory) |
+| Sign-up attributes collected | `GET .../b2cUserFlows/<id>/userAttributeAssignments` |
+| API connectors | Ask the user (portal → User flow → API connectors). Graph's `b2cUserFlows/<id>/apiConnectorConfiguration` needs `IdentityUserFlow.ReadWrite.All` — no read-only permission, so don't request it |
+| Token claims (Application claims) | **Not in Graph.** Ask for each user flow's Application claims list (portal → User flow → Application claims), or decode a real token from each user flow |
+| Session, MFA, password complexity, page layouts | Portal, per user flow — ask |
+
+User flows can't route by organization (no per-customer IdP selection, no `domain_hint` logic of
+their own), so any customer organizations live in groups, custom attributes, an API connector, or
+the app — run Customer organization discovery on those.
 
 ---
 

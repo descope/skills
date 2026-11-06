@@ -14,6 +14,7 @@
 - [Descope OIDC endpoints](#descope-oidc-endpoints)
   - [Finding the Inbound App issuer](#finding-the-inbound-app-issuer)
 - [Token claim mapping](#token-claim-mapping)
+  - [Keeping the app's organization claim](#keeping-the-apps-organization-claim)
 - [B2C as a SAML IdP → Descope SAML app](#b2c-as-a-saml-idp--descope-saml-app)
 
 **Feature Mapping**
@@ -25,6 +26,7 @@
 - [Custom attributes](#custom-attributes)
 - [Roles and groups](#roles-and-groups)
   - [Importing organizations](#importing-organizations)
+  - [Organization lookup through an API connector](#organization-lookup-through-an-api-connector)
 - [Page layouts → Flow styles](#page-layouts--flow-styles)
 - [Passkeys](#passkeys)
 - [Localization](#localization)
@@ -286,6 +288,25 @@ Descope session tokens contain `sub`, `amr`, `drn`, `tenants`, `roles`, `permiss
 default — not `email` or `name`. A user JWT Template applies to both session tokens and Inbound
 App access tokens.
 
+#### Keeping the app's organization claim
+
+Find the claim the app reads to know the user's organization: relying party `OutputClaims`
+(custom policies), the user flow's Application claims (user flows), search group 14, and the
+Customer organizations table. Then ask which way to go:
+
+- **Keep the claim (default at cutover).** A JWT Template custom claim with the same name, filled
+  from the current tenant: `"tenant_id": "{{tenant.customAttributes.b2cOrgId}}"` keeps the B2C
+  values (`b2cOrgId` set on each tenant in Importing organizations); `{{tenant.id}}` sends the
+  Descope tenant ID instead. The backend and data keys don't change.
+- **Switch to Descope claims.** The app reads `dct` (current tenant) or `tenants` and its org
+  checks are rewritten. Cleaner, but every org check changes — usually a later cleanup.
+
+`tenant.*` values come from the **current tenant**:
+- Users in one tenant: turn on **Set active tenant claim automatically** on the template.
+- Users in several: the Flow must pick the tenant (Picking the tenant at sign-in; Tenant Switcher
+  Widget afterwards). Otherwise the claim is empty — set the template's empty-claim behavior to
+  Null or Empty and have the backend reject a missing org rather than treat it as "no org".
+
 ### B2C as a SAML IdP → Descope SAML app
 
 Some B2C custom policies issue SAML assertions to the customer's own SAML apps (a relying party
@@ -459,6 +480,26 @@ Whether organizations came from groups or a custom attribute
    combined groups); project-level roles go in `roleNames`.
 3. Keep the original attribute on the user (`customAttributes`) until the app reads the Descope
    tenant instead.
+
+#### Organization lookup through an API connector
+
+Some setups keep "user → organization" in the customer's own database: an API connector or REST
+technical profile sends the email and gets back an org ID (output claims like `extension_OrgId`,
+`tenant_id`), often before IdP selection or before the token is sent. Detect it from the REST
+profile's output claims, the user flow's API connector settings, and the endpoint's code if it's
+in the repo. Then ask who owns membership after the migration:
+
+- **Descope (default).** Export the customer's org table (user, org, role) and import it with
+  `userTenants` (Importing organizations). The Flow needs no lookup: new users join by tenant
+  email domain (Update User / Add Tenant) or tenant selection; the app changes membership with the
+  Management API (`user.addTenant`, `addTenantRoles`) or the User Management Widget. If the lookup
+  was only "email domain → org", tenant email domains replace it outright.
+- **The customer's database.** Keep the lookup: a Flow HTTP Connector calls the same endpoint at
+  the same point (table above), and the result in `connectors.<contextKey>` drives conditions
+  and routing. The customer's service (or the endpoint itself) keeps Descope in sync by calling
+  `user.addTenant` when membership changes. Update User / Add Tenant is documented as matching on
+  email domain only — don't plan on it to set the tenant from a connector result; check with the
+  Docs MCP before relying on it.
 
 ### Page layouts → Flow styles
 
