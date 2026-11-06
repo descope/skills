@@ -48,8 +48,12 @@ grep -rn "AADB2C\|homeAccountId\|idTokenClaims\|\btfp\b\|\.acr\b\|protocolMode\|
 # 5. Token claims that change
 grep -rn "\bscp\b\|RequiredScope\|VerifyUserHasAnyAcceptedScope\|GetObjectId\|\boid\b\|emails\[\|\"emails\"\|extension_\|\bidp\b\|identity/claims/scope" "${EXCL[@]}" . 2>/dev/null
 
+# 5b. User ID reads — anything stored, compared or used as a key decides the User ID strategy
+#     (a `sub` hit used as a data key means the JWT Template must override `sub`)
+grep -rnI "\.sub\b\|\[['\"]sub['\"]\]\|ClaimTypes\.NameIdentifier\|nameidentifier\|localAccountId\|homeAccountId\|\.oid\b\|\[['\"]oid['\"]\]\|objectidentifier" "${EXCL[@]}" . 2>/dev/null
+
 # 6. Roles and groups
-grep -rn "extension_.*[Rr]ole\|\"groups\"\|memberOf\|IsInRole\|Authorize(Roles\|hasRole\|roles\.includes" "${EXCL[@]}" . 2>/dev/null
+grep -rniI "extension_.*role\|\"groups\"\|memberOf\|IsInRole\|Authorize(Roles\|hasRole\|requireRole\|roles\.includes\|ClaimTypes\.Role\|\.role\b\|\[['\"]role['\"]\]" "${EXCL[@]}" . 2>/dev/null
 
 # 7. Enterprise login routing
 grep -rn "domain_hint\|domainHint\|extraQueryParameters\|login_hint" "${EXCL[@]}" . 2>/dev/null
@@ -281,6 +285,7 @@ Stop and confirm scope if you find:
 | Authority `https://login.microsoftonline.com/<tenant>` with no B2C policy, workforce app roles, groups claims | Workforce Microsoft Entra ID | Out of scope |
 | `login.microsoftonline.com/<tenant>.onmicrosoft.com/<policy>` (legacy B2C endpoint) | Azure AD B2C (old endpoint) | In scope — treat as `b2clogin.com` |
 | Azure AD B2B guest invitations | Workforce B2B | Out of scope |
+| Generic OIDC library (`angular-auth-oidc-client`, `oidc-client-ts`, `openid-client`, `passport-openidconnect`, `AddOpenIdConnect`) pointed at a non-Microsoft authority | Another identity provider | Out of scope — name the matching migration skill (SKILL.md Part 1.5) |
 
 ---
 

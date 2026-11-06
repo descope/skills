@@ -46,11 +46,13 @@
 **User Migration**
 - [User schema](#user-schema)
 - [Exporting users from B2C](#exporting-users-from-b2c)
+  - [Without Graph access](#without-graph-access)
 - [User ID strategy](#user-id-strategy)
   - [Overriding sub (JWT Template → Override system claims)](#overriding-sub-jwt-template--override-system-claims)
   - [Filling b2cObjectId for new users](#filling-b2cobjectid-for-new-users)
   - [App changes when keeping the B2C ID](#app-changes-when-keeping-the-b2c-id)
 - [Password strategy](#password-strategy)
+  - [Building the JIT via ROPC Flow](#building-the-jit-via-ropc-flow)
 - [Social users](#social-users)
 - [Enterprise SSO users](#enterprise-sso-users)
 
@@ -147,8 +149,10 @@ the Resource):
   `end_session_endpoint` from discovery.
 
 **POC checklist:** sign-in completes and returns to the app; the access token has the Inbound App
-`iss`, `aud` = the Resource and the expected `scope`; silent token renewal works; logout ends the
-Descope session; the API accepts the token. Then plan the SDK replacement (Execution Phase 4a).
+`iss`, `aud` = the Resource and the expected `scope`; if the plan keeps the B2C ID, the access
+token's `oid` (and `sub`, when overridden) equals the user's `b2cObjectId` (User ID strategy →
+Overriding `sub`); silent token renewal works; logout ends the Descope session; the API accepts
+the token. Then plan the SDK replacement (Execution Phase 4a).
 
 ### Hosted login by default
 
@@ -884,6 +888,17 @@ GET https://graph.microsoft.com/v1.0/users?$select=id,identities,accountEnabled,
 Follow `@odata.nextLink`; on `429`, honor `Retry-After` with backoff. Extension attributes must
 be listed explicitly in `$select`.
 
+#### Without Graph access
+
+The import can't start without this export. Put it in the plan as a blocking dependency with an
+owner, and pick one:
+- **The customer's admin runs the export** — they create the app registration above, run the
+  request (give them the exact `$select`, including every `extension_*` attribute), and hand over
+  the JSON. You don't need tenant access.
+- **No export — JIT only** (Password strategy: JIT via ROPC, or JIT with B2C as an OIDC provider).
+  Users are created on first sign-in; anyone who doesn't sign in before B2C is turned off is lost,
+  along with group memberships and attributes not in the token. B2C stays up for the whole window.
+
 `identities[]` per user (`signInType`, `issuer`, `issuerAssignedId`):
 - `emailAddress` / `userName` → local account; `issuerAssignedId` is the sign-in name
 - `phoneNumber` → local account that signs in with a phone number; `issuerAssignedId` is the number (E.164)
@@ -962,7 +977,12 @@ Only override `sub` when the code keys on `sub`; if it reads `oid`, emit `oid` a
 alone. Don't set `amr`, `act` or `iss` here, although the same toggle allows it. The override
 applies to every app on that JWT Template, every token validator sees the new `sub`, and Management
 API calls about a user must pass `dsub`. The docs don't say whether it reaches Inbound App access
-tokens — test that before relying on it for a scoped API.
+tokens, so the POC checks it first (POC checklist).
+
+**If the access token still carries Descope's `sub`:** the API reads `oid` instead — change the
+claim read at each search group 5b hit (`req.authInfo['sub']` → `req.authInfo['oid']`), keep the
+data as is. `oid` comes from the JWT Template, which does reach Inbound App access tokens. Write
+both paths into the plan; the POC result picks one.
 [Override System Claims](https://docs.descope.com/management/token/jwt-templates#override-system-claims).
 
 #### Filling `b2cObjectId` for new users
@@ -998,11 +1018,17 @@ B2C does not export password hashes.
 | Option | How | Trade-off |
 |---|---|---|
 | Full import without passwords | First-login password reset step, or passwordless (OTP, magic link, passkeys) | Fastest B2C shutdown; every password user acts once |
-| JIT via ROPC | Flow collects email + password → HTTP Connector to the B2C ROPC endpoint → on success create the user and set the password in Descope | Keeps passwords; B2C stays up until active users have signed in; local accounts only; no MFA in that call |
+| JIT via ROPC | Flow collects email + password → HTTP Connector to the B2C ROPC endpoint → on success save the password in Descope (Building the JIT via ROPC Flow) | Keeps passwords; B2C stays up until active users have signed in; local accounts only; no MFA in that call |
 | JIT with B2C as an OIDC provider | B2C policy configured as a custom OAuth provider in Descope; users sign in through B2C once and are created from the ID token | No passwords kept; B2C stays up |
 | Session migration | Existing B2C sessions exchanged for Descope sessions ([docs](https://docs.descope.com/migrate/session-migration)) | Session migration currently accepts Auth0 and Okta tokens — B2C needs Descope Support to confirm first. Default to re-login at cutover |
 
-**ROPC request** (requires a B2C ROPC user flow or custom policy):
+**ROPC prerequisites** — a customer task, since you don't write to the tenant:
+- An ROPC user flow (or custom policy) and an app registration allowed to use it. Ask whether one
+  exists; if not, the customer's admin creates it before the Flow can call it.
+- ROPC works for **local accounts only** — social and enterprise SSO users need another path
+  (Social users, Enterprise SSO users).
+
+**ROPC request:**
 
 ```http
 POST https://<tenant>.b2clogin.com/<tenant>.onmicrosoft.com/<B2C_1_ROPC_policy>/oauth2/v2.0/token
@@ -1010,6 +1036,32 @@ Content-Type: application/x-www-form-urlencoded
 
 username=user@example.com&password=...&grant_type=password&scope=openid <client-id> offline_access&client_id=<client-id>&response_type=token id_token
 ```
+
+#### Building the JIT via ROPC Flow
+
+Follows [docs.descope.com/migrate/azure-ad-b2c → Using the Generic HTTP Connector](https://docs.descope.com/migrate/azure-ad-b2c#using-the-generic-http-connector).
+First choose the order — it decides which Flow action saves the password:
+
+| Order | How the password is saved | Trade-off |
+|---|---|---|
+| **Import first, capture on sign-in (default)** — bulk import every user up front, without passwords | User exists, so **Update Password**. It needs a signed-in user: verify the email with OTP or magic link first, then call B2C, then save | Roles, tenants, attributes and `b2cObjectId` are there from day one, so the app works for everyone. Cost: one extra email step on the first Descope sign-in |
+| **JIT first, import later** — only users who sign in during the window are created | **Sign Up / Password** creates the user and saves the password | No extra step, but JIT users have none of the imported data (`b2cObjectId`, roles, tenants) until a reconcile at the end of the window: re-export, update users that exist by login ID, create the rest. Use only when the app needs nothing beyond email and password |
+
+Flow steps (default order):
+1. Screen with email and the **Login Password** input (the password the user already has, not
+   **New Password**).
+2. Generic HTTP Connector → the ROPC request above. On a 200, continue; on any error, branch to
+   password reset or passwordless — don't loop on wrong passwords.
+3. OTP or magic link to the email (the default order needs a signed-in user), then **Update
+   Password** from the **Login Password** value.
+4. After saving, set a boolean custom attribute (`b2cPasswordMigrated`) with **Update User /
+   Attributes**. Branch on it at the start of the Flow so migrated users go straight to normal
+   Descope password sign-in and B2C is called once per user — confirm the condition key with the
+   Docs MCP.
+
+Descope's password policy applies when saving. If B2C allowed weaker passwords, align the policy for
+the window or send the failure to reset. Users who never sign in before B2C is turned off keep their
+imported record without a password: they reset or use passwordless on their next visit.
 
 ### Social users
 
@@ -1150,7 +1202,7 @@ import { AuthProvider } from '@descope/react-sdk';
 |---|---|
 | `instance.loginRedirect(loginRequest)` | `useDescope().oidc.loginWithRedirect({ resource: '<Resource>', extraTokenParams: { resource: '<Resource>' } })` |
 | `useIsAuthenticated()` | `useSession().isAuthenticated` (+ `isSessionLoading`) |
-| `useMsal().accounts[0]` / `idTokenClaims` | `useUser().user` |
+| `useMsal().accounts[0]` / `idTokenClaims` | `useUser().user` for profile fields (name, email). For any user ID the app **stores or compares** (record owner, API key), follow the User ID strategy: keeping the B2C ID → `user.customAttributes.b2cObjectId` (or the `oid` / overridden `sub` claim), never `user.userId` — that is Descope's ID and won't match existing rows |
 | `acquireTokenSilent({ scopes })` → `accessToken` | `useSession().sessionToken` — with `oidcConfig` this is the Inbound App access token; the SDK refreshes it |
 | `AuthenticatedTemplate` / `UnauthenticatedTemplate` | Conditional render on `isAuthenticated` |
 | `MsalAuthenticationTemplate` | Guard component that calls `loginWithRedirect({ resource, extraTokenParams: { resource } })` |

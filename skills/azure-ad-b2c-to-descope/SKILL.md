@@ -92,7 +92,9 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   (`implementation-nuances.md` → Enterprise SSO users).
 - **Do not read `scp`, `tfp`, or `emails` from Descope tokens.** Map each claim (see Execution Phase 4d:
   Critical Gotchas). `oid` is the exception: keep the claim name when the JWT Template emits it.
-- **Do not write to the B2C tenant.** All tenant discovery is read-only.
+- **Do not write to the B2C tenant yourself.** All tenant discovery is read-only. Changes the
+  migration needs there (an ROPC policy, an app registration for Descope or the export) are
+  customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
 - **Do not import users into production before dev/staging imports and sign-in tests pass.**
@@ -104,7 +106,7 @@ for the custom policy XML files. Do not infer the auth experience from code alon
 Before doing anything else, check whether the Descope Docs MCP is available by calling
 `search-descope-docs` with a simple query (e.g., "session validation").
 
-**If the tool is available:** proceed to Part 2 immediately.
+**If the tool is available:** proceed to Part 1.5.
 
 **If the tool is not available**, show this message and use `AskUserQuestion` to ask whether
 they want to install it first:
@@ -118,22 +120,25 @@ they want to install it first:
 - If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `search-descope-docs` again before proceeding.
 - If they choose to proceed without it: continue, but flag any SDK-specific answers as "based on last known documentation — verify against the current SDK."
 
-Do not proceed to Part 2 until this step is resolved.
+Do not proceed to Part 1.5 until this step is resolved.
 
 ---
 
 ## Part 1.5: Scope Guard (BLOCKING)
 
-Before triage, confirm the app uses Azure AD B2C. Quick check: grep for the login host
-(`b2clogin.com`, `B2C_1`, `AzureAdB2C`). If the authority is `*.ciamlogin.com` (Microsoft Entra
-External ID) or plain `login.microsoftonline.com/<tenant>` without a B2C policy (workforce Entra
-ID), stop and tell the user this skill does not cover it. See `references/b2c-detection-patterns.md`
-→ Out-of-Scope Detection.
+Before triage, confirm the app uses Azure AD B2C. Quick check (case-insensitive): grep for
+`b2clogin.com`, `B2C_1`, `/tfp/`, `AzureAdB2C`, `WithB2CAuthority`.
 
-No evidence either way — for example B2C on a custom domain (`login.<company>.com`), or the
-authority kept in Key Vault, app settings or a deployment pipeline rather than the repo — ask the
-user with `AskUserQuestion` whether the app uses Azure AD B2C, Entra External ID, or workforce Entra
-ID. Proceed only on an explicit "Azure AD B2C".
+| What the repo shows | Result |
+|---|---|
+| Any of the markers above — on any host, including a custom domain (`login.<company>.com/<tenant>.onmicrosoft.com/B2C_1A_…`) | Azure AD B2C — proceed |
+| `*.ciamlogin.com` (Entra External ID), or `login.microsoftonline.com/<tenant>` with no B2C policy (workforce Entra ID) | Stop: this skill does not cover it |
+| Another identity provider (IdentityServer / Duende, Auth0, Okta, Keycloak, Cognito, PingOne, a homegrown OIDC server) | Stop and name the matching skill if one exists (`auth0-to-descope`, `okta-cis-to-descope`, `pingone-to-descope`, `stytch-to-descope`, `workos-to-descope`); otherwise point to [docs.descope.com/migrate](https://docs.descope.com/migrate) |
+| No identity provider visible — authority in Key Vault, app settings or a pipeline | Ask |
+
+When asking, use `AskUserQuestion`: "Which service does this app sign in with?" — Azure AD B2C /
+Microsoft Entra External ID / Microsoft Entra ID (workforce) / Other (name it). Proceed only on an
+explicit "Azure AD B2C". See `references/b2c-detection-patterns.md` → Out-of-Scope Detection.
 
 ---
 
@@ -341,7 +346,7 @@ App code reads tfp / acr?
 - For enterprise users, does B2C add its own MFA after the company login, skip it, or skip it only when the company IdP already did MFA (`amr` contains `mfa`)?
 
 **Passwords and sessions** (if existing users)
-- Password strategy: full import without passwords (reset or passwordless), JIT via ROPC (keeps passwords; B2C stays running), or JIT with B2C as an OIDC provider.
+- Password strategy: full import without passwords (reset or passwordless), JIT via ROPC (keeps passwords; B2C stays running), or JIT with B2C as an OIDC provider. For JIT via ROPC, ask whether the tenant has an ROPC user flow or policy; if not, creating one is a customer task.
 - Session behavior per policy (lifetimes, rolling/absolute, "Keep me signed in", SSO scope):
   do policies differ, and by app or by customer? Which actions send users back to B2C to re-enter
   credentials (they become step-up)? Do apps on different root domains share one session?
@@ -398,7 +403,7 @@ Read `references/b2c-detection-patterns.md` before this step.
 
 **Step 1a — Code analysis.** Run the search groups in `b2c-detection-patterns.md` → Search Groups
 (MSAL packages, authority/policy names, MSAL call sites, B2C-specific logic, token claims, roles,
-`domain_hint`, iframe sign-in, custom policy XML, user IDs stored or parsed as GUIDs). Record each
+`domain_hint`, iframe sign-in, custom policy XML, user IDs used as keys or parsed as GUIDs). Record each
 hit as the search groups describe.
 
 **Step 1b — Tenant discovery (optional, read-only).** If the user granted read-only Graph access,
@@ -406,7 +411,9 @@ run the routes in `b2c-detection-patterns.md` → Read-Only Microsoft Graph Disc
 custom policies (download XML), identity providers, API connectors, app registrations, custom
 attributes, Conditional Access policies, user counts. If not, ask for the custom policy XML
 files, a list of identity providers, and each Conditional Access policy's conditions and grant
-(require MFA / block).
+(require MFA / block). Without Graph access the **user export is a blocking dependency**: name in
+the plan who will run it, or choose a JIT-only path (`implementation-nuances.md` → Exporting users
+from B2C → Without Graph access).
 
 Also build, from the same sources:
 - **Sign-in methods** — the union of the tenant's identity providers, user flows' providers, and
