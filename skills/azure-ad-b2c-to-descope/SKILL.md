@@ -77,7 +77,8 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   Descope SDK or a standard OIDC library before cutover (`implementation-nuances.md` → MSAL POC
   first, then replace MSAL).
 - **Do not promise a no-reconfiguration enterprise SSO cutover by default.** It only works for
-  SAML connections whose old ACS URLs are on a domain the customer controls. Build the
+  SAML or OIDC connections whose old ACS / redirect URLs are on a domain the customer controls;
+  OIDC also needs the original client secret from outside B2C. Build the
   per-connection inventory first (Step 1c) and state which customer IdP admins must act.
 - **Do not plan to export B2C secrets or private keys** — none can be read back
   (`implementation-nuances.md` → Secrets can't be exported).
