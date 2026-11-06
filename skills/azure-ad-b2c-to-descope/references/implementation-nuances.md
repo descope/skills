@@ -20,6 +20,7 @@
 - [User flows and custom policies → Flows](#user-flows-and-custom-policies--flows)
 - [API connectors and REST technical profiles → HTTP Connectors](#api-connectors-and-rest-technical-profiles--http-connectors)
 - [Identity providers](#identity-providers)
+  - [Picking the tenant at sign-in](#picking-the-tenant-at-sign-in)
 - [MFA and Conditional Access](#mfa-and-conditional-access)
 - [Custom attributes](#custom-attributes)
 - [Roles and groups](#roles-and-groups)
@@ -381,8 +382,27 @@ screens. B2C timeouts are 5 s (user flows) / 10 s (custom policies).
 | Single customer Entra ID (OIDC) | Tenant with OIDC SSO + email domains |
 | SAML IdP (custom policies only) | Tenant with SAML SSO + email domains |
 | Multi-tenant Entra (`common` + `ValidTokenIssuerPrefixes` allowlist) | "Sign in with Microsoft" social login + Flow condition for the allowlist; per-customer tenants only if they need own roles/settings |
-| `domain_hint` / home realm discovery | Tenant email domains; `tenant` parameter on the hosted login URL skips the email screen |
+| `domain_hint` / home realm discovery | Tenant email domains, or a tenant slug or ID — see Picking the tenant at sign-in |
 | Another B2C tenant as IdP | OIDC provider or tenant SSO |
+
+#### Picking the tenant at sign-in
+
+B2C picks the customer's IdP from `domain_hint`, an IdP button, or a policy per customer. Find
+which of these the app relies on (search group 7, Custom Policy XML Hints) and use the matching row:
+
+| How B2C picks the customer | Descope |
+|---|---|
+| The user's email domain | Tenant email domains (SSO domains) — the Flow routes from the email the user types |
+| `domain_hint` holds a customer key, not an email domain; a customer has several domains; the app already knows the customer | **Tenant slug or ID** passed in the `tenant` flow parameter (embedded Flow prop, or on the hosted login URL) — the Flow starts in that tenant and skips the email screen |
+| The user picks or types their organization | **Tenant Name** input in the Flow — the user types the tenant's name (slug); conditions read it as `form.tenantName` |
+| A per-customer app, login URL or subdomain | Hardcode the tenant slug in that app's hosting settings (**Tenant** field) |
+| Several customers share one email domain | Allow duplicate SSO domains; a condition on `ssoDomainsTenantsCount` shows the Switch Tenant screen |
+
+The `tenant` parameter is a hint: it sets the current tenant (`dct`) but doesn't add the user to
+the tenant. Record the value the app sends today in the SSO inventory (Routing key) so each
+customer's Descope tenant can be found from it.
+[Tenant slug or ID](https://docs.descope.com/auth-methods/sso#option-2-tenant-slug-or-id),
+[Flow inputs](https://docs.descope.com/flows/dynamic-keys/flow-inputs).
 
 ### MFA and Conditional Access
 

@@ -124,7 +124,7 @@ Policy files chain: `TrustFrameworkBase.xml` → `TrustFrameworkLocalization.xml
 | `<ContentDefinition>` / `LoadUri` | Page layout templates | Flow styles |
 | `JourneyFraming Enabled="true"` | Embedded (iframe) sign-in | Embedded Flow |
 | `PhoneFactor`, `TOTP` technical profiles | MFA | MFA steps |
-| `domain_hint` / `ClaimsProviderSelection` with `TargetClaimsExchangeId` per customer | Home realm discovery | Tenant email domains |
+| `domain_hint` / `ClaimsProviderSelection` with `TargetClaimsExchangeId` per customer | Home realm discovery | Tenant email domains, or a tenant slug if the hint is a customer key |
 | `amr` captured from a federated IdP + skip MFA precondition | MFA trusted from the customer IdP | Condition on `idpOIDCClaims.amr` |
 | `AuthenticationContextReferenceClaimPattern` | `acr` vs `tfp` policy claim | Delete consumers |
 | `<RelyingParty>` with `<Protocol Name="SAML2"/>`, `SubjectNamingInfo`, `Saml2AssertionIssuer` | B2C issues SAML to the customer's own SAML apps — check `NameID` source/format and output claim names | Descope SAML Federated App (`implementation-nuances.md` → B2C as a SAML IdP → Descope SAML app) |
@@ -247,8 +247,8 @@ Stop and confirm scope if you find:
 |---|---|---|---|
 
 ### Enterprise SSO connections
-| Customer | IdP | Protocol | Email domain(s) | ACS / redirect URL host | Signed requests / encrypted assertions | OIDC secret available outside B2C | MFA behavior | Cutover result |
-|---|---|---|---|---|---|---|---|---|
-| Acme | Okta | SAML | acme.com | login.contoso.com | No | n/a | Trust IdP | May move without IdP changes |
-| Globex | Entra ID | OIDC | globex.com | contoso.b2clogin.com | n/a | No | B2C adds MFA | Admin updates redirect URI + new secret |
+| Customer | IdP | Protocol | Routing key (domain / `domain_hint` / slug) | Email domain(s) | ACS / redirect URL host | Signed requests / encrypted assertions | OIDC secret available outside B2C | MFA behavior | Cutover result |
+|---|---|---|---|---|---|---|---|---|---|
+| Acme | Okta | SAML | email domain | acme.com | login.contoso.com | No | n/a | Trust IdP | May move without IdP changes |
+| Globex | Entra ID | OIDC | `domain_hint=globex` → slug | globex.com | contoso.b2clogin.com | n/a | No | B2C adds MFA | Admin updates redirect URI + new secret |
 ```

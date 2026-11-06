@@ -246,7 +246,8 @@ What is a "tenant"?
 ├── (b) Customer orgs inside custom policies → Descope tenants in one project
 │                                            Record how the policy identifies the org today
 │                                            (domain_hint, claim, lookup) — the Flow does the same
-│                                            with tenant selection or email-domain routing
+│                                            with email-domain routing, a tenant slug or
+│                                            ID, or tenant selection
 ├── (c) Both                               → Projects per directory, tenants inside each
 └── (d) No separation                      → One project, no tenants
 ```

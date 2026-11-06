@@ -53,7 +53,7 @@ Sources:
 | **MFA** (SMS, email OTP, TOTP) | **MFA steps** in the Flow | Enrollments don't carry over. |
 | **`oid` / `sub`** (object ID) | **`b2cObjectId`** custom attribute, emitted as `oid` | `implementation-nuances.md` → User ID strategy. |
 | **Roles** (custom attribute, API connector, Graph groups) | **Roles and permissions** (per tenant if needed) | Policy steps that assign groups → Assigning roles and tenants in a Flow. |
-| **Per-customer IdP + `domain_hint` routing** | **Tenant SSO + email domains** | `tenant` parameter on hosted login. |
+| **Per-customer IdP + `domain_hint` routing** | **Tenant SSO + email domains, or a tenant slug** | Slug or ID via the `tenant` parameter, or the Tenant Name input (`implementation-nuances.md` → Picking the tenant at sign-in). |
 | **Multi-tenant Entra** (`common` + allowlist) | **"Sign in with Microsoft" social login + Flow condition** | |
 | **Passkeys** via sample / partner | **Native passkeys** | Users re-enroll. |
 | **Custom domain** (Azure Front Door) | **Custom domain** (CNAME) | Front Door WAF and rules don't come with it — see `implementation-nuances.md` → Custom domain on Azure Front Door |
