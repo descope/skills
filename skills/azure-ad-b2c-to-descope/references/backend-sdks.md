@@ -152,7 +152,7 @@ validation if the project serves more than one app.
 
 | B2C (`Microsoft.Identity.Web`) | Descope |
 |---|---|
-| `User.GetObjectId()` / `oid` | `User.FindFirst("oid")` — the JWT Template emits `oid` from `b2cObjectId` (keep `MapInboundClaims = false`). Descope's own user ID: `sub`, or `dsub` if `sub` is overridden |
+| `User.GetObjectId()` / `oid` | `User.FindFirst("oid")` — the JWT Template emits `oid` from `azureObjectId` (keep `MapInboundClaims = false`). Descope's own user ID: `sub`, or `dsub` if `sub` is overridden |
 | `User.FindFirst("emails")` | `User.FindFirst("email")` (JWT Template) |
 | `User.FindFirst("tfp")` | Delete |
 | `User.FindFirst("extension_Role")` | `roles` claim, or the custom attribute via JWT Template |

@@ -51,7 +51,7 @@ Sources:
 | **Policy keys** | — | Descope manages its own signing keys; every other key is a credential to re-obtain (`implementation-nuances.md` → Policy key inventory). |
 | **Conditional Access** (require MFA / block) | **Flow conditions + risk connectors** | |
 | **MFA** (SMS, email OTP, TOTP) | **MFA steps** in the Flow | Enrollments don't carry over. |
-| **`oid` / `sub`** (object ID) | **`b2cObjectId`** custom attribute, emitted as `oid` | `implementation-nuances.md` → User ID strategy. |
+| **`oid` / `sub`** (object ID) | **`azureObjectId`** custom attribute, emitted as `oid` | `implementation-nuances.md` → User ID strategy. |
 | **Roles** (custom attribute, API connector, Graph groups) | **Roles and permissions** (per tenant if needed) | Policy steps that assign groups → Assigning roles and tenants in a Flow. |
 | **Per-customer IdP + `domain_hint` routing** | **Tenant SSO + email domains, or a tenant slug** | Slug or ID via the `tenant` parameter, or the Tenant Name input (`implementation-nuances.md` → Picking the tenant at sign-in). |
 | **Multi-tenant Entra** (`common` + allowlist) | **"Sign in with Microsoft" social login + Flow condition** | |

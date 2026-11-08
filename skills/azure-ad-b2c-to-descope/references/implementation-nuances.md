@@ -49,7 +49,7 @@
   - [Without Graph access](#without-graph-access)
 - [User ID strategy](#user-id-strategy)
   - [Overriding sub (JWT Template → Override system claims)](#overriding-sub-jwt-template--override-system-claims)
-  - [Filling b2cObjectId for new users](#filling-b2cobjectid-for-new-users)
+  - [Filling azureObjectId for new users](#filling-azureobjectid-for-new-users)
   - [App changes when keeping the B2C ID](#app-changes-when-keeping-the-b2c-id)
 - [Password strategy](#password-strategy)
   - [Building the JIT via ROPC Flow](#building-the-jit-via-ropc-flow)
@@ -153,7 +153,7 @@ cosmetic — the SDK replacement reads the user from Descope.
 
 **POC checklist:** sign-in completes and returns to the app; the access token has the Inbound App
 `iss`, `aud` = the Resource and the expected `scope`; if the plan keeps the B2C ID, the access
-token's `oid` (and `sub`, when overridden) equals the user's `b2cObjectId` (User ID strategy →
+token's `oid` (and `sub`, when overridden) equals the user's `azureObjectId` (User ID strategy →
 Overriding `sub`), and the ID token carries the same value wherever the frontend reads it; silent token renewal works; logout ends the Descope session; the API accepts
 the token. Then plan the SDK replacement (Execution Phase 4a).
 
@@ -285,7 +285,7 @@ discovery document. Execution Phase 6 → Test 4 checks that the configured issu
 
 | B2C claim | Meaning | Descope |
 |---|---|---|
-| `sub` / `oid` | B2C object ID | Descope user ID by default. Keep the B2C value: custom attribute `b2cObjectId`, emitted as `oid` (and as `sub` with Override system claims) |
+| `sub` / `oid` | B2C object ID | Descope user ID by default. Keep the B2C value: custom attribute `azureObjectId`, emitted as `oid` (and as `sub` with Override system claims) |
 | `tfp` / `acr` | Policy name | None — delete code that reads it |
 | `iss` | `https://<tenant>.b2clogin.com/<tenant-guid>/v2.0/` (or `/tfp/<guid>/<policy>/v2.0/`) | Inbound App: the Inbound App issuer (default `https://api.descope.com/v1/apps/<ProjectID>` — see Finding the Inbound App issuer); session: `https://api.descope.com/<ProjectID>` (custom domain / region change the host) |
 | `aud` | App registration (client) ID | Inbound App access token: the Resource; session token: project ID |
@@ -307,8 +307,8 @@ Find the claim the app reads to know the user's organization: relying party `Out
 Customer organizations table. Then ask which way to go:
 
 - **Keep the claim (default at cutover).** A JWT Template custom claim with the same name, filled
-  from the current tenant: `"tenant_id": "{{tenant.customAttributes.b2cOrgId}}"` keeps the B2C
-  values (`b2cOrgId` set on each tenant in Importing organizations); `{{tenant.id}}` sends the
+  from the current tenant: `"tenant_id": "{{tenant.customAttributes.azureOrgId}}"` keeps the B2C
+  values (`azureOrgId` set on each tenant in Importing organizations); `{{tenant.id}}` sends the
   Descope tenant ID instead. The backend and data keys don't change.
 - **Switch to Descope claims.** The app reads `dct` (current tenant) or `tenants` and its org
   checks are rewritten. Cleaner, but every org check changes — usually a later cleanup.
@@ -340,9 +340,9 @@ tracer — the XML doesn't show defaults):
 
 | B2C assertion | Descope SAML app setting |
 |---|---|
-| `NameID` = `objectId` | Advanced → SAML Assertion Subject Type: custom attribute `b2cObjectId`. Use the same `Format` the app received; Descope recommends `unspecified` for custom attributes if the app doesn't care |
+| `NameID` = `objectId` | Advanced → SAML Assertion Subject Type: custom attribute `azureObjectId`. Use the same `Format` the app received; Descope recommends `unspecified` for custom attributes if the app doesn't care |
 | `NameID` = email | Subject Type: Email |
-| Attribute carrying `objectId` (`objectId`, `…/objectidentifier`, or another `PartnerClaimType`) | **SSO / Add SAML Attributes** Flow action: key = the exact attribute name, type **Dynamic**, value `user.customAttributes.b2cObjectId` |
+| Attribute carrying `objectId` (`objectId`, `…/objectidentifier`, or another `PartnerClaimType`) | **SSO / Add SAML Attributes** Flow action: key = the exact attribute name, type **Dynamic**, value `user.customAttributes.azureObjectId` |
 | Other attributes (email, name, given/surname, roles) | SSO Mapping → User Attribute Mapping with the exact same attribute names; groups/roles via Group Mapping |
 | Attributes computed in the policy (claims transformations, REST calls) | Compute in the Flow (Scriptlet / HTTP Connector), then **SSO / Add SAML Attributes** |
 
@@ -493,7 +493,7 @@ Whether organizations came from groups or a custom attribute
 (`b2c-detection-patterns.md` → Customer organization discovery):
 1. Create one tenant per boundary group or distinct attribute value, before importing users. Keep
    the B2C value (group ID or attribute value) on the tenant as a tenant custom attribute
-   (`b2cOrgId`), so the app's existing org claim and data keys can still be matched.
+   (`azureOrgId`), so the app's existing org claim and data keys can still be matched.
 2. Import each user with `userTenants` (`tenantId` plus `roleNames` for tenant roles from
    combined groups); project-level roles go in `roleNames`.
 3. Keep the original attribute on the user (`customAttributes`) until the app reads the Descope
@@ -935,7 +935,7 @@ them silently.
 | B2C (Graph) | Descope |
 |---|---|
 | `identities[emailAddress, userName or phoneNumber].issuerAssignedId` | `loginId` (phone sign-in: the E.164 number, plus `phone` and `verifiedPhone: true`) |
-| `id` | `customAttributes.b2cObjectId` (User ID strategy) |
+| `id` | `customAttributes.azureObjectId` (User ID strategy) |
 | `displayName`, `givenName`, `surname` | `name`, `givenName`, `familyName` |
 | `mail`, else the `emailAddress` identity | `email` (+ `verifiedEmail: true` for email sign-in accounts, which B2C verifies at sign-up — Graph has no per-user flag; confirm the policy verified emails) |
 | `otherMails` | Usually drop, or keep in a Multi select custom attribute. Put one in `additionalIdentifiers` only if the user should sign in with it — those become extra login IDs |
@@ -954,12 +954,12 @@ SDK equivalent (verify the method name via the Docs MCP).
 
 Descope always generates its own user ID; the user import API has no field to set it. So B2C's
 object ID can't become the Descope user ID — but the token can still carry it. Always import it
-as the `b2cObjectId` custom attribute (the descriptive name is for the Descope user store; the
+as the `azureObjectId` custom attribute (the descriptive name is for the Descope user store; the
 claim name is chosen separately).
 
 **Migrated users vs. new users.** A user imported from B2C has a B2C object ID, so
-`b2cObjectId` is set. A user who signs up after cutover never existed in B2C: they get only a
-Descope user ID, and `b2cObjectId` is empty unless the sign-up Flow fills it. Every strategy below
+`azureObjectId` is set. A user who signs up after cutover never existed in B2C: they get only a
+Descope user ID, and `azureObjectId` is empty unless the sign-up Flow fills it. Every strategy below
 must say what new users get.
 
 Default when the customer doesn't know: **Keep the B2C ID** — no data changes, and it can be
@@ -967,9 +967,9 @@ switched later.
 
 | Strategy | What the token carries | Data change | New users | Watch out for |
 |---|---|---|---|---|
-| **Keep the B2C ID** (no app code change) | JWT Template emits `oid` from `b2cObjectId`. If the code keys on `sub` (B2C's default), also turn on **Override system claims** and set `sub` from `b2cObjectId`; Descope's ID moves to `dsub` | None | The sign-up Flow fills `b2cObjectId` with their Descope user ID (`U…`, not a GUID) — see Filling `b2cObjectId` for new users | See Overriding `sub` and App changes when keeping the B2C ID |
-| **Switch to the Descope user ID** | `sub` = Descope user ID | One-time remap before cutover: after import, read each user's Descope ID and `b2cObjectId` (Management API search) and rewrite the keys | Nothing to do — they only have a Descope ID | Every system keyed on the B2C ID moves in the same window; rollback means reversing the remap |
-| **Remap on first login** | `sub` = Descope user ID, plus `oid` from `b2cObjectId` | Gradual: on login, if no row matches `sub`, look up by `oid`, then store `sub` on that row | Nothing to do — no `oid`, matched by `sub` from the start | Users who never log in stay on the B2C ID; finish them later with the batch remap |
+| **Keep the B2C ID** (no app code change) | JWT Template emits `oid` from `azureObjectId`. If the code keys on `sub` (B2C's default), also turn on **Override system claims** and set `sub` from `azureObjectId`; Descope's ID moves to `dsub` | None | The sign-up Flow fills `azureObjectId` with their Descope user ID (`U…`, not a GUID) — see Filling `azureObjectId` for new users | See Overriding `sub` and App changes when keeping the B2C ID |
+| **Switch to the Descope user ID** | `sub` = Descope user ID | One-time remap before cutover: after import, read each user's Descope ID and `azureObjectId` (Management API search) and rewrite the keys | Nothing to do — they only have a Descope ID | Every system keyed on the B2C ID moves in the same window; rollback means reversing the remap |
+| **Remap on first login** | `sub` = Descope user ID, plus `oid` from `azureObjectId` | Gradual: on login, if no row matches `sub`, look up by `oid`, then store `sub` on that row | Nothing to do — no `oid`, matched by `sub` from the start | Users who never log in stay on the B2C ID; finish them later with the batch remap |
 
 Systems outside the app that receive the B2C ID — SAML apps (B2C as a SAML IdP → Descope SAML app),
 CRM, analytics, support tools — follow the same choice. List them in the plan.
@@ -982,8 +982,8 @@ By default Descope sets `sub` to its user ID and a JWT Template can't change it.
 
 ```json
 {
-  "oid": "{{user.customAttributes.b2cObjectId}}",
-  "sub": "{{user.customAttributes.b2cObjectId}}"
+  "oid": "{{user.customAttributes.azureObjectId}}",
+  "sub": "{{user.customAttributes.azureObjectId}}"
 }
 ```
 
@@ -1009,11 +1009,11 @@ data as is. `oid` comes from the JWT Template, which does reach Inbound App acce
 both paths into the plan; the POC result picks one.
 [Override System Claims](https://docs.descope.com/management/token/jwt-templates#override-system-claims).
 
-#### Filling `b2cObjectId` for new users
+#### Filling `azureObjectId` for new users
 
 Users who sign up after cutover never had a B2C ID. In the sign-up Flow, after the user is created
-and only when `b2cObjectId` is empty: a Scriptlet with a dynamic argument `user.userId` returns it,
-an override copies it to `form.customAttributes.b2cObjectId`, and **Update User / Attributes**
+and only when `azureObjectId` is empty: a Scriptlet with a dynamic argument `user.userId` returns it,
+an override copies it to `form.customAttributes.azureObjectId`, and **Update User / Attributes**
 saves it. Their `oid` (and `sub`, if overridden) is then their Descope user ID.
 
 #### App changes when keeping the B2C ID
@@ -1032,7 +1032,7 @@ working, and rolling back to B2C during a phased rollout is safe. What the app t
       letting the API set it from its own token
 - [ ] Calls to the Descope Management API about a user use Descope's ID — `dsub` with the `sub`
       override, `sub` without it
-- [ ] The sign-up Flow fills `b2cObjectId` for new users, so `oid` / `sub` are never empty
+- [ ] The sign-up Flow fills `azureObjectId` for new users, so `oid` / `sub` are never empty
 - [ ] Tests cover one migrated user and one new user end to end
 
 If the columns or downstream systems can't take a string before cutover, use **Remap on first
@@ -1071,8 +1071,8 @@ First choose the order — it decides which Flow action saves the password:
 
 | Order | How the password is saved | Trade-off |
 |---|---|---|
-| **Import first, capture on sign-in (default)** — bulk import every user up front, without passwords | User exists, so **Update Password**. It needs a signed-in user: verify the email with OTP or magic link first, then call B2C, then save | Roles, tenants, attributes and `b2cObjectId` are there from day one, so the app works for everyone. Cost: one extra email step on the first Descope sign-in |
-| **JIT first, import later** — only users who sign in during the window are created | **Sign Up / Password** creates the user and saves the password | No extra step, but JIT users have none of the imported data (`b2cObjectId`, roles, tenants) until a reconcile at the end of the window: re-export, update users that exist by login ID, create the rest. Use only when the app needs nothing beyond email and password |
+| **Import first, capture on sign-in (default)** — bulk import every user up front, without passwords | User exists, so **Update Password**. It needs a signed-in user: verify the email with OTP or magic link first, then call B2C, then save | Roles, tenants, attributes and `azureObjectId` are there from day one, so the app works for everyone. Cost: one extra email step on the first Descope sign-in |
+| **JIT first, import later** — only users who sign in during the window are created | **Sign Up / Password** creates the user and saves the password | No extra step, but JIT users have none of the imported data (`azureObjectId`, roles, tenants) until a reconcile at the end of the window: re-export, update users that exist by login ID, create the rest. Use only when the app needs nothing beyond email and password |
 
 Flow steps (default order):
 1. Screen with email and the **Login Password** input (the password the user already has, not
@@ -1081,7 +1081,7 @@ Flow steps (default order):
    password reset or passwordless — don't loop on wrong passwords.
 3. OTP or magic link to the email (the default order needs a signed-in user), then **Update
    Password** from the **Login Password** value.
-4. After saving, set a boolean custom attribute (`b2cPasswordMigrated`) with **Update User /
+4. After saving, set a boolean custom attribute (`azurePasswordMigrated`) with **Update User /
    Attributes**. Branch on it at the start of the Flow so migrated users go straight to normal
    Descope password sign-in and B2C is called once per user — confirm the condition key with the
    Docs MCP.
@@ -1230,7 +1230,7 @@ import { AuthProvider } from '@descope/react-sdk';
 |---|---|
 | `instance.loginRedirect(loginRequest)` | `useDescope().oidc.loginWithRedirect({ resource: '<Resource>', extraTokenParams: { resource: '<Resource>' } })` |
 | `useIsAuthenticated()` | `useSession().isAuthenticated` (+ `isSessionLoading`) |
-| `useMsal().accounts[0]` / `idTokenClaims` | `useUser().user` for profile fields (name, email). For any user ID the app **stores or compares** (record owner, API key), follow the User ID strategy: keeping the B2C ID → `user.customAttributes.b2cObjectId` (or the `oid` / overridden `sub` claim), never `user.userId` — that is Descope's ID and won't match existing rows |
+| `useMsal().accounts[0]` / `idTokenClaims` | `useUser().user` for profile fields (name, email). For any user ID the app **stores or compares** (record owner, API key), follow the User ID strategy: keeping the B2C ID → `user.customAttributes.azureObjectId` (or the `oid` / overridden `sub` claim), never `user.userId` — that is Descope's ID and won't match existing rows |
 | `acquireTokenSilent({ scopes })` → `accessToken` | `useSession().sessionToken` — with `oidcConfig` this is the Inbound App access token; the SDK refreshes it |
 | `AuthenticatedTemplate` / `UnauthenticatedTemplate` | Conditional render on `isAuthenticated` |
 | `MsalAuthenticationTemplate` | Guard component that calls `loginWithRedirect({ resource, extraTokenParams: { resource } })` |

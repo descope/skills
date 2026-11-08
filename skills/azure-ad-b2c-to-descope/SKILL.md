@@ -549,7 +549,7 @@ Start with the user count and chosen password strategy (`implementation-nuances.
 Migration). PM checklist:
 - [ ] Choose password strategy (reset / passwordless / JIT via ROPC / JIT via B2C as OIDC provider)
 - [ ] Choose user ID strategy (keep the B2C ID / switch to Descope user ID / remap on first login), decide what new users get, and list every system keyed on the B2C ID
-- [ ] Build the user schema table; create typed custom attributes (incl. `b2cObjectId`) and tenants before import
+- [ ] Build the user schema table; create typed custom attributes (incl. `azureObjectId`) and tenants before import
 - [ ] Export users via Microsoft Graph (`$select` incl. `identities` and `extension_*`)
 - [ ] Transform and import into dev, then staging, then production
 - [ ] Verify one local, one social, one enterprise SSO user end to end
@@ -674,7 +674,12 @@ Ask whether they already have a Project ID and working Flow; if yes, verify item
 5. **Resource + Inbound App** (Decision 1) — Resource with the B2C scope names (e.g. `tasks.read`); Inbound App for the frontend (public client with PKCE for an SPA), following the Inbound App rules under Decision 1. Federated App instead when no API scopes are needed.
 6. **JWT Template** — `email` → `user.email`, `name` → `user.name` (not in Descope tokens by default), `oid` / `sub` per the User ID strategy, and custom attributes the app reads. It also applies to Inbound App access tokens.
 7. **Roles and permissions** — Authorization → RBAC, if roles were built in B2C.
-8. **Custom attributes** — define them (incl. `b2cObjectId`) before importing users.
+8. **Custom attributes** — define them (incl. `azureObjectId`) under **Users → Custom Attributes**
+   before importing users. Then check each attribute's **Machine Name** and use exactly that in the
+   JWT Template, the import and the Flow. The Console generates it from the display name, capitalises
+   the letter after a digit (`b2cObjectId` → `b2CObjectId`), and doesn't let you edit it; a mismatch
+   resolves silently to null, and a `sub` override from it fails the token request (`E063305`). Keep
+   attribute names free of digits.
 9. **Tenants + SSO** — one tenant per enterprise customer connection, with email domains; configure SSO before importing that customer's users.
 10. **Widgets** — check before migrating profile or user-management pages.
 
