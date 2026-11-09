@@ -266,7 +266,8 @@ Customers use "tenant" for two different things. Ask, don't assume:
 > brand, or region (`contoso-dev.onmicrosoft.com`, `contoso-eu.onmicrosoft.com`), (b) one B2C
 > directory where customer organizations are separated inside your custom policies (per-customer
 > identity providers, `domain_hint`, a tenant or organization claim, an API connector lookup),
-> (c) both, or (d) no customer separation?"
+> (c) both, (d) no customer separation, or (e) a separate B2C directory for each business customer
+> (one for Acme, one for Globex)?"
 
 Decision tree:
 ```
@@ -279,8 +280,23 @@ What is a "tenant"?
 │                                            with email-domain routing, a tenant slug or
 │                                            ID, or tenant selection
 ├── (c) Both                               → Projects per directory, tenants inside each
-└── (d) No separation                      → One project, no tenants
+├── (d) No separation                      → One project, no tenants
+└── (e) A directory per business customer  → Ask why (below). Default: one project,
+                                             one tenant per directory
 ```
+
+**A directory per business customer (e).** Customers usually split directories because B2C has no
+organizations, not because they need separate projects. Ask why, then recommend:
+- **B2C had no organizations; or each customer needed its own SSO, settings, branding or admins; or
+  the same email had to exist for different customers** → **one project, one tenant per
+  directory**. Descope tenants cover each of these.
+- **Data residency, or a contract requiring separate keys and admins** → a project per region or
+  per isolated customer, with tenants inside where several customers share one.
+
+Consolidating means importing each directory's users into its tenant. A person in several
+directories becomes one user in several tenants (matched by email). Each customer is routed to its
+tenant the way the app picks the directory today, for example subdomain → tenant slug
+(`implementation-nuances.md` → Picking the tenant at sign-in).
 
 Dev / staging / prod directories are case (a) even when the customer doesn't call them tenants.
 
