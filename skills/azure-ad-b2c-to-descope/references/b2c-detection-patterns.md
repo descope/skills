@@ -31,8 +31,8 @@ EXCL=(-I --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exc
   --exclude-dir=vendor --exclude-dir=coverage
   --exclude='*.lock' --exclude='*-lock.json' --exclude='*.min.js')
 
-# 1. MSAL / Microsoft identity packages (decides the framework guide)
-grep -rni "@azure/msal-browser\|@azure/msal-react\|@azure/msal-angular\|@azure/msal-node\|Microsoft.Identity.Web\|Microsoft.Identity.Client\|passport-azure-ad\|azure-ad-b2c\|active-directory-b2c\|msal4j\|identity.client:msal\|'MSAL'\|\"MSAL\"" \
+# 1. Auth libraries: MSAL, Microsoft identity, and other OIDC clients (decides the framework guide and the POC)
+grep -rni "Microsoft.Owin.Security.OpenIdConnect\|oidc-client-ts\|\"oidc-client\"\|angular-auth-oidc-client\|angular-oauth2-oidc\|openid-client\|passport-openidconnect\|hellojs\|react-native-app-auth\|spring-boot-starter-oauth2-client\|@azure/msal-browser\|@azure/msal-react\|@azure/msal-angular\|@azure/msal-node\|Microsoft.Identity.Web\|Microsoft.Identity.Client\|passport-azure-ad\|azure-ad-b2c\|active-directory-b2c\|msal4j\|identity.client:msal\|'MSAL'\|\"MSAL\"" \
   --include="package.json" --include="*.csproj" --include="packages.config" --include="requirements*.txt" --include="pyproject.toml" \
   --include="Pipfile" --include="pom.xml" --include="build.gradle*" --include="*.gradle" --include="*.gradle.kts" \
   --include="Podfile" --include="Package.swift" --include="Cartfile" "${EXCL[@]}" . 2>/dev/null

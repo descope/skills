@@ -5,6 +5,7 @@
 **Architecture**
 - [B2C hosts every login; each policy is its own authority](#b2c-hosts-every-login-each-policy-is-its-own-authority)
 - [MSAL POC first, then replace MSAL](#msal-poc-first-then-replace-msal)
+  - [Other OIDC libraries](#other-oidc-libraries)
 - [Hosted login by default](#hosted-login-by-default)
 - [Which Descope app: Inbound App, Federated App, or plain SDK](#which-descope-app-inbound-app-federated-app-or-plain-sdk)
   - [Consent for first-party Inbound Apps](#consent-for-first-party-inbound-apps)
@@ -112,7 +113,7 @@ library before production cutover.
 |---|---|
 | `@azure/msal-browser`, `msal-react`, `msal-angular` | Yes — `system.protocolMode: "OIDC"` (msal-browser 2.4.0+; 3.x+ preferred — msal-common 14 stops sending Microsoft telemetry parameters in OIDC mode) |
 | `@azure/msal-node` | Yes — `system.protocolMode: "OIDC"` |
-| MSAL.NET (`Microsoft.Identity.Client`) | Yes — `WithOidcAuthority(<issuer>)` on the app builder, MSAL.NET **4.60.0+** (older versions only have the experimental `WithGenericAuthority`, client credentials only). Older apps upgrade the package for the POC, or skip it. `resource`: `.WithExtraQueryParameters(new Dictionary<string, string> { ["resource"] = "<Resource>" })` — untested against Descope; the POC confirms `aud` |
+| MSAL.NET (`Microsoft.Identity.Client`) | Yes — `WithOidcAuthority(<issuer>)` on the app builder, MSAL.NET **4.60.0+** (older versions only have the experimental `WithGenericAuthority`, client credentials only). Older apps upgrade the package for the POC, or skip it. `resource`: `.WithExtraQueryParameters(new Dictionary<string, string> { ["resource"] = "<Resource>" })` — untested; the POC confirms `aud` |
 | `Microsoft.Identity.Web` | No — built for Entra / B2C. Use the standard ASP.NET OpenID Connect or JwtBearer handler (Server-side web apps; `backend-sdks.md` → .NET / ASP.NET Core) |
 | MSAL Android / iOS | Not verified — go straight to the Descope native SDK |
 
@@ -131,12 +132,31 @@ const msalConfig = {
 const loginRequest = { scopes: ['openid', 'profile', 'offline_access', 'tasks.read'] };
 ```
 
+**MSAL lowercases the authority before fetching discovery.** The Descope project ID in the issuer path
+is case-sensitive: `…/v1/apps/<ProjectID>/.well-known/openid-configuration` returns 200, the
+lowercased URL returns 404, and sign-in never starts. Fetch the discovery document yourself with the
+original casing and pass it to MSAL as `authorityMetadata`, so MSAL never builds the URL:
+
+```js
+const res = await fetch(`${issuer}/.well-known/openid-configuration`);
+const authorityMetadata = JSON.stringify(await res.json());
+const msalInstance = new PublicClientApplication({
+  ...msalConfig,
+  auth: { ...msalConfig.auth, authorityMetadata },
+});
+```
+
+Create the MSAL instance only after this resolves (render the app inside the `.then`). Tested with
+msal-browser 2.31 in OIDC mode.
+
 **Sending the Resource** (Descope needs `resource` on the authorize and token requests — Selecting
 the Resource):
 - msal-browser 5.x: the request's `resource` option.
 - msal-browser 2.x / 3.x: `extraQueryParameters: { resource }` (authorize) and
-  `tokenQueryParameters: { resource }` (token, sent as a query parameter). Untested against Descope —
-  the POC must confirm the access token's `aud` is the Resource.
+  `tokenBodyParameters: { resource }` (token). Descope reads `resource` on the token request from the
+  form body, so use the body option, not `tokenQueryParameters`, which puts it in the URL. Tested
+  with msal-browser 2.31: the access token's `aud` includes the Resource.
+- Other libraries: send `resource` as a form field in the token request body, the same way.
 
 MSAL shows `account.username` from the `preferred_username` claim; if it's blank in the POC, that's
 cosmetic — the SDK replacement reads the user from Descope.
@@ -152,10 +172,18 @@ cosmetic — the SDK replacement reads the user from Descope.
   `end_session_endpoint` from discovery.
 
 **POC checklist:** sign-in completes and returns to the app; the access token has the Inbound App
-`iss`, `aud` = the Resource and the expected `scope`; if the plan keeps the B2C ID, the access
+`iss`, `aud` = the Resource, and a `scope` that lists **every** scope the app requests, by name — a
+missing one (an unticked policy scope, a role link) fails silently until that API call returns 403; if the plan keeps the B2C ID, the access
 token's `oid` (and `sub`, when overridden) equals the user's `azureObjectId` (User ID strategy →
-Overriding `sub`), and the ID token carries the same value wherever the frontend reads it; silent token renewal works; logout ends the Descope session; the API accepts
+Overriding `sub`), and the frontend doesn't take the user ID from the ID token (custom claims weren't in it in testing); silent token renewal works; logout ends the Descope session; the API accepts
 the token. Then plan the SDK replacement (Execution Phase 4a).
+
+#### Other OIDC libraries
+
+The same POC works with any standard OIDC client already pointed at B2C (OWIN, ASP.NET Core OpenID
+Connect, oidc-client-ts, Spring and others): change its configuration, not its code. Unlike MSAL,
+the library can stay afterwards. Only the MSAL POC has been tested. If discovery returns 404, the
+library has changed the issuer's casing; give it the discovery URL directly (`MetadataAddress`).
 
 ### Hosted login by default
 
@@ -205,6 +233,17 @@ Inbound App Scopes component.
 (`https://api.<company>.com`), not the B2C App ID URI (`https://<tenant>.onmicrosoft.com/<api>`),
 which names a tenant that's going away. Frontends that requested full-URI scopes
 (`https://<tenant>.onmicrosoft.com/<api>/tasks.read`) switch to the short names (`tasks.read`).
+
+**Linking roles to scopes.** On the Resource, each scope can be linked to RBAC roles, and then only
+users holding one of those roles receive it. Match what B2C did:
+- **B2C granted scopes per app** (the default — every signed-in user got the scopes the app
+  requested): leave the scopes without roles.
+- **B2C limited access by group** (a custom policy adds a `groups` or roles claim from Graph, and
+  either the API checks it or the policy issues scopes per group): link each scope to the roles the
+  groups map to (Roles and groups), and give those roles to migrated users in the import and to new
+  users through a default role or a Flow step. A user without the role silently loses the scope.
+The docs don't say clearly what an unlinked scope grants; confirm in the POC that a user with no
+roles gets every unlinked scope.
 
 Scope names alone don't select a Resource — only the RFC 8707 `resource` parameter does, and
 without it the token's `aud` isn't the Resource. Put the scope names in `oidcConfig.scope` (with a
@@ -297,8 +336,8 @@ discovery document. Execution Phase 6 → Test 4 checks that the configured issu
 | `azp` | Authorized party (client ID) | `azp` on Inbound App tokens — check it if only some clients may call the API |
 
 Descope session tokens contain `sub`, `amr`, `drn`, `tenants`, `roles`, `permissions`, `dct` by
-default — not `email` or `name`. A user JWT Template applies to both session tokens and Inbound
-App access tokens.
+default — not `email` or `name`. A user JWT Template shapes session tokens and, once selected on the
+Inbound App (Session Management → Custom → User JWT template), its access tokens.
 
 #### Keeping the app's organization claim
 
@@ -396,6 +435,11 @@ Docs: [SAML apps](https://docs.descope.com/identity-federation/applications/saml
 Read the custom policy XML (relying party file first, then the chain: Base → Localization →
 Extensions) to list user journeys, orchestration steps, `ClaimsExchange` technical profiles, and
 `OutputClaims`. Each relying party policy usually maps to one Flow.
+
+**Starting from a Flow template:** compare every step to what the B2C journey did, and remove or
+bypass steps B2C didn't have — for example the "passwords or social" template asks social users
+with no password to set one, and others prompt for a name or show screens B2C never showed. Add
+them back only if the customer asks (Match first, then enhance).
 
 ### API connectors and REST technical profiles → HTTP Connectors
 
@@ -1016,6 +1060,15 @@ and only when `azureObjectId` is empty: a Scriptlet with a dynamic argument `use
 an override copies it to `form.customAttributes.azureObjectId`, and **Update User / Attributes**
 saves it. Their `oid` (and `sub`, if overridden) is then their Descope user ID.
 
+**Required when `sub` is overridden.** Without this step, a new user's `azureObjectId` is empty, the
+override resolves `sub` to an empty value, and the token request fails (`E063305`, "Internal error
+while accessing token endpoint") — the user can't sign in at all. Without the override, `oid` is
+just empty. So:
+- Put the step on **every** path that can create a user: password sign-up, email OTP sign-up and
+  the first social sign-in.
+- Run it **before Update User Consent**, so the token is built after the value exists.
+- Test with a brand-new user, not only an imported one.
+
 #### App changes when keeping the B2C ID
 
 No data moves: migrated users keep the same `oid` / `sub`, so existing rows and lookups keep
@@ -1029,7 +1082,8 @@ working, and rolling back to B2C during a phased rollout is safe. What the app t
       webhooks) gets the same check
 - [ ] One source for the user ID: if the frontend writes it into records (an `owner` field from the
       ID token) and the API reads it from the access token, both must carry the same value. Prefer
-      letting the API set it from its own token
+      letting the API set it from its own token. In testing, the JWT Template's custom claims
+      (`oid`) reached the Inbound App access token but not the ID token
 - [ ] Calls to the Descope Management API about a user use Descope's ID — `dsub` with the `sub`
       override, `sub` without it
 - [ ] The sign-up Flow fills `azureObjectId` for new users, so `oid` / `sub` are never empty

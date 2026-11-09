@@ -196,17 +196,18 @@ iframe). The **target** decides: if sign-in must stay in the page, follow (c) fo
 use (b) only for what the server keeps doing (validating the session on each request); otherwise
 follow (b).
 
-**POC with MSAL first — offer it whenever the target is redirect login.** For MSAL.js (browser,
-React, Angular, Node) and MSAL.NET apps whose target is Descope-hosted login (Decision 0 (a) or
-(b)), ask:
+**POC with the app's current library first — offer it whenever the target is redirect login.**
+If the app uses MSAL or another OIDC client (search group 1) and the target is Descope-hosted login
+(Decision 0 (a) or (b)), ask:
 
-> "Do you want to start with a proof of concept that keeps MSAL and only changes its configuration
-> to point at Descope, then replace MSAL with the Descope SDK? Or replace MSAL straight away?"
+> "Do you want to start with a proof of concept that keeps your current sign-in library and only
+> changes its configuration to point at Descope? Then we replace or keep it."
 
-If yes, the plan runs the MSAL POC first and the SDK replacement afterwards, both before
-production cutover (`implementation-nuances.md` → MSAL POC first, then replace MSAL). Skip it, and
-say why in the plan, for apps on `Microsoft.Identity.Web` or native MSAL, and when the target is an
-embedded Flow (Decision 0 (c)) — the POC would test a redirect login that never ships.
+If yes, the plan runs the POC first, before any rewrite (`implementation-nuances.md` → MSAL POC
+first, then replace MSAL, and → Other OIDC libraries). What follows the POC depends on the library:
+**MSAL is always replaced** with the Descope SDK before production; a standard OIDC library can stay.
+Skip the POC, and say why in the plan, for `Microsoft.Identity.Web`, native MSAL, and when the
+target is an embedded Flow (Decision 0 (c)) — the POC would test a login that never ships.
 
 Rule of thumb: **Descope-hosted login by default** — B2C users already redirect to
 `b2clogin.com`, so a hosted page is the smallest UX change. Use an embedded Flow only for B2C
@@ -245,6 +246,15 @@ Who calls the API?
   (→ Selecting the Resource).
 - An embedded Flow issues a session token (no `scope`) and can't mint Inbound App access tokens —
   keep hosted login for scoped APIs (→ Embedded Flows and scoped APIs).
+- **Connect the Inbound App to the Resource with an access policy.** Creating both doesn't link them.
+  On the **Access Policy** page, add a rule:
+  - **Allow**
+  - **Subject:** the Inbound App
+  - **Target:** the Resource, with **all** its scopes ticked
+  - **Grant type:** **User access** (not "Delegated access", which is for token exchange)
+
+  If the policy is missing or a scope isn't ticked, sign-in still works, but the access token lacks
+  those scopes, and the API rejects the calls that need them (403).
 
 ---
 
@@ -671,8 +681,11 @@ Ask whether they already have a Project ID and working Flow; if yes, verify item
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
 3. **Flows** — start from `sign-up-or-in`; one Flow per B2C user flow / custom policy journey (sign-up-or-in, password reset, profile edit can be one Flow with branches). Check the template library first.
 4. **Auth methods** — match B2C: email + password, email OTP, SMS, TOTP, social providers (register new client IDs/secrets with Google etc.; B2C secrets can't be read).
-5. **Resource + Inbound App** (Decision 1) — Resource with the B2C scope names (e.g. `tasks.read`); Inbound App for the frontend (public client with PKCE for an SPA), following the Inbound App rules under Decision 1. Federated App instead when no API scopes are needed.
-6. **JWT Template** — `email` → `user.email`, `name` → `user.name` (not in Descope tokens by default), `oid` / `sub` per the User ID strategy, and custom attributes the app reads. It also applies to Inbound App access tokens.
+5. **Resource + Inbound App + access policy** (Decision 1), in this order. Federated App instead when no API scopes are needed.
+   - **Resource** (Resources page): identifier = a URL you control, scopes = the B2C scope names (e.g. `tasks.read`).
+   - **Inbound App** (Inbound Apps page): Client Authentication **Public** for an SPA (PKCE is then required automatically); approved redirect URLs for every origin and port the app runs on; **Authorization Code** grant on, then the sign-in Flow under **Flows → User Consent**.
+   - **Access policy** (Access Policy page): Allow, subject = the Inbound App, target = the Resource with **all** its scopes ticked, grant type **User access**. Creating the Inbound App alone grants it nothing.
+6. **JWT Template** — `email` → `user.email`, `name` → `user.name` (not in Descope tokens by default), `oid` / `sub` per the User ID strategy, and custom attributes the app reads. For Inbound App tokens, select it on the Inbound App: **Session Management → Custom → User JWT template**. If it overrides `sub`, the sign-up Flow must fill `azureObjectId` for new users, or they can't sign in (`implementation-nuances.md` → Filling `azureObjectId` for new users).
 7. **Roles and permissions** — Authorization → RBAC, if roles were built in B2C.
 8. **Custom attributes** — define them (incl. `azureObjectId`) under **Users → Custom Attributes**
    before importing users. Then check each attribute's **Machine Name** and use exactly that in the
