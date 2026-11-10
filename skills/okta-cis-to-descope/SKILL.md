@@ -17,7 +17,7 @@ description: >
 This skill guides self-service migrations from Okta Customer Identity Service (CIS) to Descope.
 It runs in three parts:
 
-1. **MCP Check** — confirm whether the Descope Docs MCP is available and suggest installing it if not
+1. **MCP Check** — confirm which Descope MCP is connected and suggest connecting the Descope MCP Server if not
 2. **Migration Plan** — gather context via triage questions, analyze the codebase's auth touchpoints, and produce a human-readable `MIGRATION-PLAN.md` for the user to review
 3. **Execution** — if the user confirms they want to proceed, execute the plan
 
@@ -36,34 +36,35 @@ Do not collapse these parts or skip ahead. The plan must be reviewed before code
 
 **Ask, don't assume.** At any design decision point — especially Inbound Apps vs. Federated Apps (the core Okta strategy fork), Flow vs. custom code, Widget vs. custom page, MFA inline vs. separate enrollment — use `AskUserQuestion` rather than proceeding with an assumption. The cost of a wrong assumption compounds across 20+ files. Always confirm whether the backend validates `scp` claims before recommending the Inbound Apps path.
 
-**MCP over memory.** When the Docs MCP is available (confirmed in Part 1), use `ask-question-about-descope` to verify every SDK method name, option shape, and return type before writing it. Do not fall back to "verify the exact method name in the SDK type declarations" as a hedge — just verify it directly.
+**MCP over memory.** When a Descope MCP is connected (confirmed in Part 1), use `docs_ask_question` (Descope MCP Server) or `ask-question-about-descope` (Docs MCP) to verify every SDK method name, option shape, and return type before writing it. Do not fall back to "verify the exact method name in the SDK type declarations" as a hedge — just verify it directly.
 
 ---
 
 ## Part 1: MCP Check (BLOCKING)
 
-Before doing anything else, check whether the Descope Docs MCP is available by calling
-`search-descope-docs` with a simple query (e.g., "session validation").
+Before doing anything else, check which Descope MCP is connected:
+- **Descope MCP Server** — call `docs_search` with a simple query (e.g., "session validation").
+  It searches the docs and can also read and change the Descope project.
+- **Descope Docs MCP** (docs only) — call `search-descope-docs`.
 
-**If the tool is available:** proceed to Part 2 immediately.
+**If the Descope MCP Server is connected:** proceed to Part 2 immediately.
 
-**If the tool is not available**, show this message and use `AskUserQuestion` to ask whether
-they want to install it first:
+**If it isn't**, show this message and use `AskUserQuestion`:
 
-> **Descope Docs MCP is not installed.**
+> **Connect the Descope MCP Server.** This skill uses it to check current SDK methods and
+> features, and it can read your Descope project and make the Console setup changes with your
+> approval. Without it, guidance may be stale. Server URL `https://mcp.descope.com` (other
+> regions and client setup: https://docs.descope.com/mcp/mcp-server).
 >
-> This skill uses the Descope Docs MCP to look up current API signatures, SDK methods, and
-> feature availability during migration. Without it, guidance is based on static training data,
-> which may be stale and can produce SDK calls that don't exist.
+> For docs lookups only, you can connect the Descope Docs MCP instead:
+> `https://docs-mcp.descope.com/mcp`.
 >
-> You can install it in a few minutes at **https://docs-mcp.descope.com/** (server URL:
-> `https://docs-mcp.descope.com/mcp`). It significantly improves the accuracy of the
-> migration output — especially for SDK lookups and flow-specific configuration.
->
-> **Would you like to install the MCP before we continue, or proceed without it?**
+> **Connect it before we continue, or proceed without it?**
 
-- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `search-descope-docs` again before proceeding.
-- If they choose to proceed without it: continue, but flag any SDK-specific answers as "based on last known documentation — verify against the current SDK."
+- Connect: pause and wait. Once they confirm, re-check by calling `docs_search` before proceeding.
+- Proceed with only the Docs MCP: use it for doc lookups; the Console setup stays manual.
+- Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
+  verify against the current SDK."
 
 Do not proceed to Part 2 until this step is resolved.
 
@@ -331,8 +332,8 @@ For each hit, record:
 Read `package.json` (or equivalent) for the exact framework version — this affects async
 behavior (Next.js 15 vs 14) and SDK compatibility.
 
-If the Descope Docs MCP is available, use `search-descope-docs` or `ask-question-about-descope`
-to verify current SDK method names for anything you plan to reference in the plan.
+If a Descope MCP is connected, use `docs_search` or `docs_ask_question` (Descope MCP Server) or
+`search-descope-docs` or `ask-question-about-descope` (Docs MCP) to verify current SDK method names for anything you plan to reference in the plan.
 
 ---
 
@@ -701,9 +702,9 @@ Run before generating any import, wrapper type, or helper. Skipping produces cod
 compiles but fails at runtime.
 
 **1. Verify SDK exports before writing any import.**
-When the Docs MCP is available, use `ask-question-about-descope` to confirm the exact method name, option shape, and return type before writing any SDK call. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
+When a Descope MCP is connected, use `docs_ask_question` (Descope MCP Server) or `ask-question-about-descope` (Docs MCP) to confirm the exact method name, option shape, and return type before writing any SDK call. Do not write a method name and add a hedge like "verify the exact name" — just verify it.
 
-When the Docs MCP is unavailable: resolve the package's type declarations (`node_modules/<pkg>/dist/types/` or its `package.json` `types` field) and confirm the exact exported name and signature.
+When neither Descope MCP is connected: resolve the package's type declarations (`node_modules/<pkg>/dist/types/` or its `package.json` `types` field) and confirm the exact exported name and signature.
 
 **Prefer local `node_modules/` over GitHub** when reading type declarations. Installed packages reflect the exact version in use. Install the Descope package first if not yet installed, then read local type declarations.
 
