@@ -201,7 +201,7 @@ change. Use an embedded Flow only for B2C iframe users or when the customer asks
 | Server-side web apps | Standard OIDC library pointed at the Descope app |
 
 With `oidcConfig` set, `refresh()` and `logout()` switch to the OIDC client (per the web-js SDK
-source, shared by all of these SDKs) — confirm with the Docs MCP.
+source, shared by all of these SDKs) — confirm with the Descope MCP.
 
 ### Which Descope app: Inbound App, Federated App, or plain SDK
 
@@ -524,7 +524,7 @@ that process keeps running after cutover and needs its own replacement:
 **App reads one `role` string** (`claims.role === 'Admin'`): with tenant roles, set the JWT
 Template's authorization claims to **Current Tenant, No Tenant Reference** — the current tenant's
 roles then sit in the root `roles` array — and change the check to `roles.includes('Admin')`. A
-single-string role claim isn't a documented template value; confirm with the Docs MCP before
+single-string role claim isn't a documented template value; confirm with the Descope MCP before
 promising the backend no change.
 
 **Exporting current memberships for the import:** read groups and members through Graph
@@ -572,7 +572,7 @@ replace the lookup, in this order:
 2. **The app looks up, then passes the tenant.** When the domain alone doesn't identify the
    customer, the app calls its lookup before login and passes the tenant ID or slug in the `tenant`
    parameter (Picking the tenant at sign-in).
-3. **HTTP Connector inside the Flow** — only after the Docs MCP or Descope confirms a Flow can
+3. **HTTP Connector inside the Flow** — only after the Descope MCP or Descope confirms a Flow can
    start a specific tenant's SSO from a connector result. No documented Flow action does this
    today.
 
@@ -992,7 +992,7 @@ them silently.
 | — | `customAttributes.freshlyMigrated: true` |
 
 Import with the batch create users Management API (`POST /v1/mgmt/user/create/batch`) or the
-SDK equivalent (verify the method name via the Docs MCP).
+SDK equivalent (verify the method name via the Descope MCP).
 
 ### User ID strategy
 
@@ -1101,7 +1101,6 @@ B2C does not export password hashes.
 | Full import without passwords | First-login password reset step, or passwordless (OTP, magic link, passkeys) | Fastest B2C shutdown; every password user acts once |
 | JIT via ROPC | Flow collects email + password → HTTP Connector to the B2C ROPC endpoint → on success save the password in Descope (Building the JIT via ROPC Flow) | Keeps passwords; B2C stays up until active users have signed in; local accounts only; no MFA in that call |
 | JIT with B2C as an OIDC provider | B2C policy configured as a custom OAuth provider in Descope; users sign in through B2C once and are created from the ID token | No passwords kept; B2C stays up |
-| Session migration | Existing B2C sessions exchanged for Descope sessions ([docs](https://docs.descope.com/migrate/session-migration)) | Session migration currently accepts Auth0 and Okta tokens — B2C needs Descope Support to confirm first. Default to re-login at cutover |
 
 **ROPC prerequisites** — a customer task, since you don't write to the tenant:
 - An ROPC user flow (or custom policy) and an app registration allowed to use it. Ask whether one
@@ -1125,7 +1124,7 @@ First choose the order — it decides which Flow action saves the password:
 
 | Order | How the password is saved | Trade-off |
 |---|---|---|
-| **Import first, capture on sign-in (default)** — bulk import every user up front, without passwords | User exists, so **Update Password**. It needs a signed-in user: verify the email with OTP or magic link first, then call B2C, then save | Roles, tenants, attributes and `azureObjectId` are there from day one, so the app works for everyone. Cost: one extra email step on the first Descope sign-in |
+| **Import first, capture on sign-in (default)** — bulk import every user up front, without passwords | User exists, so **Update Password**. It needs a signed-in user: check the password against B2C, then verify the email with OTP or magic link, then save (Flow steps below) | Roles, tenants, attributes and `azureObjectId` are there from day one, so the app works for everyone. Cost: one extra email step on the first Descope sign-in |
 | **JIT first, import later** — only users who sign in during the window are created | **Sign Up / Password** creates the user and saves the password | No extra step, but JIT users have none of the imported data (`azureObjectId`, roles, tenants) until a reconcile at the end of the window: re-export, update users that exist by login ID, create the rest. Use only when the app needs nothing beyond email and password |
 
 Flow steps (default order):
@@ -1138,7 +1137,7 @@ Flow steps (default order):
 4. After saving, set a boolean custom attribute (`azurePasswordMigrated`) with **Update User /
    Attributes**. Branch on it at the start of the Flow so migrated users go straight to normal
    Descope password sign-in and B2C is called once per user — confirm the condition key with the
-   Docs MCP.
+   Descope MCP.
 
 Descope's password policy applies when saving. If B2C allowed weaker passwords, align the policy for
 the window or send the failure to reset. Users who never sign in before B2C is turned off keep their
@@ -1328,7 +1327,7 @@ Typical B2C setups: `@azure/msal-react` in client components, or NextAuth with t
 provider.
 
 - Replace with `@descope/nextjs-sdk`. Its `AuthProvider` passes every prop (including `oidcConfig`) to the React SDK and sets session/refresh tokens in cookies (`sameSite: 'Lax'`) so `authMiddleware` and `session()` can read them — derived from SDK code; test it.
-- NextAuth users: either switch to `@descope/nextjs-sdk`, or replace the Azure AD B2C provider with NextAuth's Descope provider (verify the provider config via the Docs MCP).
+- NextAuth users: either switch to `@descope/nextjs-sdk`, or replace the Azure AD B2C provider with NextAuth's Descope provider (verify the provider config via the Descope MCP).
 - Server: `session()` from `@descope/nextjs-sdk/server` (not `getServerSession`). Next.js 15: `cookies()`/`headers()` are async.
 - Delete MSAL redirect pages and `/api/auth/callback/azure-ad-b2c` handling when NextAuth is removed.
 
@@ -1396,8 +1395,9 @@ use the web component and the web-js SDK on the page, and validate on the server
 - Getting the session to the server: in production use **Manage in cookies** (Project Settings →
   Session Management). Descope then sets the session token as an `HttpOnly`, `SameSite=Strict`
   cookie (`DS`) on the custom domain, and the browser sends it with every request. This needs a
-  custom domain on the same site as the app. Without one (local development), send the session
-  token in the `Authorization` header from the page.
+  custom domain on the same site as the app. Without one (local development), set
+  `sessionTokenViaCookie: true` on the web-js SDK so it writes the session cookie on `localhost`
+  and page loads carry it; use the `Authorization` header only for `fetch` / API calls.
 - Server: validate on every request with the backend SDK (`validateSession`, or
   `validateAndRefreshSession` when the refresh token reaches the server). Check the token's `exp`,
   not the cookie's lifetime.
@@ -1449,13 +1449,15 @@ handler and configure it as above. Then:
   policy) and the `AADB2C90118` branch in `OnRemoteFailure`.
 - Use `ResponseType = "code"`; B2C samples often use the hybrid `code id_token`.
 - Drop MSAL.NET when it only fetched API tokens: with `SaveTokens = true` the handler keeps the
-  access token (`HttpContext.GetTokenAsync("access_token")`). Keep MSAL.NET only for the POC.
+  sign-in tokens (`HttpContext.GetTokenAsync("access_token")`) but never refreshes them. Add a
+  refresh step (check `expires_at`, redeem `refresh_token` with the same `resource`, store the new
+  tokens) or re-challenge on expiry. Keep MSAL.NET only for the POC.
 - Keyed caches (`ClaimTypes.NameIdentifier` → token cache) follow the User ID strategy.
 - **Profile edit:** the User Profile Widget and embedded Flows need a Descope session in the
   browser (web-js SDK). A server-rendered app on hosted login doesn't have one. Either sign the
   user in again inside an embedded profile Flow on that page, or change simple fields (name) from
   the server with the Management API and keep email or phone changes in a Flow, since they need
-  verification. Confirm the option with the Docs MCP before planning it.
+  verification. Confirm the option with the Descope MCP before planning it.
 - ASP.NET Core 2.x / 3.x has the same handler options; the samples above use .NET 6+ syntax. Plan
   the framework upgrade separately (those versions are out of support) — it doesn't block the
   migration.

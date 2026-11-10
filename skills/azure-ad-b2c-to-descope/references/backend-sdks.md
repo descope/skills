@@ -144,7 +144,7 @@ app.UseWhen(c => c.Request.Path.StartsWithSegments("/api"), api => api.Use(async
 ```
 
 Verify namespaces, option names, and the returned token type against the installed package or
-the Docs MCP before writing the code. The SDK validates locally against cached keys
+the Descope MCP before writing the code. The SDK validates locally against cached keys
 (`JwksCacheDuration`, default 5 minutes). By default `aud` is the project ID; check claims after
 validation if the project serves more than one app.
 
@@ -405,5 +405,5 @@ Same pattern in Node/Python: decode the unverified `iss`, then pick the verifier
 | `POST /groups/{id}/members/$ref` (group-based roles) | Assign roles (per tenant if needed) |
 
 Requires `DESCOPE_MANAGEMENT_KEY` (server-side only). Verify SDK method names per language with
-the Docs MCP. Before migrating a custom admin page, check whether the User Management Widget
+the Descope MCP. Before migrating a custom admin page, check whether the User Management Widget
 covers it.

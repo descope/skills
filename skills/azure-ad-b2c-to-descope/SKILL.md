@@ -58,9 +58,9 @@ failure easy to trace.
 strategy, where roles come from, SSO cutover — use `AskUserQuestion` rather than proceeding with
 an assumption. A wrong assumption compounds across 20+ files.
 
-**MCP over memory.** When the Docs MCP is available (confirmed in Part 1), use
-`ask-question-about-descope` to verify every SDK method name, option shape, and return type
-before writing it. Do not write a method name and add a hedge like "verify the exact name" —
+**MCP over memory.** When a Descope MCP is connected (confirmed in Part 1), use
+`docs_ask_question` (Descope MCP Server) or `ask-question-about-descope` (Docs MCP) to verify
+every SDK method name, option shape, and return type before writing it. Do not write a method name and add a hedge like "verify the exact name" —
 verify it.
 
 **B2C configuration often lives outside the repo.** User flows, custom policies, identity
@@ -106,22 +106,26 @@ for the custom policy XML files. Do not infer the auth experience from code alon
 ## Part 1: MCP Check (BLOCKING)
 
 First run Part 1.5's quick grep (no questions). If it already says stop, stop there without
-asking about the MCP. Otherwise check whether the Descope Docs MCP is available by calling
-`search-descope-docs` with a simple query (e.g., "session validation").
+asking about the MCP. Otherwise check which Descope MCP is connected:
+- **Descope MCP Server** — call `docs_search` with a simple query (e.g., "session validation").
+  It searches the docs and can also read and change the Descope project.
+- **Descope Docs MCP** (docs only) — call `search-descope-docs`.
 
-**If the tool is available:** proceed to Part 1.5.
+**If the Descope MCP Server is connected:** proceed to Part 1.5.
 
-**If the tool is not available**, show this message and use `AskUserQuestion` to ask whether
-they want to install it first:
+**If it isn't**, show this message and use `AskUserQuestion`:
 
-> **Descope Docs MCP is not installed.** This skill uses it to check current SDK methods and
-> features; without it, guidance may be stale. Install it at **https://docs-mcp.descope.com/**
-> (server URL `https://docs-mcp.descope.com/mcp`).
+> **Connect the Descope MCP Server.** This skill uses it to check current SDK methods and
+> features, and it can read your Descope project and make the Console setup changes with your
+> approval. Without it, guidance may be stale. Server URL `https://mcp.descope.com` (other
+> regions and client setup: https://docs.descope.com/mcp/mcp-server).
 >
-> **Install it before we continue, or proceed without it?**
+> **Connect it before we continue, or proceed without it?**
 
-- If they choose to install: pause and wait. Once they confirm it's installed, re-check by calling `search-descope-docs` again before proceeding.
-- If they choose to proceed without it: continue, but flag any SDK-specific answers as "based on last known documentation — verify against the current SDK."
+- Connect: pause and wait. Once they confirm, re-check by calling `docs_search` before proceeding.
+- Proceed with only the Docs MCP: use it for doc lookups; the Console setup stays manual.
+- Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
+  verify against the current SDK."
 
 Do not proceed to Part 1.5 until this step is resolved.
 
@@ -287,16 +291,21 @@ What is a "tenant"?
 
 **A directory per business customer (e).** Customers usually split directories because B2C has no
 organizations, not because they need separate projects. Ask why, then recommend:
-- **B2C had no organizations; or each customer needed its own SSO, settings, branding or admins; or
-  the same email had to exist for different customers** → **one project, one tenant per
-  directory**. Descope tenants cover each of these.
+- **B2C had no organizations; or each customer needed its own SSO, settings, branding or
+  admins** → **one project, one tenant per directory**. Descope tenants cover each of these.
+- **The same email had to stay a separate account for each customer** → one project with **Tenant
+  User Isolation** on (Project Settings → Security): the same login ID is then a separate identity
+  in each tenant, and the app passes the tenant at sign-in (`tenant` Flow input or SDK option).
+  How the user import handles isolated users isn't documented — confirm in a dev import.
 - **Data residency, or a contract requiring separate keys and admins** → a project per region or
   per isolated customer, with tenants inside where several customers share one.
 
-Consolidating means importing each directory's users into its tenant. A person in several
-directories becomes one user in several tenants (matched by email). Each customer is routed to its
-tenant the way the app picks the directory today, for example subdomain → tenant slug
-(`implementation-nuances.md` → Picking the tenant at sign-in).
+Consolidating means importing each directory's users into its tenant. Without Tenant User
+Isolation, list emails that appear in more than one directory as conflicts and decide each with the
+customer before import: a merge keeps one password, profile and `azureObjectId`, and enterprise SSO
+users stay in one tenant (DO NOT list). Each customer is routed to its tenant the way the app picks
+the directory today, for example subdomain → tenant slug (`implementation-nuances.md` → Picking the
+tenant at sign-in).
 
 Dev / staging / prod directories are case (a) even when the customer doesn't call them tenants.
 
@@ -393,8 +402,7 @@ App code reads tfp / acr?
   do policies differ, and by app or by customer? Which actions send users back to B2C to re-enter
   credentials (they become step-up)? Do apps on different root domains share one session?
   (`implementation-nuances.md` → Session behavior and token lifetimes)
-- Can users sign in again at cutover? Plan for it — B2C session migration needs Descope Support
-  to confirm first (→ Password strategy).
+- Can users sign in again at cutover? Existing B2C sessions don't carry over.
 
 **Deployment**
 - Multiple environments (dev / staging / prod)? Each needs its own Descope project.
@@ -476,7 +484,7 @@ Also build, from the same sources:
 customer connection (`b2c-detection-patterns.md` → Evidence Recording Template), with a cutover
 result from `implementation-nuances.md` → Per-connection inventory and cutover rules.
 
-If the Descope Docs MCP is available, verify SDK method names you plan to reference.
+If a Descope MCP is connected, verify SDK method names you plan to reference.
 
 ---
 
@@ -668,7 +676,7 @@ Phase 1 — Console Setup (not started)
 
 ### Pre-Generation Protocol (apply before writing any code)
 
-1. **Verify SDK exports before writing any import.** Use the Docs MCP; without it, read the
+1. **Verify SDK exports before writing any import.** Use the Descope MCP; without it, read the
    installed package's type declarations (`node_modules/<pkg>/dist/types/`, NuGet XML docs).
 2. **After rewriting any module, grep for remaining B2C/MSAL references:**
    ```bash
@@ -692,6 +700,9 @@ Phase 1 — Console Setup (not started)
 ### Execution Phases 1–3: Console Setup, Flows, Tenants and SSO
 
 Ask whether they already have a Project ID and working Flow; if yes, verify items 3–9.
+
+If the Descope MCP Server is connected, offer to make these changes with it: read the project
+first, then apply each change after the user approves. Otherwise give them as Console steps.
 
 1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per environment.
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
@@ -848,13 +859,15 @@ Failures usually mean fixtures still use B2C claim shapes (`scp`, `emails`, `oid
 Without a browser login, check what `curl` can prove:
 - The Descope discovery document loads: `curl -s <issuer>/.well-known/openid-configuration` returns
   200, and its `issuer` equals the issuer the app is configured with.
-- An unauthenticated protected page redirects (302) to the Descope host — not to `b2clogin.com`.
+- Server-side web apps only (Decision 0 (b)): an unauthenticated protected page redirects (302) to
+  the Descope host — not to `b2clogin.com`. SPAs redirect in JavaScript, which `curl` can't see.
 - A protected API returns 401 with no token and with a malformed token — never 500.
 
 #### Test 5: Checks that need a real sign-in (human checklist)
 The agent can't complete an interactive login, and Part 3 doesn't import users. List these in
 `MIGRATION-SUMMARY.md` under **Not yet verified — needs a person**, with exact steps:
 - Login completes on the Descope-hosted page (or embedded Flow) and returns to the app.
+- SPAs: opening a protected page while signed out goes to the Descope host, not `b2clogin.com`.
 - API call with the new token succeeds; with a token missing the scope → 403. After the access token
   refreshes, `aud` is still the Resource (the SDK's refresh call doesn't send `resource`). If every call returns
   403, check the token's `scope` first — an Inbound App Flow without Scopes auto approval or the
@@ -907,7 +920,6 @@ Write `MIGRATION-SUMMARY.md`, scoped to the user's stack, with code snippets and
 
 - Descope Azure AD B2C migration guide: https://docs.descope.com/migrate/azure-ad-b2c
 - Descope SSO migration: https://docs.descope.com/migrate/sso
-- Descope session migration: https://docs.descope.com/migrate/session-migration
 - Inbound Apps: https://docs.descope.com/identity-federation/inbound-apps
 - Resources: https://docs.descope.com/resources
 - Federated OIDC Apps: https://docs.descope.com/identity-federation/applications/oidc-apps

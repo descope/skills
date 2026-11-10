@@ -140,7 +140,7 @@ how the B2C step decided:
 | Nothing exists yet for this organization (first user creates it) | **Create Tenant** — sets name, tenant ID, self-provisioning domains and roles; values can use `{{}}` dynamic syntax |
 | A fixed default for everyone in a tenant | Tenant default roles — set once on the tenant, applied when a user is created in it; no Flow step |
 | Who invited the user | **User / Invite** — the invitee joins the inviter's tenants with the roles chosen in the action |
-| A rule in the Flow (a form answer, a claim from the IdP, a connector result) | A condition, then the Flow's role-assignment action. Flows can assign roles directly; confirm the exact action name in the Flow editor or with the Descope Docs MCP |
+| A rule in the Flow (a form answer, a claim from the IdP, a connector result) | A condition, then the Flow's role-assignment action. Flows can assign roles directly; confirm the exact action name in the Flow editor or with the Descope MCP |
 | An external system (CRM, entitlement service) | Generic HTTP Connector to that system, then the condition + role-assignment step above. If the system should stay the source of truth, call it every login and put the result in a claim with **Custom Claims** instead of storing roles in Descope |
 
 Docs: [Add user to tenant](https://docs.descope.com/management/tenant-management/handling-tenants-in-flows/add-user-to-tenant),
