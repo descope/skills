@@ -701,8 +701,10 @@ Phase 1 — Console Setup (not started)
 
 Ask whether they already have a Project ID and working Flow; if yes, verify items 3–9.
 
-If the Descope MCP Server is connected, offer to make these changes with it: read the project
-first, then apply each change after the user approves. Otherwise give them as Console steps.
+If the Descope MCP Server is connected, offer to make these changes with it. Before the first change,
+read the project and show its ID and name, and confirm with the user that it is the environment
+recorded in `MIGRATION-STATE.md` (start with dev). Then apply each change after the user approves.
+Otherwise give them as Console steps.
 
 1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per environment.
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
