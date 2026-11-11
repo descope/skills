@@ -1,0 +1,171 @@
+{
+ "screen": {
+  "screenId": "SCxThjs8I63bQkyzUIWeb6dsSl3b1",
+  "interactions": [
+   {
+    "id": "Y24KSpRwJp",
+    "type": "button",
+    "label": "Continue",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "nSWsnZnASA",
+     "cGByZ3Hryy",
+     "Y24KSpRwJp",
+     "g7U-rSAssF"
+    ],
+    "linkedNodes": {}
+   },
+   "nSWsnZnASA": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Sign in or sign up",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "nSWsnZnASA"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "cGByZ3Hryy": {
+    "type": {
+     "resolvedName": "EmailInput"
+    },
+    "isCanvas": false,
+    "props": {
+     "label": "Email",
+     "label-type": "static",
+     "size": "md",
+     "placeholder": "Email",
+     "full-width": true,
+     "max": 100,
+     "required": true,
+     "bordered": true,
+     "copy-to-clipboard": false,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "name": "email",
+     "type": "email",
+     "pattern": "^[\\w\\.\\%\\+\\-']+@[\\w\\.\\-]+\\.[A-Za-z]{2,}$",
+     "data-errormessage-pattern-mismatch": "Must be a valid email",
+     "autoComplete": null,
+     "id": "cGByZ3Hryy"
+    },
+    "displayName": "Email Input",
+    "custom": {
+     "type": "input"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "Y24KSpRwJp": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "Y24KSpRwJp"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "g7U-rSAssF": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "g7U-rSAssF"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Enter email",
+  "screenId": "SCxThjs8I63bQkyzUIWeb6dsSl3b1",
+  "inputKeys": [
+   "email"
+  ],
+  "allInputKeys": [
+   "email"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "Y24KSpRwJp",
+     "taskId": "<send-otp task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "EmailInput posts its value as context key `email` (props.name); sign-up-or-in-otp-email reads `email`.",
+  "The Continue button's props.id is the interaction id: the screen task's next rule uses it.",
+  "ErrorMessage shows the error of the step that sent the user back to this screen; keep one on every screen an action can fail back to.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

@@ -1,0 +1,210 @@
+{
+ "screen": {
+  "screenId": "SCGRYwY7ePbOzCqxMhEhCpbBS6O8Y",
+  "interactions": [
+   {
+    "id": "dJz1EDjpiC",
+    "type": "button",
+    "label": "Continue",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "-YN2A1IurW",
+     "PXTvRFOogP",
+     "eFVKKoFufh",
+     "dJz1EDjpiC",
+     "4rTq56yXBW"
+    ],
+    "linkedNodes": {}
+   },
+   "-YN2A1IurW": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "What do you want to use?",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "-YN2A1IurW"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "PXTvRFOogP": {
+    "type": {
+     "resolvedName": "MultiSelect"
+    },
+    "isCanvas": false,
+    "props": {
+     "name": "form.services",
+     "variant": "buttonSelectionGroup",
+     "data": [
+      {
+       "value": "calendar",
+       "label": "Calendar"
+      },
+      {
+       "value": "drive",
+       "label": "Drive"
+      },
+      {
+       "value": "mail",
+       "label": "Mail"
+      }
+     ],
+     "label": "Services",
+     "label-type": "static",
+     "size": "md",
+     "placeholder": "Enter items",
+     "full-width": true,
+     "required": true,
+     "bordered": true,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "id": "PXTvRFOogP"
+    },
+    "displayName": "Multi Select",
+    "custom": {
+     "type": "input"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "eFVKKoFufh": {
+    "type": {
+     "resolvedName": "Boolean"
+    },
+    "isCanvas": false,
+    "props": {
+     "label": "Send me product news",
+     "size": "md",
+     "full-width": true,
+     "required": false,
+     "checked": false,
+     "bordered": true,
+     "type": "checkbox",
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "name": "form.newsletter",
+     "id": "eFVKKoFufh"
+    },
+    "displayName": "Boolean Input",
+    "custom": {
+     "type": "input"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "dJz1EDjpiC": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "dJz1EDjpiC"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "4rTq56yXBW": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "4rTq56yXBW"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "Choose services",
+  "screenId": "SCGRYwY7ePbOzCqxMhEhCpbBS6O8Y",
+  "inputKeys": [
+   "form.services",
+   "form.newsletter"
+  ],
+  "allInputKeys": [
+   "form.services",
+   "form.newsletter"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "dJz1EDjpiC",
+     "taskId": "<next task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "Several choices: one MultiSelect. `form.services` posts an array of the chosen `value`s (`[\"calendar\", \"mail\"]`). `variant`: `buttonSelectionGroup` shows a toggle button per option, `combobox` (the default) a dropdown with checkmarks.",
+  "One yes/no: a Boolean with `type: \"checkbox\"` (or `\"switch\"`). `form.newsletter` posts `true` or `false`; test it with `is-true` / `is-false`.",
+  "Both are custom inputs: name them `form.<key>` and read them as `form.<key>`.",
+  "One choice of several: SingleSelect (variant `combobox`, the default, `buttonSelectionGroup` or `radioGroup`) posts the chosen value as a string.",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

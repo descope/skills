@@ -1,0 +1,168 @@
+{
+ "screen": {
+  "screenId": "SCYoSAuofaXr75blE6b2O4KrCqqFE",
+  "interactions": [
+   {
+    "id": "UYXqeXZqp7",
+    "type": "button",
+    "label": "Continue",
+    "icon": "",
+    "subType": ""
+   }
+  ],
+  "contents": {
+   "ROOT": {
+    "type": {
+     "resolvedName": "Container"
+    },
+    "isCanvas": true,
+    "props": {
+     "paddingX": "4",
+     "paddingY": "8",
+     "justify": "center",
+     "background": "#ffffff00",
+     "width": "100%",
+     "align": "center",
+     "direction": "column",
+     "spaceBetween": "4",
+     "data-editor-type": "container",
+     "st-items-grow": 0,
+     "id": "ROOT"
+    },
+    "displayName": "Container",
+    "custom": {},
+    "hidden": false,
+    "nodes": [
+     "wRHNfhCl-x",
+     "82vWBVyWwR",
+     "UYXqeXZqp7",
+     "fh2aZ9tnJr"
+    ],
+    "linkedNodes": {}
+   },
+   "wRHNfhCl-x": {
+    "type": {
+     "resolvedName": "Text"
+    },
+    "isCanvas": false,
+    "props": {
+     "children": "Tell us about yourself",
+     "italic": false,
+     "variant": "h2",
+     "text-align": "center",
+     "full-width": false,
+     "mode": "primary",
+     "isEnriched": false,
+     "link-target-blank": true,
+     "id": "wRHNfhCl-x"
+    },
+    "displayName": "Text",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "82vWBVyWwR": {
+    "type": {
+     "resolvedName": "FullNameInput"
+    },
+    "isCanvas": false,
+    "props": {
+     "label": "Display Name",
+     "label-type": "static",
+     "size": "md",
+     "placeholder": "Display Name",
+     "full-width": true,
+     "max": 100,
+     "required": true,
+     "bordered": true,
+     "copy-to-clipboard": false,
+     "data-errormessage-value-missing": "Please fill out this field.",
+     "name": "fullName",
+     "type": "text",
+     "id": "82vWBVyWwR"
+    },
+    "displayName": "Full Name Input",
+    "custom": {
+     "type": "input",
+     "contextKey": "displayName"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "UYXqeXZqp7": {
+    "type": {
+     "resolvedName": "Button"
+    },
+    "isCanvas": false,
+    "props": {
+     "size": "md",
+     "variant": "contained",
+     "color": "primary",
+     "children": "Continue",
+     "full-width": true,
+     "formNoValidate": false,
+     "data-type": "button",
+     "id": "UYXqeXZqp7"
+    },
+    "displayName": "Button",
+    "custom": {
+     "type": "button"
+    },
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   },
+   "fh2aZ9tnJr": {
+    "type": {
+     "resolvedName": "ErrorMessage"
+    },
+    "isCanvas": false,
+    "props": {
+     "mode": "error",
+     "data-type": "error-message",
+     "variant": "body1",
+     "text-align": "center",
+     "full-width": false,
+     "link-target-blank": true,
+     "id": "fh2aZ9tnJr"
+    },
+    "displayName": "Error Message",
+    "custom": {},
+    "hidden": false,
+    "nodes": [],
+    "linkedNodes": {},
+    "parent": "ROOT"
+   }
+  }
+ },
+ "task": {
+  "type": "screen",
+  "name": "User information",
+  "screenId": "SCYoSAuofaXr75blE6b2O4KrCqqFE",
+  "inputKeys": [
+   "fullName"
+  ],
+  "allInputKeys": [
+   "fullName"
+  ],
+  "calculatedInputKeys": true,
+  "next": {
+   "rules": [
+    {
+     "interactionId": "UYXqeXZqp7",
+     "taskId": "<update-user task>"
+    }
+   ]
+  }
+ },
+ "notes": [
+  "FullNameInput posts `fullName`, an input of update-user-properties (also firstName, lastName, middleName via FirstNameInput, LastNameInput, or an Input with that props.name).",
+  "Custom attributes: an input you name yourself is `form.<key>` (props.name and every read), saved by an update-user task; a bare custom name is lost (references/screens.md, Inputs).",
+  "Ids are console-shaped: screenId \"SC\" + 27 base62 chars, node ids 10-char nanoids equal to props.id. Using this screen twice in one flow: give the copy a new screenId (node ids only need to be unique within a screen)."
+ ]
+}

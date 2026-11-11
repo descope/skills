@@ -1,0 +1,1538 @@
+{
+  "flowId": "sign-up-or-in-magic-link-passkey-required",
+  "metadata": {
+    "componentsVersion": "2.1.13",
+    "description": "Sign up or in with a magic link, then a passkey as a required second factor: users with a passkey confirm with it, others must add one. No session on the link alone.",
+    "name": "Sign up or in - magic link + required passkey",
+    "sharedInteractions": [
+      {
+        "id": "6.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "0",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "0"
+            }
+          ]
+        },
+        "view": {
+          "x": -240,
+          "y": 204
+        }
+      },
+      "0": {
+        "id": "0",
+        "name": "Welcome",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "oQK_Zn381E",
+              "taskId": "7"
+            }
+          ]
+        },
+        "screenId": "SC2Vg9E9HnZr4n1k1vYrkvpV94pvB",
+        "type": "screen",
+        "view": {
+          "x": 252,
+          "y": 204
+        },
+        "inputKeys": [
+          "email"
+        ],
+        "allInputKeys": [
+          "email"
+        ],
+        "calculatedInputKeys": true
+      },
+      "3": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "authInfo.firstSeen"
+                }
+              }
+            ],
+            "interactionId": "54rw4h4uwmm",
+            "name": "New user"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Existing user"
+          }
+        ],
+        "id": "3",
+        "name": "Is new user?",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "54rw4h4uwmm",
+              "taskId": "4"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "10"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 1164,
+          "y": 180
+        }
+      },
+      "4": {
+        "id": "4",
+        "name": "User Information",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "8rXwiVLKmp",
+              "taskId": "5"
+            }
+          ]
+        },
+        "screenId": "SC2Vg9E9BDt0KSbhnyjryREvAdnUo",
+        "type": "screen",
+        "view": {
+          "x": 1620,
+          "y": 168
+        },
+        "inputKeys": [
+          "fullName"
+        ],
+        "allInputKeys": [
+          "fullName"
+        ],
+        "calculatedInputKeys": true
+      },
+      "5": {
+        "action": "update-user-properties",
+        "id": "5",
+        "name": "Update User / Properties",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "10"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 2088,
+          "y": 168
+        },
+        "arguments": {
+          "userPropertiesDefinitions": {
+            "type": "inline",
+            "value": [
+              {
+                "key": "displayName",
+                "type": "context",
+                "value": "form.fullName"
+              }
+            ]
+          }
+        }
+      },
+      "6": {
+        "action": "logged-in",
+        "id": "6",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 4416,
+          "y": 204
+        }
+      },
+      "7": {
+        "action": "sign-up-or-in-magic-linkv3-email",
+        "arguments": {
+          "uri": {
+            "type": "inline",
+            "value": ""
+          },
+          "verifyStepId": {
+            "type": "inline",
+            "value": "7.end"
+          }
+        },
+        "id": "7",
+        "name": "Sign Up or In / Magic Link / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "8"
+            },
+            {
+              "interactionId": "success",
+              "taskId": "7.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 672,
+          "y": 168
+        }
+      },
+      "7.end": {
+        "action": "verify-magic-link",
+        "id": "7.end",
+        "name": "Sign Up or In / Magic Link / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "3"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 672,
+          "y": 168
+        },
+        "arguments": {
+          "uri": {
+            "type": "inline",
+            "value": ""
+          },
+          "verifyStepId": {
+            "type": "inline",
+            "value": "7.end"
+          }
+        }
+      },
+      "8": {
+        "id": "8",
+        "name": "Magic Link Sent",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "polling",
+              "taskId": "9"
+            },
+            {
+              "interactionId": "resend",
+              "taskId": "7"
+            },
+            {
+              "interactionId": "polling-error",
+              "taskId": "0"
+            }
+          ]
+        },
+        "screenId": "SC2Vg9E9auWrketyxvfCQyPjV7V3F",
+        "type": "screen",
+        "view": {
+          "x": 672,
+          "y": -180
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true,
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ]
+      },
+      "9": {
+        "id": "9",
+        "name": "Verified Successfully",
+        "next": {},
+        "screenId": "SC2Vg9E7VUU58P34h9MVVfYbO2PYN",
+        "type": "screen",
+        "view": {
+          "x": 1164,
+          "y": -132
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      },
+      "10": {
+        "id": "10",
+        "name": "Has a passkey?",
+        "type": "condition",
+        "conditions": [
+          {
+            "interactionId": "k3vq8xw2mfa",
+            "name": "Has a passkey",
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.webauthn"
+                }
+              }
+            ]
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Else"
+          }
+        ],
+        "next": {
+          "rules": [
+            {
+              "interactionId": "k3vq8xw2mfa",
+              "taskId": "11"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "12"
+            }
+          ]
+        },
+        "view": {
+          "x": 2544,
+          "y": 204
+        }
+      },
+      "11": {
+        "id": "11",
+        "name": "Confirm with Passkey",
+        "type": "screen",
+        "screenId": "SC2kvtgqQEF3L3dOgsPfHGGqtsjVN",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "Q86IXDdAAn",
+              "taskId": "13"
+            }
+          ]
+        },
+        "view": {
+          "x": 3012,
+          "y": 72
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      },
+      "13": {
+        "action": "webauthn-sign-in-start-v2",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "13.end"
+          }
+        },
+        "id": "13",
+        "name": "Sign In / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "13.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3480,
+          "y": 96
+        }
+      },
+      "13.end": {
+        "action": "webauthn-sign-in-finish",
+        "id": "13.end",
+        "name": "Sign In / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "6"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3480,
+          "y": 96
+        },
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "13.end"
+          }
+        }
+      },
+      "12": {
+        "id": "12",
+        "name": "Can this device use passkeys?",
+        "type": "condition",
+        "conditions": [
+          {
+            "interactionId": "r7kd2m9xq4w",
+            "name": "Supports passkeys",
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "device.webAuthnSupport"
+                }
+              }
+            ]
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Else"
+          }
+        ],
+        "next": {
+          "rules": [
+            {
+              "interactionId": "r7kd2m9xq4w",
+              "taskId": "14"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "16"
+            }
+          ]
+        },
+        "view": {
+          "x": 3012,
+          "y": 384
+        }
+      },
+      "14": {
+        "id": "14",
+        "name": "Add Passkey",
+        "type": "screen",
+        "screenId": "SC2kvre1zENur8v8nbpit1M4MDeI0",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "6Cy2f8gQ_7",
+              "taskId": "15"
+            }
+          ]
+        },
+        "view": {
+          "x": 3480,
+          "y": 360
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      },
+      "15": {
+        "action": "webauthn-update-user-start",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "15.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "15",
+        "name": "Update User / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "15.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3948,
+          "y": 384
+        }
+      },
+      "15.end": {
+        "action": "webauthn-update-user-finish",
+        "arguments": {
+          "finishStepId": {
+            "type": "inline",
+            "value": "15.end"
+          },
+          "restrictPasskeyTypes": {
+            "type": "inline",
+            "value": ""
+          },
+          "userVerificationDiscouraged": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "15.end",
+        "name": "Update User / Passkeys (WebAuthn)",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "6"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3948,
+          "y": 384
+        }
+      },
+      "16": {
+        "id": "16",
+        "name": "Passkey Required",
+        "type": "screen",
+        "screenId": "SC3Lb6s7uKQI1QdW7jBHamBtu5Uuj",
+        "next": {},
+        "view": {
+          "x": 3480,
+          "y": 660
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC2Vg9E7VUU58P34h9MVVfYbO2PYN",
+      "interactions": [],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "You're authenticated, you can close this window now",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "PUZgvFyUAB": {
+          "custom": {},
+          "displayName": "Image",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "alt": "Image",
+            "height": "50px",
+            "id": "PUZgvFyUAB",
+            "src": "https://imgs.descope.com/flows/common/v1/green-checkmark.png"
+          },
+          "type": {
+            "resolvedName": "Image"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "PUZgvFyUAB",
+            "LmrSIGOWZb",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2Vg9E9BDt0KSbhnyjryREvAdnUo",
+      "interactions": [
+        {
+          "id": "8rXwiVLKmp",
+          "type": "button",
+          "label": "Submit",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "8rXwiVLKmp": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Submit",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "8rXwiVLKmp",
+            "mode": "primary",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "tnAqBLcXRW",
+            "raEe6rX__S",
+            "8rXwiVLKmp",
+            "eL21q5_riX"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "eL21q5_riX": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "eL21q5_riX",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "raEe6rX__S": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Full Name Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "full-width": true,
+            "id": "raEe6rX__S",
+            "label": "Full name",
+            "max": 100,
+            "name": "fullName",
+            "placeholder": "Full name",
+            "required": false,
+            "size": "md",
+            "type": "text"
+          },
+          "type": {
+            "resolvedName": "FullNameInput"
+          }
+        },
+        "tnAqBLcXRW": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "To complete your sign up, please provide the following information",
+            "full-width": false,
+            "id": "tnAqBLcXRW",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2Vg9E9HnZr4n1k1vYrkvpV94pvB",
+      "interactions": [
+        {
+          "id": "oQK_Zn381E",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "ChBNd96q6W": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Welcome!",
+            "full-width": false,
+            "id": "ChBNd96q6W",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h3"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "D2CXvmeZut": {
+          "custom": {},
+          "displayName": "Link",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "WBWDvlFcN_",
+          "props": {
+            "children": "Terms of Service",
+            "full-width": false,
+            "href": "REPLACE_WITH_TERMS_URL",
+            "id": "D2CXvmeZut",
+            "italic": false,
+            "mode": "primary",
+            "target": "_blank",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Link"
+          }
+        },
+        "Okc6Pj2RrL": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "WBWDvlFcN_",
+          "props": {
+            "children": "and",
+            "full-width": false,
+            "id": "Okc6Pj2RrL",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "P0SKru1iuR": {
+          "custom": {},
+          "displayName": "Logo",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "alt": "Logo",
+            "height": "100px",
+            "id": "P0SKru1iuR"
+          },
+          "type": {
+            "resolvedName": "Logo"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "P0SKru1iuR",
+            "ChBNd96q6W",
+            "tHfIT4QT-M",
+            "WBWDvlFcN_",
+            "oQK_Zn381E",
+            "be0MK9nfQ5"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "WBWDvlFcN_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "XYImGhaM9S",
+            "pP3IGpk8mE",
+            "Okc6Pj2RrL",
+            "D2CXvmeZut"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "WBWDvlFcN_",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "1",
+            "spaceBetween": "0.5",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "XYImGhaM9S": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "WBWDvlFcN_",
+          "props": {
+            "children": "By continuing, I agree to the Company's",
+            "full-width": false,
+            "id": "XYImGhaM9S",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "be0MK9nfQ5": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "be0MK9nfQ5",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oQK_Zn381E": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Continue",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "oQK_Zn381E",
+            "mode": "primary",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "pP3IGpk8mE": {
+          "custom": {},
+          "displayName": "Link",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "WBWDvlFcN_",
+          "props": {
+            "children": "Privacy Statement",
+            "full-width": false,
+            "href": "REPLACE_WITH_PRIVACY_URL",
+            "id": "pP3IGpk8mE",
+            "italic": false,
+            "mode": "primary",
+            "target": "_blank",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "Link"
+          }
+        },
+        "tHfIT4QT-M": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Email Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "data-errormessage-pattern-mismatch": "Must be a valid email",
+            "full-width": true,
+            "id": "tHfIT4QT-M",
+            "label": "",
+            "max": 100,
+            "name": "email",
+            "pattern": "^[\\w._%+-]+@[\\w.-]+\\.[A-Za-z]{2,}$",
+            "placeholder": "Email Address *",
+            "required": true,
+            "size": "md",
+            "type": "email"
+          },
+          "type": {
+            "resolvedName": "EmailInput"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2Vg9E9auWrketyxvfCQyPjV7V3F",
+      "interactions": [
+        {
+          "id": "polling",
+          "type": "polling",
+          "label": "Polling",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "polling-error",
+          "type": "polling",
+          "label": "Polling Expired",
+          "icon": "error",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "LgBFKYoM2h": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "id": "LgBFKYoM2h",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "R4ubbo8hKX": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Click the link in the email to continue",
+            "full-width": false,
+            "id": "R4ubbo8hKX",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "hLL454bn-h",
+            "R4ubbo8hKX",
+            "lpP_khmMrA",
+            "WzZtEzEpyY",
+            "LgBFKYoM2h"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "WzZtEzEpyY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "WzZtEzEpyY",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1.5",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "hLL454bn-h": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a verification link to {{sentTo.maskedEmail}}",
+            "full-width": false,
+            "id": "hLL454bn-h",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "lpP_khmMrA": {
+          "custom": {
+            "type": "polling"
+          },
+          "displayName": "Polling",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "color": "primary",
+            "data-type": "polling",
+            "id": "lpP_khmMrA",
+            "size": "md",
+            "variant": "linear"
+          },
+          "type": {
+            "resolvedName": "PollingLoader"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "WzZtEzEpyY",
+          "props": {
+            "children": "Send again",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvtgqQEF3L3dOgsPfHGGqtsjVN",
+      "interactions": [
+        {
+          "id": "Q86IXDdAAn",
+          "type": "button",
+          "label": "",
+          "icon": "passkey",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "0hlvnQDdq_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Confirm it's you with your passkey",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "0hlvnQDdq_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "Q86IXDdAAn": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Passkey Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "",
+            "color": "primary",
+            "data-type": "biometrics",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "Q86IXDdAAn",
+            "size": "md",
+            "st-label-spacing": "10px",
+            "startIcon": "passkey",
+            "startIconColorText": true,
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "PasskeyButton"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "0hlvnQDdq_",
+            "Q86IXDdAAn",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2kvre1zENur8v8nbpit1M4MDeI0",
+      "interactions": [
+        {
+          "id": "6Cy2f8gQ_7",
+          "type": "button",
+          "label": "Add a passkey",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "0hlvnQDdq_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Add a passkey to finish signing in",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "0hlvnQDdq_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "6Cy2f8gQ_7": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": false,
+            "children": "Add a passkey",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "6Cy2f8gQ_7",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "0hlvnQDdq_",
+            "6Cy2f8gQ_7",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3Lb6s7uKQI1QdW7jBHamBtu5Uuj",
+      "interactions": [],
+      "contents": {
+        "0hlvnQDdq_": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "This device can't use passkeys. Open the sign-in link on a device that supports passkeys.",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "0hlvnQDdq_",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "0hlvnQDdq_",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    }
+  ]
+}

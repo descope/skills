@@ -1,0 +1,1503 @@
+{
+  "flowId": "sign-up-or-in-progressive-profiling",
+  "metadata": {
+    "componentsVersion": "2.1.13",
+    "description": "Sign up or in that prompts the user to add missing profile information one screen at a time.",
+    "name": "Sign up or in with progressive profiling",
+    "sharedInteractions": [
+      {
+        "id": "0.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "1",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "1"
+            }
+          ]
+        },
+        "view": {
+          "x": -240,
+          "y": 12
+        }
+      },
+      "0": {
+        "action": "logged-in",
+        "id": "0",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 7032,
+          "y": 144
+        }
+      },
+      "1": {
+        "id": "1",
+        "inputKeys": [
+          "email"
+        ],
+        "name": "Welcome",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "tYh-Zm_66U",
+              "taskId": "2"
+            }
+          ]
+        },
+        "screenId": "SC2l4KLZ4EwWIXSVLsuj8kJkXwAaa",
+        "type": "screen",
+        "view": {
+          "x": 252,
+          "y": 12
+        },
+        "allInputKeys": [
+          "email"
+        ],
+        "calculatedInputKeys": true
+      },
+      "10": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "not-empty",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.name"
+                }
+              }
+            ],
+            "interactionId": "gjbve0qef2b",
+            "name": "Name exists"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "No name"
+          }
+        ],
+        "id": "10",
+        "name": "Check Name",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "gjbve0qef2b",
+              "taskId": "0"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "11"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 5076,
+          "y": 324
+        }
+      },
+      "11": {
+        "id": "11",
+        "inputKeys": [
+          "fullName"
+        ],
+        "name": "Get Name",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "tYh-Zm_66U",
+              "taskId": "13"
+            }
+          ]
+        },
+        "screenId": "SC2l4KLbzdQhgcvyu9ULyiik8RzMn",
+        "type": "screen",
+        "view": {
+          "x": 5556,
+          "y": 516
+        },
+        "allInputKeys": [
+          "fullName"
+        ],
+        "calculatedInputKeys": true
+      },
+      "12": {
+        "action": "update-user-otp-sms",
+        "arguments": {
+          "addToLoginIDs": {
+            "type": "inline",
+            "value": ""
+          },
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "onMergeUseExisting": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "12",
+        "name": "Update User / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "8"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 3648,
+          "y": 324
+        }
+      },
+      "13": {
+        "action": "update-user-properties",
+        "arguments": {
+          "userPropertiesDefinitions": {
+            "type": "inline",
+            "value": [
+              {
+                "key": "displayName",
+                "type": "context",
+                "value": "form.fullName"
+              }
+            ]
+          }
+        },
+        "errorHandlingV2": {
+          "UpdateUserPropertiesFailed": {
+            "errorHandlingType": "automatic"
+          }
+        },
+        "id": "13",
+        "name": "Update User / Attributes",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "0"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 6048,
+          "y": 516
+        }
+      },
+      "15": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.verifiedPhone"
+                }
+              },
+              {
+                "operator": "not-empty",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.name"
+                }
+              }
+            ],
+            "interactionId": "l2ejsoj1lun",
+            "name": "All Set"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "Some profiling needed"
+          }
+        ],
+        "id": "15",
+        "name": "Check user",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "l2ejsoj1lun",
+              "taskId": "0"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "5"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 2196,
+          "y": 108
+        }
+      },
+      "2": {
+        "action": "sign-up-or-in-otp-email",
+        "arguments": {
+          "extraTemplateVals": {
+            "type": "inline",
+            "value": ""
+          },
+          "providerId": {
+            "type": "inline",
+            "value": ""
+          },
+          "templateId": {
+            "type": "inline",
+            "value": ""
+          }
+        },
+        "id": "2",
+        "name": "Sign Up or In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "3"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 744,
+          "y": 36
+        }
+      },
+      "3": {
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "3",
+        "name": "Verify Email OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "2"
+            },
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "4"
+            }
+          ]
+        },
+        "screenId": "SC2l4KLd6hk9YtXUivomlUizn91QJ",
+        "type": "screen",
+        "view": {
+          "x": 1224,
+          "y": 36
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "4": {
+        "action": "verify-code-otp-email",
+        "id": "4",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "15"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1704,
+          "y": 108
+        }
+      },
+      "5": {
+        "conditions": [
+          {
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.verifiedPhone"
+                }
+              }
+            ],
+            "interactionId": "4hb9twsxthx",
+            "name": "Phone is verified"
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "No phone"
+          }
+        ],
+        "id": "5",
+        "name": "Profiling - Check Phone",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "4hb9twsxthx",
+              "taskId": "10"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "6"
+            }
+          ]
+        },
+        "type": "condition",
+        "view": {
+          "x": 2676,
+          "y": 216
+        }
+      },
+      "6": {
+        "id": "6",
+        "name": "Get Phone",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "tYh-Zm_66U",
+              "taskId": "12"
+            }
+          ]
+        },
+        "screenId": "SC2l4KLfTpY3L2EdIKOWf54nGx6FG",
+        "type": "screen",
+        "view": {
+          "x": 3156,
+          "y": 324
+        },
+        "inputKeys": [
+          "phone"
+        ],
+        "allInputKeys": [
+          "phone"
+        ],
+        "calculatedInputKeys": true
+      },
+      "8": {
+        "contextKeys": [
+          "sentTo.maskedPhone"
+        ],
+        "id": "8",
+        "name": "Verify Phone OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "12"
+            },
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "9"
+            }
+          ]
+        },
+        "screenId": "SC2l4KLZYDLII08kNhFmqsDwvpX1a",
+        "type": "screen",
+        "view": {
+          "x": 4128,
+          "y": 324
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "9": {
+        "action": "verify-code-otp-sms",
+        "id": "9",
+        "name": "Verify Code / OTP / SMS",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "10"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 4608,
+          "y": 396
+        }
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC2l4KLZ4EwWIXSVLsuj8kJkXwAaa",
+      "interactions": [
+        {
+          "id": "tYh-Zm_66U",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "children": "Welcome\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "vu5LZkwo8l",
+            "h5OXAfs27h",
+            "tYh-Zm_66U",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "h5OXAfs27h": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Email Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "copy-to-clipboard": false,
+            "data-errormessage-pattern-mismatch": "Must be a valid email",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": true,
+            "id": "h5OXAfs27h",
+            "label": "Email",
+            "label-type": "static",
+            "max": 100,
+            "name": "email",
+            "pattern": "^[\\w\\.\\%\\+\\-]+@[\\w\\.\\-]+\\.[A-Za-z]{2,}$",
+            "placeholder": "Email",
+            "required": false,
+            "size": "md",
+            "type": "email"
+          },
+          "type": {
+            "resolvedName": "EmailInput"
+          }
+        },
+        "tYh-Zm_66U": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "tYh-Zm_66U",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "vu5LZkwo8l": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Let's start with your email\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "vu5LZkwo8l",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2l4KLZYDLII08kNhFmqsDwvpX1a",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "QW6CWy1Z9D": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fpDoUMsBUm",
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "QW6CWy1Z9D",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "pp-3i0IgkA",
+            "auED4dEJkJ",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedPhone}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fpDoUMsBUm": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fpDoUMsBUm",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "pp-3i0IgkA": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Verify Phone\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "pp-3i0IgkA",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "oneTimeCodeId",
+            "QW6CWy1Z9D",
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2l4KLbzdQhgcvyu9ULyiik8RzMn",
+      "interactions": [
+        {
+          "id": "tYh-Zm_66U",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "8h3S14P_an": {
+          "custom": {
+            "contextKey": "displayName",
+            "type": "input"
+          },
+          "displayName": "Full Name Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "copy-to-clipboard": false,
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": true,
+            "id": "8h3S14P_an",
+            "label": "Display Name",
+            "label-type": "static",
+            "max": 100,
+            "name": "fullName",
+            "placeholder": "Display Name",
+            "required": false,
+            "size": "md",
+            "type": "text"
+          },
+          "type": {
+            "resolvedName": "FullNameInput"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "children": "Additional Details\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "paDCyU6u3L",
+            "8h3S14P_an",
+            "tYh-Zm_66U",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "paDCyU6u3L": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Please enter your name\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "paDCyU6u3L",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "tYh-Zm_66U": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "tYh-Zm_66U",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2l4KLd6hk9YtXUivomlUizn91QJ",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "cv-7yG0QMi",
+            "auED4dEJkJ",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent a message containing a 6-digit code to {{sentTo.maskedEmail}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "cv-7yG0QMi": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Welcome\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "cv-7yG0QMi",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fyz-aN6hyx": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "thNbUTWOGY",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fyz-aN6hyx",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "oOOUcyEOVr": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "oOOUcyEOVr",
+            "justify": "center",
+            "paddingX": "5",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "oOOUcyEOVr",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "thNbUTWOGY": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fyz-aN6hyx"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "thNbUTWOGY",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "3",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "oneTimeCodeId",
+            "thNbUTWOGY",
+            "oOOUcyEOVr"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC2l4KLfTpY3L2EdIKOWf54nGx6FG",
+      "interactions": [
+        {
+          "id": "tYh-Zm_66U",
+          "type": "button",
+          "label": "Continue",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "GQ-xB3auX9": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Please provide your phone number\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "GQ-xB3auX9",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "children": "Welcome\n\n",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "h1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "GQ-xB3auX9",
+            "ZnPSdkdYsa",
+            "tYh-Zm_66U",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "space-between": "md",
+            "spaceBetween": "4",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ZnPSdkdYsa": {
+          "custom": {
+            "type": "input"
+          },
+          "displayName": "Phone Input",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "country-input-label": "Code",
+            "country-input-placeholder": "Code",
+            "data-errormessage-missing-value": "Required",
+            "data-errormessage-pattern-mismatch-too-short": "Please enter a valid phone",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "default-code": "autoDetect",
+            "full-width": true,
+            "id": "ZnPSdkdYsa",
+            "label": "Phone",
+            "label-type": "static",
+            "maxlength": "20",
+            "minlength": "6",
+            "name": "phone",
+            "phone-input-placeholder": "Phone",
+            "size": "md",
+            "type": "tel",
+            "variant": "countrySelection"
+          },
+          "type": {
+            "resolvedName": "PhoneInput"
+          }
+        },
+        "tYh-Zm_66U": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "auto-submit": true,
+            "children": "Continue",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": false,
+            "full-width": true,
+            "id": "tYh-Zm_66U",
+            "shape": "",
+            "size": "md",
+            "variant": "contained"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        }
+      }
+    }
+  ]
+}

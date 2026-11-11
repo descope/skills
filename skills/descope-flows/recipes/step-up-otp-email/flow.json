@@ -1,0 +1,614 @@
+{
+  "flowId": "step-up-otp-email",
+  "metadata": {
+    "componentsVersion": "2.1.13",
+    "description": "Extra verification of a signed-in user with a one-time code by email, before a high risk action. The new session token carries the step-up claim.",
+    "name": "Step up - OTP email",
+    "sharedInteractions": [
+      {
+        "id": "7.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "14",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "14"
+            }
+          ]
+        },
+        "view": {
+          "x": -84,
+          "y": -108
+        }
+      },
+      "11": {
+        "action": "sign-in-otp-email",
+        "id": "11",
+        "name": "Sign In / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "12"
+            },
+            {
+              "interactionId": "OTPSignUpOrInEmailFailed",
+              "taskId": "15"
+            },
+            {
+              "interactionId": "ActionErrorRateLimitExceeded",
+              "taskId": "15"
+            },
+            {
+              "interactionId": "ActionErrorTenantRequiresSSO",
+              "taskId": "15"
+            },
+            {
+              "interactionId": "ActionErrorTenantDisabled",
+              "taskId": "15"
+            },
+            {
+              "interactionId": "SignInRecoveryDestinationNotSet",
+              "taskId": "15"
+            },
+            {
+              "interactionId": "SignInRecoveryDestinationNotVerified",
+              "taskId": "15"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 1416,
+          "y": -84
+        },
+        "errorHandlingV2": {
+          "OTPSignUpOrInEmailFailed": {
+            "errorHandlingType": "custom"
+          },
+          "ActionErrorRateLimitExceeded": {
+            "errorHandlingType": "custom"
+          },
+          "ActionErrorTenantRequiresSSO": {
+            "errorHandlingType": "custom"
+          },
+          "ActionErrorTenantDisabled": {
+            "errorHandlingType": "custom"
+          },
+          "SignInRecoveryDestinationNotSet": {
+            "errorHandlingType": "custom"
+          },
+          "SignInRecoveryDestinationNotVerified": {
+            "errorHandlingType": "custom"
+          }
+        }
+      },
+      "12": {
+        "contextKeys": [
+          "sentTo.maskedEmail"
+        ],
+        "id": "12",
+        "name": "Verify OTP",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "11"
+            },
+            {
+              "interactionId": "L1T9iO4p5U",
+              "taskId": "13"
+            }
+          ]
+        },
+        "screenId": "SC2Vg93siXTs7412LAUmZ6eFVm3Og",
+        "type": "screen",
+        "view": {
+          "x": 1836,
+          "y": -84
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "13": {
+        "action": "verify-code-otp-email",
+        "id": "13",
+        "name": "Verify Code / OTP / Email",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "7"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 2256,
+          "y": -84
+        }
+      },
+      "14": {
+        "action": "loadUser",
+        "id": "14",
+        "name": "Step Up",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "14.end"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 408,
+          "y": -108
+        }
+      },
+      "14.end": {
+        "action": "step-up",
+        "id": "14.end",
+        "name": "Step Up",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "11"
+            }
+          ]
+        },
+        "type": "automated",
+        "view": {
+          "x": 408,
+          "y": -108
+        }
+      },
+      "7": {
+        "action": "logged-in",
+        "id": "7",
+        "name": "End",
+        "next": {},
+        "type": "automated",
+        "view": {
+          "x": 2724,
+          "y": -24
+        }
+      },
+      "15": {
+        "id": "15",
+        "name": "Code not sent",
+        "type": "screen",
+        "screenId": "SC3L6Qgf89VuuInaLo3ejkI6ay1j3",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "resend",
+              "taskId": "11"
+            }
+          ]
+        },
+        "view": {
+          "x": 1416,
+          "y": 300
+        },
+        "inputKeys": [],
+        "allInputKeys": [],
+        "calculatedInputKeys": true
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC2Vg93siXTs7412LAUmZ6eFVm3Og",
+      "interactions": [
+        {
+          "id": "L1T9iO4p5U",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        },
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Send again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "L1T9iO4p5U": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digits number",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "digits": 6,
+            "full-width": false,
+            "fullWidth": false,
+            "id": "L1T9iO4p5U",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "CodeInput"
+          }
+        },
+        "QW6CWy1Z9D": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "fpDoUMsBUm"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "start",
+            "background": "#ffffff00",
+            "data-editor-type": "container",
+            "direction": "row",
+            "id": "QW6CWy1Z9D",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "1",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "eBGiu9cYSb",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We've sent an email with a 6-digit code to {{sentTo.maskedEmail}}",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "eBGiu9cYSb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter it below",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "eBGiu9cYSb",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "fpDoUMsBUm": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "QW6CWy1Z9D",
+          "props": {
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "fpDoUMsBUm",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Send again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "L1T9iO4p5U",
+            "QW6CWy1Z9D",
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L6Qgf89VuuInaLo3ejkI6ay1j3",
+      "interactions": [
+        {
+          "id": "resend",
+          "type": "button",
+          "label": "Try again",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "FJm7_vlTEW": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "resend"
+          ],
+          "parent": "yZNZ2ZVVu_",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "FJm7_vlTEW",
+            "justify": "start",
+            "paddingX": "3",
+            "paddingY": "0",
+            "spaceBetween": "0",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "auED4dEJkJ",
+            "yZNZ2ZVVu_"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "auED4dEJkJ": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "We couldn't send you a code. Please try again later.",
+            "data-errormessage-value-missing": "Please fill out this field.",
+            "full-width": false,
+            "id": "auED4dEJkJ",
+            "isEnriched": true,
+            "italic": false,
+            "link-target-blank": true,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle1"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "resend": {
+          "custom": {
+            "type": "button"
+          },
+          "displayName": "Button",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "FJm7_vlTEW",
+          "props": {
+            "children": "Try again",
+            "color": "primary",
+            "data-type": "button",
+            "formNoValidate": true,
+            "full-width": true,
+            "id": "resend",
+            "mode": "primary",
+            "size": "sm",
+            "variant": "link"
+          },
+          "type": {
+            "resolvedName": "Button"
+          }
+        },
+        "yZNZ2ZVVu_": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "FJm7_vlTEW"
+          ],
+          "parent": "ROOT",
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "yZNZ2ZVVu_",
+            "justify": "start",
+            "paddingX": "4",
+            "paddingY": "4",
+            "spaceBetween": "2.5",
+            "st-items-grow": 0,
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,456 @@
+{
+  "flowId": "totp-mfa",
+  "metadata": {
+    "name": "TOTP MFA",
+    "componentsVersion": "2.1.13",
+    "description": "Second factor by authenticator app (TOTP) for an identified user: verify, or enroll by QR code. Run it as a subflow after a first factor.",
+    "sharedInteractions": [
+      {
+        "id": "24.success",
+        "type": "success"
+      },
+      {
+        "id": "27.success",
+        "type": "success"
+      }
+    ]
+  },
+  "contents": {
+    "startTask": "22",
+    "tasks": {
+      "start": {
+        "id": "start",
+        "name": "start",
+        "next": {
+          "rules": [
+            {
+              "taskId": "22"
+            }
+          ]
+        },
+        "view": {
+          "x": 0,
+          "y": 324
+        }
+      },
+      "22": {
+        "id": "22",
+        "name": "Has TOTP?",
+        "type": "condition",
+        "conditions": [
+          {
+            "interactionId": "t4mq8zk2wd1",
+            "name": "TOTP set",
+            "atomicConditions": [
+              {
+                "operator": "is-true",
+                "predicate": {
+                  "type": "inline",
+                  "value": ""
+                },
+                "target": {
+                  "type": "context",
+                  "value": "user.totp"
+                }
+              }
+            ]
+          },
+          {
+            "interactionId": "ELSE",
+            "name": "No TOTP"
+          }
+        ],
+        "next": {
+          "rules": [
+            {
+              "interactionId": "t4mq8zk2wd1",
+              "taskId": "23"
+            },
+            {
+              "interactionId": "ELSE",
+              "taskId": "25"
+            }
+          ]
+        },
+        "view": {
+          "x": 492,
+          "y": 324
+        }
+      },
+      "23": {
+        "id": "23",
+        "name": "Verify TOTP",
+        "type": "screen",
+        "screenId": "SC3L26rOTi2J4Vv93tefbWeR7EUjZ",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "24"
+            }
+          ]
+        },
+        "view": {
+          "x": 984,
+          "y": 108
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "24": {
+        "id": "24",
+        "name": "Verify Code / TOTP",
+        "type": "automated",
+        "action": "verify-totp-code",
+        "next": {},
+        "view": {
+          "x": 1476,
+          "y": 108
+        }
+      },
+      "25": {
+        "id": "25",
+        "name": "Update User / TOTP",
+        "type": "automated",
+        "action": "update-user-totp",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "success",
+              "taskId": "26"
+            }
+          ]
+        },
+        "view": {
+          "x": 984,
+          "y": 540
+        }
+      },
+      "26": {
+        "id": "26",
+        "name": "Connect an authenticator app",
+        "type": "screen",
+        "screenId": "SC3L26rP2NlCaka892yqpmqxs6Yik",
+        "next": {
+          "rules": [
+            {
+              "interactionId": "oneTimeCodeId",
+              "taskId": "27"
+            }
+          ]
+        },
+        "view": {
+          "x": 1476,
+          "y": 540
+        },
+        "inputKeys": [],
+        "allInputKeys": [
+          "code"
+        ],
+        "calculatedInputKeys": true
+      },
+      "27": {
+        "id": "27",
+        "name": "Verify Code / TOTP",
+        "type": "automated",
+        "action": "verify-totp-code",
+        "next": {},
+        "view": {
+          "x": 1968,
+          "y": 540
+        }
+      }
+    }
+  },
+  "screens": [
+    {
+      "screenId": "SC3L26rOTi2J4Vv93tefbWeR7EUjZ",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "color": "error",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Two-step verification",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "Uxv7qARLkj",
+            "oneTimeCodeId",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "Uxv7qARLkj": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter the 6-digit code from your authenticator app",
+            "full-width": false,
+            "id": "Uxv7qARLkj",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "digits": 6,
+            "full-width": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "Code"
+          }
+        }
+      }
+    },
+    {
+      "screenId": "SC3L26rP2NlCaka892yqpmqxs6Yik",
+      "interactions": [
+        {
+          "id": "oneTimeCodeId",
+          "type": "oneTimeCode",
+          "label": "OTP code",
+          "icon": "",
+          "subType": ""
+        }
+      ],
+      "contents": {
+        "1sMmkeVxVT": {
+          "custom": {},
+          "displayName": "Error Message",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "color": "error",
+            "data-type": "error-message",
+            "full-width": false,
+            "hide-when-empty": true,
+            "id": "1sMmkeVxVT",
+            "italic": false,
+            "mode": "error",
+            "text-align": "center",
+            "variant": "body1"
+          },
+          "type": {
+            "resolvedName": "ErrorMessage"
+          }
+        },
+        "LmrSIGOWZb": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Scan the QR code below using your Authenticator application",
+            "full-width": false,
+            "id": "LmrSIGOWZb",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "ROOT": {
+          "custom": {},
+          "displayName": "Container",
+          "hidden": false,
+          "isCanvas": true,
+          "linkedNodes": {},
+          "nodes": [
+            "LmrSIGOWZb",
+            "UV4gtH3-wl",
+            "Uxv7qARLkj",
+            "oneTimeCodeId",
+            "1sMmkeVxVT"
+          ],
+          "props": {
+            "align": "center",
+            "background": "",
+            "data-editor-type": "container",
+            "direction": "column",
+            "id": "ROOT",
+            "justify": "center",
+            "paddingX": "4",
+            "paddingY": "8",
+            "spaceBetween": "4",
+            "width": "100%"
+          },
+          "type": {
+            "resolvedName": "Container"
+          }
+        },
+        "UV4gtH3-wl": {
+          "custom": {},
+          "displayName": "TOTP QR Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "alt": "QR Code",
+            "height": "100px",
+            "id": "UV4gtH3-wl"
+          },
+          "type": {
+            "resolvedName": "TOTPImage"
+          }
+        },
+        "Uxv7qARLkj": {
+          "custom": {},
+          "displayName": "Text",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "children": "Enter the 6-digit code",
+            "full-width": false,
+            "id": "Uxv7qARLkj",
+            "italic": false,
+            "mode": "primary",
+            "text-align": "center",
+            "variant": "subtitle2"
+          },
+          "type": {
+            "resolvedName": "Text"
+          }
+        },
+        "oneTimeCodeId": {
+          "custom": {
+            "type": "oneTimeCode"
+          },
+          "displayName": "One Time Code",
+          "hidden": false,
+          "isCanvas": false,
+          "linkedNodes": {},
+          "nodes": [],
+          "parent": "ROOT",
+          "props": {
+            "bordered": true,
+            "data-auto-submit": true,
+            "data-errormessage-pattern-mismatch": "Must be a 6 digit number",
+            "digits": 6,
+            "full-width": false,
+            "id": "oneTimeCodeId",
+            "label": "",
+            "name": "code",
+            "required": true,
+            "size": "lg",
+            "type": "tel"
+          },
+          "type": {
+            "resolvedName": "Code"
+          }
+        }
+      }
+    }
+  ]
+}
