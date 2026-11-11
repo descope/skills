@@ -202,7 +202,11 @@ and the user's request names a project ID as dev or otherwise not production:
    request. If it doesn't, stop the Console setup and leave the checklist for a person.
 2. Elevate (`session` → `elevate`).
 3. Apply the plan's Console setup checklist. Add what is missing; don't delete or overwrite
-   existing Flows, apps or settings — list each conflict under **Open questions**.
+   existing Flows, apps or settings — list each conflict under **Open questions**. For the JWT
+   Template, select it on the Inbound App for its access tokens. Set the project-wide **User JWT
+   Token Format** only for embedded-Flow or SDK session tokens, since it applies to every app in
+   the project. Never apply a template that overrides `sub` project-wide: users without
+   `azureObjectId` then fail at the token endpoint (`E063305`). List it under **Open questions**.
 4. Mark each item in the plan as done, with what was changed. Leave any step that fails in the
    checklist for a person.
 
