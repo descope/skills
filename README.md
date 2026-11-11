@@ -278,6 +278,26 @@ Guides self-service migrations from **Azure AD B2C** to Descope across any langu
 </details>
 
 <details>
+<summary><b>azure-ad-b2c-to-descope-lite</b> — Migrate from Azure AD B2C to Descope without interactive questions</summary>
+
+A shorter, non-interactive version of `azure-ad-b2c-to-descope` for agents running without a person to answer questions. Follows Descope's migration strategy, accounts for the main B2C differences (no password hash or secret export, `oid` user IDs, MSAL replaced before production, enterprise SSO cutover limits), makes each design decision from the codebase with stated defaults, and records the decision and its evidence in `MIGRATION-PLAN.md`.
+
+**Use when:**
+- "Migrate this app from Azure AD B2C to Descope without asking me questions"
+- An autonomous or background agent run of a B2C migration
+
+**Hard stops:** never writes to the B2C tenant, never imports users or changes the Descope project, never exposes management keys client-side, stops if the app doesn't use Azure AD B2C.
+
+**Output:**
+- `MIGRATION-PLAN.md` with a Decisions table (choice, evidence, what would change it)
+- SDK replacement across auth touchpoints, plus user export and transform scripts (not run)
+- `MIGRATION-SUMMARY.md` with open questions and the checks that need a person
+
+**Workflow:** MCP check → scope check → discovery → decisions → plan → code changes → checks → summary.
+
+</details>
+
+<details>
 <summary><b>descope-fga-schema</b> — Author and apply Descope FGA authorization schemas</summary>
 
 Author, edit, and apply Descope FGA schemas using the ReBAC/ABAC DSL. Validates changes via dry run before applying, warns on data loss, and requires user confirmation before modifying live schema. Requires the Descope Management MCP.
@@ -585,6 +605,8 @@ skills/
 │       ├── flows-and-widgets.md - B2C→Descope lingo map, Flow/Widget guides, console-vs-code
 │       ├── backend-sdks.md - .NET, Node.js, Python, Java API validation patterns
 │       └── b2c-detection-patterns.md - Code search, read-only Graph discovery, SSO inventory template
+├── azure-ad-b2c-to-descope-lite/
+│   └── SKILL.md - Non-interactive B2C migration: defaults, decisions log, hard stops
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
