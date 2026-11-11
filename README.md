@@ -259,10 +259,10 @@ Guides self-service migrations from Frontegg to Descope across any language or f
 - "We're moving off Frontegg"
 
 **Covers:**
-- Hosted vs. embedded login-box detection, driving the Auth Hosting vs. embedded Flow decision
+- Hosted vs. embedded login-box detection, driving the Descope-hosted login (`oidcConfig`) vs. embedded Flow decision
 - Feature mappings: login box → Flows, self-service portal → Widgets + SSO Setup Suite, Accounts → Tenants, Environments → Projects, Applications → Projects/Federated Apps/Inbound Apps, RBAC → Descope RBAC, ReBAC (self-hosted SpiceDB) → managed Descope ReBAC, prehooks → Flow steps/Connectors/JWT Templates, security rules → Flow-based security, SCIM → Descope SCIM, M2M → Resources + Inbound Apps + Policies or Access Keys, Frontegg AI integrations → Outbound Apps
 - User and account migration via the Descope migration tool (if it includes a Frontegg module; otherwise via a custom export/import script), plus both JIT paths (Generic HTTP Connector to preserve passwords, or Frontegg as a custom OIDC provider) and dual token validation during cutover
-- Detection patterns across all 14 Frontegg SDKs (React, Next.js, Vue, Angular, JS, Node, Python, Go, Java entitlements, iOS, Android, React Native, Flutter, Ionic) plus .NET apps with no Frontegg SDK
+- Detection patterns across Frontegg's frontend, backend, and mobile SDKs (React, Next.js, Vue, Angular, JS, Node, Python, Go, Java entitlements, iOS, Android, React Native, Flutter, Ionic) plus .NET apps with no Frontegg SDK
 - Frontegg-specific gotchas: no password-hash export, `fe_refresh`/`fe_session` cookies, `tenantId`/`tenantIds` → `dct`/`tenants`, `aud` validation, `X-API-KEY` vs. `Authorization`, hardcoded public keys, role levels and sub-accounts with no Descope equivalent
 - Scope guards for entitlements, plans, and feature flags — flagged, not silently rebuilt
 
@@ -271,7 +271,7 @@ Guides self-service migrations from Frontegg to Descope across any language or f
 - Code/config changes across confirmed auth touchpoints
 - Descope Flow, Widget, and Console configuration guidance
 
-**Workflow:** MCP check → migration plan (human review) → execution. Never skips ahead.
+**Workflow:** MCP check → scope guard → migration plan (human review) → execution. Never skips ahead.
 
 </details>
 
@@ -558,7 +558,8 @@ skills/
 │   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
 │   └── references/
 │       ├── implementation-nuances.md - Per-framework patterns, user export/JIT paths, ReBAC and prehook mapping, gotchas
-│       └── flows-and-widgets.md - Frontegg→Descope lingo map, self-service portal mapping, Flow/Widget guides
+│       ├── flows-and-widgets.md - Frontegg→Descope lingo map, self-service portal mapping, Flow/Widget guides
+│       └── frontegg-detection-patterns.md - Codebase search commands and known Frontegg env vars
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/

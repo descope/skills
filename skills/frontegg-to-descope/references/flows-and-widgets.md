@@ -41,15 +41,15 @@ projects.
 | **User** | **User** | Frontegg's primary identifier is email, and it auto-merges users across login methods on email. |
 | **Application** (`appId`, max 200/env) | **Project**, **Federated App**, or **Inbound App** | Depends on what the Applications were doing — see SKILL.md Step 3. |
 | **Client ID + API Key** (Keys & domains) | **Project ID** (+ **Management Key** for server-side admin) | Frontegg mints a short-lived vendor token from these; Descope uses the Project ID directly and a Management Key only for administration. |
-| **Hosted login box** (`/oauth/account/login`) | A decision, not a direct swap — embedded Flow, **Auth Hosting** behind a custom domain, or an OIDC-client model | Auth Hosting is built for Descope acting as IdP to a Federated/Inbound/Agentic App, not as a generic redirect-and-return page for a first-party origin — see SKILL.md Step 1.5 item 3 before defaulting to it. |
+| **Hosted login box** (`/oauth/account/login`) | **Descope-hosted login** via the SDK's OIDC redirect (`oidcConfig` on `AuthProvider` + `sdk.oidc.loginWithRedirect()`) | The smallest UX change for a hosted Frontegg app — the user redirects out and lands back on the app's own origin with a session. Add a Descope custom domain if the Frontegg app had one. See `implementation-nuances.md` → *Hosted vs. embedded*. |
 | **Embedded login box** (injected `/account/login`, `/account/sign-up`) | Embedded **`<descope-wc>` / `<Descope>` component** | Frontegg injects routes into your app; Descope renders a Flow component on your own login route. |
 | **Self-service portal** (`AdminPortal.show()` / `/oauth/portal`) | **Widgets + SSO Setup Suite** | See the dedicated mapping table below. |
 | **Social login providers** | **OAuth Provider** | Configured under Authentication Methods in Console. Note Frontegg ships shared dev credentials for every provider except LinkedIn — you may be registering real OAuth apps for the first time. |
 | **SSO connection** (SAML/OIDC, per account) | **Tenant SSO** | Per-tenant configuration. Use the SSO Setup Suite for self-service. |
 | **Roles / Permissions** | **Roles / Permissions** | Same concepts. Frontegg's role **key** is what lands in the `roles` claim, so migrate keys, not display names. Role *levels* and permission *classification types* have no equivalent. |
 | **Features / Plans / Feature flags** (entitlements engine) | Partly **Roles / Permissions / tenant custom attributes**; mostly **out of scope** | Descope has no plans or feature-flag product. |
-| **ReBAC** (entity types, relations, actions — evaluated in self-hosted SpiceDB) | **ReBAC / FGA** (managed) | Descope evaluates in-platform; the SpiceDB + CockroachDB + sync-job stack goes away. |
-| **Prehooks** (13 events, synchronous, 5s timeout, allow/block/challenge/lock) | **Flow steps, Conditions, Connectors, JWT Templates** | One Frontegg mechanism spread across several Descope ones. |
+| **ReBAC** (entity types, relations, actions — evaluated in customer-run SpiceDB) | **ReBAC / FGA** (managed) | Descope evaluates in-platform; the customer's SpiceDB + `frontegg/entitlements-engine` (Helm) stack goes away. |
+| **Prehooks** (14 events, synchronous, 5s default timeout (configurable), allow/block/challenge/lock) | **Flow steps, Conditions, Connectors, JWT Templates** | One Frontegg mechanism spread across several Descope ones. |
 | **Frontegg Flows** (no-code orchestration of hooks) | **Flows** | Same idea, different execution model: in Descope the Flow *is* the auth journey. |
 | **Webhooks** (`frontegg.*` events, `x-webhook-secret`) | **Connectors / Audit Webhook / audit events** | Delivery semantics differ — Frontegg never redelivers a failed event. |
 | **Security rules** (9 built-in defenses) | **Fingerprinting + Flow conditions + security Connectors** | No single equivalent toggle; reproduce per rule. |
@@ -86,7 +86,7 @@ services. In Descope, that logic moves *inside* the Flow as steps, conditions, a
 | Frontegg | Descope Flow equivalent |
 |---|---|
 | Embedded login box | Embedded Flow component |
-| Hosted login box | Not a direct swap — embedded Flow, Auth Hosting behind a custom domain, or an OIDC-client model, decided per SKILL.md Step 1.5 item 3 |
+| Hosted login box | Descope-hosted login via `oidcConfig` + `sdk.oidc.loginWithRedirect()` (the Flow runs on the hosted page; custom domain recommended if Frontegg had one) |
 | `customLoginBox` / custom login screens | Flow Screens in Screen Builder |
 | Login identifier configuration (email / username / phone) | Flow steps per method |
 | MFA policy and enrollment | MFA step in the main sign-in Flow, or MFA subflow |
@@ -243,7 +243,7 @@ Builder toggle and an `fe.*` permission, so the live set is usually much smaller
 | Personal (user) API tokens | Access Key Management Widget, or an Inbound App per client | Close |
 | Account details (name, address, website, timezone, currency) | Tenant Profile Widget + tenant custom attributes | Close — the extra fields become custom attributes |
 | Users: invite, enable/disable, revoke sessions, resend activation | User Management Widget | Direct |
-| Bulk invite (max 5 at a time in Frontegg) | User Management Widget or Management SDK | Direct |
+| Bulk invite (max 5 at a time in the Frontegg self-service portal UI; the Bulk Invitation API allows up to 1,000) | User Management Widget or Management SDK | Direct |
 | Invite links (invitee inherits the inviter's roles) | Invitation Flow | Verify role-inheritance behavior explicitly — this is a Frontegg-specific semantic |
 | Guest / temporary users with an access period | **No direct equivalent** | Model with a custom attribute plus expiry logic, or a scheduled deprovisioning job |
 | Groups and group roles | Roles + tenant membership; SCIM/SSO group mapping where groups come from an IdP | Partial — Frontegg groups are a first-class object |
@@ -265,8 +265,9 @@ cutover.
 
 ## SSO Setup Suite
 
-The SSO Setup Suite is a no-code Console wizard for SAML and OIDC SSO configuration.
-It guides tenant admins through per-tenant SSO setup with step-by-step instructions
+The SSO Setup Suite is a Descope-hosted, no-code self-service setup flow for SAML and OIDC SSO
+configuration — tenant admins open it via a link generated per tenant, not through the Descope
+Console. It guides them through per-tenant SSO setup with step-by-step instructions
 specific to common IdPs (Okta, Microsoft Entra ID (formerly known as Azure AD), Google Workspace, etc.).
 
 ### When to recommend it

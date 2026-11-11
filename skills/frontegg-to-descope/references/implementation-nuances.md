@@ -90,7 +90,7 @@ carry both, and the env var wins.
 | Trigger | `loginWithRedirect()` / `useLoginWithRedirect()` | Navigate to the injected `/account/login` route |
 | Session refresh | `keepSessionAlive` in `authOptions` — **the same flag in both modes**, refreshing at ~80% of token lifetime | same |
 | Logout | Navigate to `{baseUrl}/oauth/logout?post_logout_redirect_uri=…` | Navigate to `/account/logout` (or call `logout()`); clears `fe_refresh` |
-| Descope target | A decision — see below | Embedded `<Descope flowId>` / `<descope-wc>` component |
+| Descope target | Descope-hosted login: `oidcConfig` on `AuthProvider` + `sdk.oidc.loginWithRedirect()` — see below | Embedded `<Descope flowId>` / `<descope-wc>` component |
 
 Four traps. First, **logout in both modes is usually a navigation, not a method call** — often just
 an anchor tag — so a grep for `logout()` will miss it. That link has to become real two-step logout
@@ -100,22 +100,24 @@ of either mode; both appear in hosted and embedded quickstarts alike. `hostedLog
 `FRONTEGG_HOSTED_LOGIN` is the only reliable signal, and the Console's Login method setting is the
 authority if the code is ambiguous.
 
-**Fourth, and most consequential: "hosted → Auth Hosting" is not a mechanical swap for a first-party
-app.** Descope's Auth Hosting page is built for cases where Descope is the identity provider to
-something else — a Federated App, an Inbound App, or an MCP/Agentic Client — via a redirect flow that
-lands back on *that object's* configured URL. It is not a generic "redirect out, redirect back to my
-own domain" mechanism the way Frontegg's hosted login box was. Treating the mapping as automatic can
-produce an app where the login screen renders and completes but the app's own origin never gets a
-session. For a web app, work through three options rather than defaulting to Auth Hosting:
+**Fourth: map each mode to its Descope counterpart — the smallest UX change.**
 
-1. **Embedded `<Descope flowId>` component** — same Flows, same tokens, no DNS work. The default
-   choice even for a previously-hosted app, unless something specifically requires a redirect.
-2. **Auth Hosting behind a custom domain (CNAME)** — keeps a redirect-based UX. Worth it if the app
-   manages refresh tokens in first-party cookies, or if a Frontegg custom domain existed for
-   branding or to avoid third-party-cookie failures on token refresh (see *Silent Refresh and
-   Third-Party Cookies* below) — that same reason argues for a Descope custom domain.
-3. **Model the app as an OIDC client of a Descope Inbound/Federated App** — the case where Auth
-   Hosting's `redirect_uri` handling is actually designed to apply.
+- **Hosted Frontegg app** (`loginWithRedirect()`, `/oauth/account/login`) → **Descope-hosted login
+  via the SDK's OIDC redirect** ([React OIDC guide](https://docs.descope.com/getting-started/react/react-oidc)).
+  Set `oidcConfig` on the provider — `<AuthProvider projectId="..." oidcConfig={true}>`, or an object
+  with `redirectUri` / `scope` / `applicationId` — then call
+  `sdk.oidc.loginWithRedirect({ redirect_uri: window.location.origin })` from `useDescope()`. Logout
+  is `sdk.oidc.logout({ post_logout_redirect_uri })`. The user leaves the app, authenticates on the
+  Descope-hosted page, and lands back on the app's own origin with a session — the same round-trip
+  Frontegg's hosted login box gave.
+- **Embedded Frontegg app** (injected `/account/login` routes) → **embedded `<Descope flowId>`**
+  component on the app's own login route.
+- **Server-side web apps / backends** that drove the hosted redirect themselves can instead point a
+  standard OIDC client library at Descope as the issuer.
+
+If the Frontegg app had a custom domain — for branding, or to avoid third-party-cookie failures on
+token refresh (see *Cookie names* → *Third-party cookies* below) — configure a **Descope custom
+domain** for the hosted login too; the same reasons apply.
 
 Mobile is the exception where this isn't a real choice: hosted is the only mode, embedded doesn't
 exist as a concept, and the migration runs a Descope Flow through the native SDK regardless.
@@ -154,7 +156,7 @@ Worth calling out in the plan, because it is real scope *removal*:
 - **Session cookie encryption** — `FRONTEGG_ENCRYPTION_PASSWORD` and `FRONTEGG_COOKIE_NAME` (`fe_session`) in Next.js.
 - **Per-service endpoint overrides** — `FRONTEGG_IDENTITY_SERVICE_URL`, `FRONTEGG_ENTITLEMENTS_SERVICE_URL`, `FRONTEGG_AUDITS_SERVICE_URL`, `FRONTEGG_EVENT_SERVICE_URL`, `FRONTEGG_OAUTH_SERVICE_URL`, `FRONTEGG_VENDORS_SERVICE_URL`, `FRONTEGG_METADATA_SERVICE_URL`, `FRONTEGG_AUTHENTICATION_SERVICE_URL`, `FRONTEGG_API_GATEWAY_URL`.
 - **Access-token caching config** — the Node SDK's `local` / `redis` / `ioredis` cache options.
-- **The self-hosted entitlements engine**, if ReBAC was in use: SpiceDB, CockroachDB, the `frontegg/e10s-engine-sync` job, the docker-compose stack, and the `frontegg/entitlements-engine` Helm release. Descope's ReBAC is managed. Remember to delete the infrastructure, not just the client code.
+- **The customer-run entitlements engine**, if ReBAC was in use: the `frontegg/entitlements-engine` Helm release and the SpiceDB it ran against (self-hosted or managed), plus — if they copied Frontegg's local docker-compose example — CockroachDB and the `frontegg/e10s-engine-sync` job. Descope's ReBAC is managed. Remember to delete the infrastructure, not just the client code.
 
 **— Feature Mapping —**
 
@@ -173,9 +175,8 @@ and [Azure AD B2C](https://docs.descope.com/migrate/azure-ad-b2c) — applied to
 #### The constraint that shapes everything
 
 Frontegg documents a rich *inbound* migration API — bulk import of up to 1,000 users per batch, with
-`passwordHashType` accepting at least `bcrypt`, `scrypt`, `firebase-scrypt`, `pbkdf2`, and `argon2`
-(confirmed), plus `sha256` (confirmed) and possibly `sha1` (check the live API reference — it doesn't
-consistently appear in current docs) — and **no bulk export endpoint and no password-hash export**. User *profiles* can be read out
+`passwordHashType` accepting `bcrypt`, `scrypt`, `firebase-scrypt`, `pbkdf2`, `argon2`, `sha256`, and
+`sha1` — and **no bulk export endpoint and no password-hash export**. User *profiles* can be read out
 via the paginated list endpoint, but nothing credential-shaped comes with them: `passwordHash` appears
 only on the inbound migration request schema, and the only CSV export endpoints in the entire product
 are for audit logs.
@@ -183,12 +184,13 @@ are for audit logs.
 `GET /resources/users/v3` returns `id`, `email`, `name`, `profilePictureUrl`, `sub`, `verified`,
 `mfaEnrolled`, `mfaBypass`, `phoneNumber`, `provider`, `tenantId`, `tenantIds`, `activatedForTenant`,
 `isLocked`, `invisible`, `superUser`, `metadata`, `vendorMetadata`, `externalId`, `lastLogin`,
-`createdAt`, `subAccountAccessAllowed`, `managedBy`, and a `tenants[]` array. Two shape details that
-break naive export scripts: `temporaryExpirationDate` and `isDisabled` live **inside** `tenants[]`
-(per tenant), not at the top level — miss them and you silently drop guest-user expiry and per-tenant
-disable state. And `tenants[]` entries carry only `tenantId`, `roles`, `temporaryExpirationDate`, and
-`isDisabled`; **permissions are not a sibling of `roles`** — each role object in `roles[]` carries its
-own `permissions`, one level deeper.
+`subAccountAccessAllowed`, `managedBy`, and a `tenants[]` array. Two shape details that break naive
+export scripts: `temporaryExpirationDate` and `isDisabled` live **inside** `tenants[]` (per tenant),
+not at the top level — miss them and you silently drop guest-user expiry and per-tenant disable
+state. And `tenants[]` entries carry only `roles`, `temporaryExpirationDate`, and `isDisabled` — tenant
+membership itself comes from the item-level `tenantId` / `tenantIds`, not from the `tenants[]` entries;
+**permissions are not a sibling of `roles`** — each role object in `roles[]` carries its own
+`permissions`, one level deeper.
 
 So the password strategy is a decision, not a lookup. Make it in Step 0.5, before estimating anything.
 
@@ -213,22 +215,25 @@ production.
 Passwords do not come along. After import, set a `freshlyMigrated` custom attribute and branch on it
 in the Flow to force a reset or onboard the user into a passwordless method. Set `verifiedEmail` and
 `verifiedPhone` to `true` where Frontegg already marked them verified — otherwise every migrated user
-gets re-verified, which looks like a bug to them. Note that `customAttributes` on the batch-create API
-is string-valued, so model `freshlyMigrated` as a Console-defined boolean or a string, not an
-arbitrary JSON type.
+gets re-verified, which looks like a bug to them. Note that `customAttributes` values on the
+batch-create API must match each attribute's type as declared in the Console (string, number,
+boolean, array, etc.) — e.g. define `freshlyMigrated` as a boolean and send `true`, not `"true"`.
 
 #### Path 2 — JIT migration with a Generic HTTP Connector (preserves passwords)
 
 The only path that keeps existing passwords working:
 
 1. The user enters email and password in the Descope Flow.
-2. A [Generic HTTP Connector](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http) step calls Frontegg's authenticate-local-user API to verify the credentials.
+2. A [Generic HTTP Connector](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http) step calls Frontegg's "Authenticate user with password" API (`POST /identity/resources/auth/v1/user`) to verify the credentials.
 3. On success, the Flow creates or updates the Descope user, sets their password, and issues a Descope session.
 4. Subsequent sign-ins authenticate directly against Descope.
 
-Configure the connector with the Frontegg auth endpoint and a request body carrying email and
-password, then map the response (user ID, email, tenant) onto Descope user attributes and flow
-context. Add a Flow condition so already-migrated users skip the connector entirely.
+Configure the connector with that endpoint and a request body carrying email and password, plus
+tenant context where applicable (verify the exact request body against the Frontegg API reference).
+On success it returns a **user token**, not a user object — so the Flow must decode the returned JWT
+(e.g. in a Scriptlet) to read the user ID and tenant, or call Frontegg's user API afterwards, before
+mapping them onto Descope user attributes and flow context. Add a Flow condition so already-migrated
+users skip the connector entirely.
 
 One mechanic worth knowing before building this: there is **no separate "Set Password" action**. On a
 successful connector response the Flow invokes the **Sign Up / Password** action, which creates the
@@ -262,7 +267,7 @@ requires a default application because `aud` verification depends on it.
 
 ```bash
 # 1. Mint an environment (vendor) token.
-#    Region matters: EU api.frontegg.com (default), US api.us., AU api.au., CA api.ca.
+#    Region matters: EU api.frontegg.com, US api.us., AU api.au., CA api.ca.
 curl -X POST https://api.frontegg.com/auth/vendor \
   -H 'Content-Type: application/json' \
   -d '{"clientId":"YOUR_CLIENT_ID","secret":"YOUR_API_KEY"}'
@@ -320,8 +325,15 @@ accordingly. This is mandatory for both JIT paths. See
 [session migration](https://docs.descope.com/migrate/session-migration) — currently in **beta**,
 documented only for Auth0, Okta, or a custom-built solution, and it assumes the user already exists in
 Descope (not a JIT mechanism), so confirm it covers the Frontegg case before relying on it; otherwise
-hand-roll the issuer/`kid` check described above. Schedule the removal of the Frontegg branch as an
-explicit follow-up — dual validation left in place is a permanent second attack surface.
+hand-roll the issuer/`kid` check described above.
+
+**Security caveat:** reading `iss` / `kid` from the *unverified* token is acceptable **only to choose
+which verifier to run**. Each branch must then verify the signature against that provider's own JWKS
+and pin the expected issuer (and audience, where one is used). Never read roles, tenant, or user
+claims from a token before its branch has verified it, and never fall through from a failed Descope
+verification to the Frontegg branch on the same token without that branch fully verifying it. Schedule
+the removal of the Frontegg branch as an explicit follow-up after cutover — dual validation left in
+place is a permanent second attack surface.
 
 ### Token claim mapping
 
@@ -381,8 +393,9 @@ hierarchy has two options: add a `tenant.subtenant` claim via a JWT template, or
 Tenant server-side and read `parent` / `successors`. Grep for hierarchy reads before assuming the
 mapping is transparent.
 
-Frontegg supports a third tenancy layer and beyond;
-Descope tenants are flat. Options, in rough order of preference:
+Frontegg supports a third tenancy layer and beyond. When a hierarchy runs deeper than Descope
+sub-tenants comfortably model, or request-time code needs hierarchy data that isn't in the token,
+choose per case, in rough order of preference:
 
 | If the hierarchy is… | Model it as… |
 |---|---|
@@ -442,53 +455,52 @@ environments have entity types configured and zero calls to `isEntitledTo`. Grep
 | Per-resource rules that depend on application data (status, dates, amounts) | Application database |
 | Frontegg entity types that exist but are never checked | Drop them |
 
-**Architecture change.** Frontegg stores the ReBAC model in Frontegg Cloud but evaluates in **SpiceDB
-that the customer self-hosts**, fed by the `frontegg/e10s-engine-sync` job pulling roughly every 60
-seconds, usually alongside CockroachDB, with the app calling `@frontegg/e10s-client` over gRPC.
-Descope evaluates in-platform. That means the migration *removes* infrastructure — remember to
-decommission the docker-compose stack and the `frontegg/entitlements-engine` Helm release, and to
-delete any application logic that compensated for the 60-second write-visibility lag.
+**Architecture change.** Frontegg stores the ReBAC model in Frontegg Cloud but evaluates in **customer
+infrastructure**: production needs an existing SpiceDB (self-hosted or managed) plus the Frontegg
+entitlements engine (`frontegg/entitlements-engine`, deployed via Helm), synced from Frontegg roughly
+every 60 seconds, with the app calling `@frontegg/e10s-client` over gRPC. (CockroachDB and the
+`frontegg/e10s-engine-sync` job appear in Frontegg's local docker-compose example; the older
+`frontegg/entitlements-agent` PDP container is what Frontegg calls legacy.) Descope evaluates
+in-platform. That means the migration *removes* infrastructure — remember to decommission the
+`frontegg/entitlements-engine` Helm release, SpiceDB if it existed only for Frontegg, and any
+docker-compose stack, and to delete any application logic that compensated for the 60-second
+write-visibility lag.
 
 **Schema translation.** Frontegg has no text DSL; the model is assembled from entity types (`key`),
 relations (`relationKey`, each declaring a subject entity type), and actions (`actionKey`, mapped to
 the relations that grant them), with hierarchy expressed as a JSON `relationKeys` array mixing direct
 relations and inherited paths.
 
+A Frontegg model (pseudo-notation, not a real file format):
+
 ```
-# Frontegg
 Entity type: document
   Relations:  reader (subject: user), editor (subject: user), parent (subject: folder)
   Actions:    read  → [ "reader", { "fromRelation": "parent", "toAction": "read_folder" } ]
               write → [ "editor" ]
+```
 
-# Descope ReBAC DSL
+The equivalent Descope ReBAC DSL:
+
+```
 model AuthZ 1.0
 
-type folder
-  relation viewer: user
+type User
+
+type Folder
+  relation viewer: User
   permission read_folder: viewer
 
-type document
-  relation reader: user
-  relation editor: user
-  relation parent: folder
+type Document
+  relation reader: User
+  relation editor: User
+  relation parent: Folder
   permission read: reader | parent.read_folder
   permission write: editor
 ```
 
-Descope DSL syntax:
-
-```
-Syntax                             Description          Example
----------------------------------  -------------------  ----------------------------
-model AuthZ 1.0                    Schema header (required)  model AuthZ 1.0
-type <name>                        Define a type        type user
-relation <name>: <type>            Define a relation    relation owner: user
-|                                  Union (OR) operator  user | group
-#                                  Relation reference   Group#member
-.                                  Traverse relation    parent.owner
-permission <name>: <expression>    Define a permission  permission can_edit: owner
-```
+For full DSL syntax — unions `|`, intersection `&`, exclusion `-`, target sets, and `with`
+conditions — use the `descope-fga-schema` skill. Note the DSL has no comment syntax.
 
 **Exporting the data.** Relationship tuples are the part that has to move:
 
@@ -541,7 +553,7 @@ Frontegg migration's timeline if it is discovered late.
 ### Prehooks → Flow steps, Connectors, and JWT Templates
 
 Frontegg prehooks are synchronous, blocking calls made before an event completes, with a **5-second
-timeout**, a configurable fail-open/fail-close setting, and four verdicts (`allow` / `block` /
+default timeout (configurable)**, a configurable fail-open/fail-close setting, and four verdicts (`allow` / `block` /
 `challenge` / `lock`). There is no single Descope equivalent — each prehook maps to whichever Descope
 mechanism matches what it does.
 
@@ -568,8 +580,8 @@ Three things to establish per prehook:
 2. **What does it return?** The `JWT_GENERATION` response shape carries `claims.customClaims`, an optional `expiresIn` overriding token lifetime for that token type, and `mfaFactorUsed`, which can reject specific MFA factors at issuance. Each needs a different Descope home.
 3. **Does it return `tenantId`?** A prehook returning `tenantId` **overrides Frontegg's default tenant resolution** — this is the documented way to do domain-based tenant assignment. Rebuild it deliberately as tenant self-provisioning domains or explicit Flow logic; it will not be obvious from the app code that tenant assignment was happening here.
 
-Frontegg's docs warn against unwarmed AWS Lambda for prehooks because cold starts exceed the 5-second
-budget. If the customer built around that constraint, note that Flow steps run in-platform and the
+Frontegg's docs warn against unwarmed AWS Lambda for prehooks because cold starts exceed the default
+5-second budget. If the customer built around that constraint, note that Flow steps run in-platform and the
 constraint disappears.
 
 ### Webhooks → Descope Audit Webhook and Connectors
@@ -729,9 +741,9 @@ access — not to Outbound Apps or Connections. Flag for dedicated review.
 Note that Frontegg's own docs are inconsistent on whether the MCP-enabled Entitlements Agent counts as
 legacy: the general ReBAC setup guide describes the underlying PDP-container stack as superseded by
 the newer SpiceDB/e10s engine, but the current AI-agent-authorization guide still uses this same
-Entitlements Agent for MCP. Don't assert it's deprecated without checking the specific guide in use at
-migration time — but if it turns out to be, that's usually an argument for migrating rather than a
-loss.
+Entitlements Agent for MCP. Frontegg calls the `frontegg/entitlements-agent` stack "legacy," not
+deprecated — check the specific guide in use at migration time, and treat legacy status as an
+argument for migrating rather than a loss.
 
 ### Management API mapping
 
@@ -739,14 +751,14 @@ loss.
 |---|---|---|
 | Authenticate as the vendor | `POST /auth/vendor` (clientId + API key) → short-lived JWT | Management Key sent directly |
 | List tenants | `GET /resources/tenants/v2` | `management.tenant.loadAll()` |
-| List users | `GET /resources/users/v3` (`_limit` max 200, `_offset`) | `management.user.search()` (Node; `SearchAll` / `search_all` in Go and Python) |
-| Fuzzy user search | `GET /resources/users/v1/query/phrase` | `management.user.search()` (Node; `SearchAll` / `search_all` in Go and Python) with filters |
+| List users | `GET /resources/users/v3` (`_limit` max 200, `_offset`) | `management.user.search({ tenantIds: [tenantId] })` (Node; `SearchAll` / `search_all` in Go and Python) |
+| Fuzzy user search | `GET /resources/users/v1/query/phrase` | `management.user.search({ ... })` (Node; `SearchAll` / `search_all` in Go and Python) with filters |
 | Create user | `POST /resources/users/v2` (`expirationInSeconds` for guests) | `management.user.create()` / `createBatch()` |
 | Roles / permissions config | `/api/identity/roles`, `/account-roles`, `/permissions` | `management.role.*`, `management.permission.*` |
 | Tenant membership | `GET /resources/users/v2/me/tenants`, `/me/hierarchy` | `management.user.loadByUserId()` → user tenants |
 | Audit export | `auditscontroller_exportcsv` and variants | Audit Webhook Connector / audit APIs |
 
-**Host routing.** Management calls must hit the regional gateway — `api.frontegg.com` (EU, default),
+**Host routing.** Management calls must hit the regional gateway — `api.frontegg.com` (EU),
 `api.us.frontegg.com`, `api.au.frontegg.com`, `api.ca.frontegg.com` — while tenant-context calls go to
 the environment subdomain or custom domain. With an environment token on a self-service route, add
 `frontegg-user-id` and/or `frontegg-tenant-id` headers. Getting this wrong yields
@@ -806,7 +818,7 @@ constraint, re-evaluate after migration rather than preserving it by default.
 | Frontegg | Descope |
 |---|---|
 | `<FronteggProvider contextOptions={{ baseUrl, clientId, appId }}>` | `<AuthProvider projectId>` |
-| `useLoginWithRedirect()` (hosted) | Not a direct swap — embedded Flow, Auth Hosting behind a custom domain, or an OIDC-client model; see *Hosted vs. embedded* above |
+| `useLoginWithRedirect()` (hosted) | `<AuthProvider projectId oidcConfig={true}>` + `sdk.oidc.loginWithRedirect({ redirect_uri: window.location.origin })` with `sdk = useDescope()`; see *Hosted vs. embedded* above |
 | Injected `/account/login` routes (embedded) | `<Descope flowId="sign-up-or-in" onSuccess={...}>` |
 | `useAuth()` / `useAuthUser()` / `useAuthUserOrNull()` | `useSession()` + `useUser()` |
 | `useIsAuthenticated()` | `useSession()` authentication state |
@@ -815,7 +827,7 @@ constraint, re-evaluate after migration rather than preserving it by default.
 | `ContextHolder.for().getContext()` | Descope SDK session accessors — do **not** hand-parse the token |
 | `AdminPortal.show()` / `.openHosted()` | Descope Widgets — see `flows-and-widgets.md` |
 | `useFeatureEntitlements()` / `usePermissionEntitlements()` | Roles/permissions where it is access control; otherwise out of scope |
-| `useTeamState()` / `useTeamActions().loadUsers()` (tenant-user listing, invites, role assignment — client-side, gated by `fe.*` permissions) | **Server-side only**: a route handler calling `management.user.searchAll([tenantId])` with a Management Key, or the User Management Widget |
+| `useTeamState()` / `useTeamActions().loadUsers()` (tenant-user listing, invites, role assignment — client-side, gated by `fe.*` permissions) | **Server-side only**: a route handler calling `management.user.search({ tenantIds: [tenantId] })` with a Management Key, or the User Management Widget |
 
 **Always read auth state through the hooks.** `ContextHolder` makes the raw token easy to reach in
 Frontegg apps, and that habit should not carry over. Never call backend `validateSession()` from
@@ -891,7 +903,7 @@ for this.
 | `frontegg.WithAuthentication(middleware.Options{Roles, Permissions})` | Custom middleware calling `descopeClient.Auth.ValidateSessionWithToken(ctx, token)` → `(bool, *descope.Token, error)` |
 | `middleware.UserFromContext(ctx)` | Claims off the returned `*descope.Token` |
 | `ident.ValidateToken(ctx, token, &identity.ValidateTokenOptions{...}, identity.JWTHeader \| identity.AccessTokenHeader)` | `ValidateSessionWithToken` + role/permission helpers |
-| `client.HostedLogin(redirectURI)` → `RequestAuthorize` / `CodeExchange` | Descope hosted flow or SDK login |
+| `client.HostedLogin(redirectURI)` → `RequestAuthorize` / `CodeExchange` | Descope-hosted login via a standard OIDC client library pointed at Descope, or SDK login |
 | `identity.ErrInsufficientRole` / `ErrInsufficientPermission` / `ErrFailedToAuthenticate` | Descope SDK errors — remap error handling explicitly |
 | Frontegg `tenantId` | Tenant ID for management calls; `token.GetTenants()` or `dct` at request time |
 
@@ -912,7 +924,7 @@ authInfo, err := descopeClient.Auth.OAuth().ExchangeToken(ctx, code, nil)
 // set DS = authInfo.SessionToken.JWT and DSR = authInfo.RefreshToken.JWT with:
 //   Path:"/", HttpOnly:true, SameSite: http.SameSiteLaxMode, Secure:false (HTTP localhost), no Domain
 // Validation still works via ValidateSessionWithRequest(r) (it reads DS/DSR by name).
-// Logout: LogoutWithToken(<DSR>, nil) then expire the DS/DSR cookies (MaxAge -1).
+// Logout: LogoutWithToken(ctx, refreshToken, nil) then expire the DS/DSR cookies (MaxAge -1).
 ```
 
 Use `descope.SessionCookieName` (`DS`) and `descope.RefreshCookieName` (`DSR`) so the SDK's
@@ -1023,7 +1035,7 @@ A typical Frontegg app carries 6–12 Frontegg environment variables plus hardco
 values; the Descope equivalent is 2–3. Removals: `FRONTEGG_CLIENT_ID`, `FRONTEGG_API_KEY`,
 `FRONTEGG_BASE_URL`, `FRONTEGG_APP_URL`, `FRONTEGG_APP_ID`, `FRONTEGG_COOKIE_NAME`,
 `FRONTEGG_ENCRYPTION_PASSWORD`, `FRONTEGG_HOSTED_LOGIN`, `FRONTEGG_JWT_PUBLIC_KEY`,
-`FRONTEGG_LOG_LEVEL`, every `FRONTEGG_*_SERVICE_URL`, `FRONTEGG_API_GATEWAY_URL`,
+`FRONTEGG_DEBUG_LEVEL` (Node) / `FRONTEGG_DEBUG` (Python), every `FRONTEGG_*_SERVICE_URL`, `FRONTEGG_API_GATEWAY_URL`,
 `DISABLE_INITIAL_PROPS_REFRESH_TOKEN`, and `ENTITLEMENTS_ENGINE_TOKEN`. Additions:
 `DESCOPE_PROJECT_ID`, its `NEXT_PUBLIC_` twin where a browser needs it, and
 `DESCOPE_MANAGEMENT_KEY` for server-side administration.
@@ -1054,7 +1066,7 @@ Applies to every migration, in addition to the framework-specific checks:
 
 - Zero `frontegg` hits in a case-insensitive repo-wide grep — including `.env*`, CI config, `build.gradle`, `Frontegg.plist`, and Docker files
 - Compile passes with zero errors; no residual async-cascade gaps
-- Unauthenticated protected routes return 302 or 401, not 500
+- Unauthenticated protected routes return 3xx or 401, not 500 (Next.js `authMiddleware` redirects with a 307)
 - Login completes and profile data renders — proving the JWT Template is applied
 - Decoded `DS` token contains `dct` and `tenants` matching what the app used to read from `tenantId` / `tenantIds`
 - Tenant switching still lands the user in the right tenant context
