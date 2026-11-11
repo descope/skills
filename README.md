@@ -286,7 +286,7 @@ A shorter, non-interactive version of `azure-ad-b2c-to-descope` for agents runni
 - "Migrate this app from Azure AD B2C to Descope without asking me questions"
 - An autonomous or background agent run of a B2C migration
 
-**Hard stops:** never writes to the B2C tenant, never imports users or changes the Descope project, never exposes management keys client-side, stops if the app doesn't use Azure AD B2C.
+**Hard stops:** never writes to the B2C tenant, never imports users, changes a Descope project (through the Descope MCP Server) only when the request names it as non-production, never exposes management keys client-side, stops if the app doesn't use Azure AD B2C.
 
 **Output:**
 - `MIGRATION-PLAN.md` with a Decisions table (choice, evidence, what would change it)

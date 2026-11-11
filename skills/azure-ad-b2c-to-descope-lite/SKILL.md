@@ -47,8 +47,10 @@ Follow Descope's migration strategy ([docs.descope.com/migrate/strategy](https:/
   team runs them: dev first, then staging after dev sign-in tests pass, then production.
 - **Never put `DESCOPE_MANAGEMENT_KEY` or an Inbound App client secret in client-side code**, and
   never print or commit their values.
-- **Never change the Descope project.** Use a connected MCP for docs and reads only; list Console
-  setup as steps in the plan.
+- **Change a Descope project only when the request names it as non-production.** Make Console
+  changes through the Descope MCP Server only for a project ID given in the user's request and
+  described there as dev or otherwise not production (Step 6). Otherwise, use the MCP for docs and
+  reads only, and list Console setup as steps in the plan.
 - **Stop if the app doesn't use Azure AD B2C** (step 2).
 
 ---
@@ -93,6 +95,7 @@ Check which Descope MCP is connected, without asking:
    write as **"verify: based on last known documentation"** in the plan and summary.
 
 With an MCP, verify each SDK method before writing it. Record which MCP was used in the plan.
+Only the Descope MCP Server can make Console changes (Step 6); the Docs MCP can't.
 
 ---
 
@@ -168,14 +171,17 @@ Write it to the working directory, in plain English, with these sections:
 2. **Decisions** — the Step 4 table, one row per decision with its evidence and reasoning.
 3. **Auth touchpoints** — file, what it does today, what changes.
 4. **Journeys** — each B2C policy → Descope Flow.
-5. **Console setup** — checklist for a person: project per environment (in the region matching the
+5. **Console setup** — checklist (applied in Step 6 when allowed, otherwise for a person): project per environment (in the region matching the
    B2C directory; fixed at creation), Flows, auth methods, Resource + Inbound App + access policy
    (Allow, subject = Inbound App, target = Resource with all scopes, grant type User access), the
    Inbound App's sign-in Flow running **Update User Consent** with **Scopes auto approval** (without
    the action the Flow fails; without auto approval the token has no scopes and the API returns
-   403), JWT
-   Template (`email`, `name`, `oid`, custom attributes), roles, custom attributes including
-   `azureObjectId`, tenants + SSO before importing their users, audit connector.
+   403), a JWT Template with every claim the code reads (for example `email`, `name`,
+   `given_name`, `family_name`, `oid`, custom attributes), roles, custom attributes including
+   `azureObjectId`, tenants + SSO before importing their users, audit connector. Select the JWT
+   Template as the project's **User JWT Token Format** (Project Settings → Session Management) for
+   session tokens, or on the Inbound App (Session Management → Custom → User JWT template) for its
+   access tokens. Until then, those claims are missing and the app shows empty user fields.
 6. **Environment variables** — remove the B2C ones, add `DESCOPE_PROJECT_ID` and the app's
    client ID / issuer / Resource identifier. `DESCOPE_MANAGEMENT_KEY` server-side only.
 7. **User migration** — the password and user ID choices; Graph export; dev → staging → production
@@ -190,7 +196,19 @@ Then continue to Step 6. Don't wait for a review.
 
 ## Step 6: Code changes
 
-Before each change, verify the SDK method with the MCP, or read the installed package's type
+**Console setup through the Descope MCP Server.** Only when the Descope MCP Server is connected
+and the user's request names a project ID as dev or otherwise not production:
+1. Select that project (`session` → `selectProject`) and check that its ID matches the one in the
+   request. If it doesn't, stop the Console setup and leave the checklist for a person.
+2. Elevate (`session` → `elevate`).
+3. Apply the plan's Console setup checklist. Add what is missing; don't delete or overwrite
+   existing Flows, apps or settings — list each conflict under **Open questions**.
+4. Mark each item in the plan as done, with what was changed. Leave any step that fails in the
+   checklist for a person.
+
+Without a named non-production project, change nothing in Descope.
+
+Before each code change, verify the SDK method with the MCP, or read the installed package's type
 declarations. Verify package versions (`npm view @descope/react-sdk version`,
 `dotnet package search Descope --exact-match`).
 
