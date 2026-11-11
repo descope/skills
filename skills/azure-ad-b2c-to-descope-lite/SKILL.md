@@ -70,7 +70,9 @@ These hold for every B2C migration. Don't plan around them.
 - **Policies become Flows.** Each user flow or custom policy journey (`B2C_1_…`, `B2C_1A_…`) maps
   to a Descope Flow. Sign-up / sign-in and password reset can be one Flow (reset is a branch of
   sign-in). Profile edit becomes the User Profile Widget or an embedded Flow in the app, not a
-  second hosted login. API connectors and REST technical profiles become Flow HTTP Connectors.
+  second hosted login. Both need a Descope session in the browser; a server-rendered app on hosted
+  login has none, so it signs the user in again inside an embedded profile Flow, or changes simple
+  fields (name) from the server with the Management API. API connectors and REST technical profiles become Flow HTTP Connectors.
 - **Claims differ.** `scp` → `scope` (same space-separated scope names), `emails` array → `email`
   (add it in the JWT Template), `tfp` / `acr` policy checks become dead code.
 - **Enterprise SSO cutover isn't free.** Customer IdPs keep working without reconfiguration only
@@ -149,10 +151,10 @@ default. Record every row in the plan's **Decisions** table: decision, choice, e
 | **Other OIDC libraries** | Redirect login: keep the library and point its configuration at the Inbound App or Federated App (Step 6). Unlike MSAL, it can stay after cutover. Embedded sign-in: remove it, as with MSAL. Only the MSAL setup has been tested, so mark sign-in with this library "untested: verify" in the summary. | Keep the library, reconfigured |
 | **Descope app** | Frontend requests B2C scopes and the API checks them → Inbound App for the frontend + Resource for the API, same scope names. Client-credentials callers → confidential Inbound App. No API scopes → Federated App (server-side OIDC) or plain SDK session. Embedded Flow → Descope session token (`aud` = project ID, no `scope` claim): it can't mint Inbound App access tokens, so map the API's scope checks to roles or permissions in the session token. | Inbound App + Resource when any scope check exists |
 | **Projects and tenants** | Separate B2C directories for dev / staging / prod → one Descope project per environment. Customer organizations inside one directory (per-customer IdPs, `domain_hint`, an org claim) → Descope tenants in one project. | One project per environment, no tenants |
-| **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users with their Descope user ID (`U…`, not a GUID). | Keep the B2C ID |
+| **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users with their Descope user ID (`U…`, not a GUID), so GUID-only code must accept strings: `Guid.Parse` / `UUID.fromString`, `{id:guid}` routes, GUID regexes and DTOs (change them), and `uniqueidentifier` / `uuid` columns and downstream systems (list them as team tasks before cutover). If those can't take a string before cutover, choose **Remap on first login** instead and record why. | Keep the B2C ID |
 | **Passwords** | Full import without passwords, with a reset or passwordless step on first login. It needs no change in the B2C tenant and lets B2C shut down soonest. List JIT via ROPC (keeps passwords, needs an ROPC policy in the tenant) as the alternative. | Import without passwords |
 | **Roles** | Recreate in Descope RBAC the roles the code reads, with the same names. | Same role names |
-| **Cutover** | No enterprise IdPs → direct, one app at a time. Enterprise IdPs or many apps → two-stage broker (Descope in front of B2C, then move the hostname). | Direct, per app |
+| **Cutover** | No enterprise IdPs → direct, one app at a time. Enterprise IdPs or many apps → two-stage broker: Descope in front of B2C, then move B2C's custom-domain hostname to Descope through the SSO migration Worker ([docs.descope.com/migrate/sso](https://docs.descope.com/migrate/sso)). A CNAME alone breaks SSO, because Descope doesn't serve B2C's paths that customer IdPs still post to. | Direct, per app |
 | **Enterprise SSO** | One Descope tenant per customer connection. Mark every connection whose hostname is unknown as "IdP admin may need to act". | Admin action assumed |
 
 ---
@@ -168,7 +170,10 @@ Write it to the working directory, in plain English, with these sections:
 4. **Journeys** — each B2C policy → Descope Flow.
 5. **Console setup** — checklist for a person: project per environment (in the region matching the
    B2C directory; fixed at creation), Flows, auth methods, Resource + Inbound App + access policy
-   (Allow, subject = Inbound App, target = Resource with all scopes, grant type User access), JWT
+   (Allow, subject = Inbound App, target = Resource with all scopes, grant type User access), the
+   Inbound App's sign-in Flow running **Update User Consent** with **Scopes auto approval** (without
+   the action the Flow fails; without auto approval the token has no scopes and the API returns
+   403), JWT
    Template (`email`, `name`, `oid`, custom attributes), roles, custom attributes including
    `azureObjectId`, tenants + SSO before importing their users, audit connector.
 6. **Environment variables** — remove the B2C ones, add `DESCOPE_PROJECT_ID` and the app's
@@ -198,12 +203,20 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
     `<issuer>/.well-known/openid-configuration` yourself and pass it as `authorityMetadata`, then
     create the MSAL instance.
   - Send the Resource on both requests: msal-browser 5.x, the request's `resource` option; 2.x and
-    3.x, `extraQueryParameters: { resource }` and `tokenBodyParameters: { resource }`.
+    3.x, `extraQueryParameters: { resource }` and `tokenBodyParameters: { resource }`. msal-node:
+    send `resource` as a form field in the token request body. MSAL.NET:
+    `.WithExtraQueryParameters(new Dictionary<string, string> { ["resource"] = "<Resource>" })`
+    (untested: check the token's `aud`).
   - Popup calls (`loginPopup`, `acquireTokenPopup`) move to redirect.
-- **Other OIDC libraries:** change their configuration, not their code: issuer / authority, client
-  ID and redirect URI from the Inbound App or Federated App, and the Resource when calling a scoped
-  API. If discovery returns 404, the library changed the issuer's casing; give it the discovery
-  URL directly (for example `MetadataAddress` in .NET).
+- **Other OIDC libraries:** change their configuration: issuer / authority, client ID and redirect
+  URI from the Inbound App or Federated App, and the Resource when calling a scoped API. Most
+  libraries send `resource` only on `/authorize`, and Descope also needs it in the token request
+  body; add the small hook that does this (ASP.NET Core: `OnAuthorizationCodeReceived` sets
+  `TokenEndpointRequest.Resource`). If discovery returns 404, the library changed the issuer's
+  casing; give it the discovery URL directly (for example `MetadataAddress` in .NET).
+- **Scopes (MSAL and other libraries):** replace full App ID URI scopes
+  (`https://<tenant>.onmicrosoft.com/<api>/tasks.read`) with the Resource's short names
+  (`tasks.read`), and keep `openid profile offline_access`.
 - **Embedded sign-in:** remove the iframe, the sign-in route that ran inside it, the
   `window.top.location.reload()` / `postMessage` glue. Leave the custom policy XML as it is, for
   rollback.
@@ -218,8 +231,13 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
   - Logout: `sdk.logout()`, then end the app's own session.
 - **Backend:** validate Descope tokens. Check `iss` against the issuer taken from discovery (never
   hardcode it) and `aud` against the Resource identifier for Inbound App tokens. Read `scope`
-  instead of `scp`; in .NET, replace `[RequiredScope]` with a policy that reads `scope`.
-- **Claims:** `emails[0]` → `email`; keep `oid` reads when the JWT Template emits `oid`.
+  instead of `scp`; in .NET, replace `[RequiredScope]` with a policy that reads `scope`. Embedded
+  Flow: the API validates the session token (`aud` = project ID) and replaces each scope check with
+  a role or permission check.
+- **Claims:** `emails[0]` → `email`. Keep the API's `oid` reads from the access token when the JWT
+  Template emits `oid`. Move frontend reads of `oid` from the ID token (for example an `owner`
+  field) to the API: in testing, JWT Template custom claims reached the access token but not the
+  ID token.
 - **Dead code:** remove per-policy authorities, `AADB2C90118` password-reset redirects, `tfp` /
   `acr` checks, per-policy metadata URLs.
 - **Config:** remove `AzureAdB2C` sections and `B2C_*` / `MSAL_*` variables; add the Descope
@@ -243,7 +261,9 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
 2. Install and run the project's build or type check with zero errors (`npx tsc --noEmit`,
    `dotnet build`, …).
 3. Run the existing tests. Failures usually mean fixtures still use B2C claim shapes.
-4. A protected API or page returns 401 with no token and with a malformed token, never 500.
+4. A protected API returns 401 with no token and with a malformed token, never 500. In a
+   server-side web app, a protected page opened while signed out redirects (302) to the Descope
+   host, not to `b2clogin.com`.
 
 ---
 
@@ -252,10 +272,11 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
 1. **What changed** — B2C concept → Descope replacement, files touched.
 2. **Decisions made without a person** — the Step 4 table, so a reviewer can overturn any row.
 3. **Open questions** — from the plan, plus anything marked "verify".
-4. **Not yet verified, needs a person** — sign-in on the Descope page returns to the app; API call
-   succeeds with the new token and returns 403 without the scope; logout clears the session; token
-   claims (`iss`, `aud`, `scope`, `email`, `oid`, roles) for one migrated and one new user; silent
-   token renewal works; after a dev import, one local, one social and one enterprise SSO user each
+4. **Not yet verified, needs a person** — sign-in on the Descope page (or in the embedded Flow)
+   returns to the app; API call succeeds with the new token and returns 403 without the scope
+   (embedded Flow: without the role); logout clears the session; token claims for one migrated and
+   one new user (Inbound App tokens: `iss`, `aud` = Resource, `scope`; embedded Flow session token:
+   `aud` = project ID, roles; both: `email`, `oid`); silent token renewal works; after a dev import, one local, one social and one enterprise SSO user each
    land on their imported account.
 5. **Before production** — replace MSAL, if it was kept, with the Descope SDK or a standard OIDC
    library; Console setup, customer IdP admin notices, the user import order, the cutover steps.
