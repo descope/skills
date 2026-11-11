@@ -115,7 +115,9 @@ Record every hit as `file:line`:
 
 - **Libraries:** `@azure/msal-browser`, `@azure/msal-react`, `@azure/msal-angular`,
   `@azure/msal-node`, `Microsoft.Identity.Web`, `Microsoft.Identity.Client`, `passport-azure-ad`,
-  NextAuth's Azure AD B2C provider, native MSAL.
+  NextAuth's Azure AD B2C provider, native MSAL, and other OIDC / OAuth clients pointed at B2C
+  (`oidc-client-ts`, `angular-auth-oidc-client`, `angular-oauth2-oidc`, hello.js, AppAuth, OWIN
+  or ASP.NET Core OpenID Connect, Spring Security).
 - **Login mode:** `loginRedirect` / `loginPopup` (SPA), OIDC middleware (server-side web app),
   an iframe with a custom policy (embedded sign-in), a password grant (ROPC).
 - **Policies:** each `B2C_1_…` / `B2C_1A_…` name and the app that calls it; custom policy XML in
@@ -140,9 +142,10 @@ default. Record every row in the plan's **Decisions** table: decision, choice, e
 
 | Decision | Rule | Default |
 |---|---|---|
-| **Login** | MSAL redirect or popup, or server-side OIDC → Descope-hosted login (B2C users already redirect, so it's the smallest UX change). Iframe sign-in → embedded `<Descope flowId="…"/>`. ROPC native app → Descope native SDK. Popup moves to redirect. | Descope-hosted login |
-| **MSAL** | Keep it and point it at Descope (Step 6). `Microsoft.Identity.Web` can't point at Descope → the standard ASP.NET Core OpenID Connect or JwtBearer handler. Native MSAL isn't verified against Descope → Descope native SDK. Put replacing MSAL under **Before production** in the summary. | Keep MSAL, reconfigured |
-| **Descope app** | Frontend requests B2C scopes and the API checks them → Inbound App for the frontend + Resource for the API, same scope names. Client-credentials callers → confidential Inbound App. No API scopes → Federated App (server-side OIDC) or plain SDK session. | Inbound App + Resource when any scope check exists |
+| **Login** | MSAL redirect or popup, or server-side OIDC → Descope-hosted login (B2C users already redirect, so it's the smallest UX change). Embedded sign-in (B2C in an iframe, a custom policy with `JourneyFraming`) → embedded Descope Flow, never the hosted page, whatever library the app uses today. ROPC native app → Descope native SDK. Popup moves to redirect. | Descope-hosted login |
+| **MSAL** | Redirect login: keep it and point it at Descope (Step 6). Embedded sign-in: remove it; the embedded Flow replaces it. `Microsoft.Identity.Web` can't point at Descope → the standard ASP.NET Core OpenID Connect or JwtBearer handler. Native MSAL isn't verified against Descope → Descope native SDK. Put replacing MSAL under **Before production** in the summary. | Keep MSAL, reconfigured |
+| **Other OIDC libraries** | Redirect login: keep the library and point its configuration at the Inbound App or Federated App (Step 6). Unlike MSAL, it can stay after cutover. Embedded sign-in: remove it, as with MSAL. Only the MSAL setup has been tested, so mark sign-in with this library "untested: verify" in the summary. | Keep the library, reconfigured |
+| **Descope app** | Frontend requests B2C scopes and the API checks them → Inbound App for the frontend + Resource for the API, same scope names. Client-credentials callers → confidential Inbound App. No API scopes → Federated App (server-side OIDC) or plain SDK session. Embedded Flow → Descope session token (`aud` = project ID, no `scope` claim): it can't mint Inbound App access tokens, so map the API's scope checks to roles or permissions in the session token. | Inbound App + Resource when any scope check exists |
 | **Projects and tenants** | Separate B2C directories for dev / staging / prod → one Descope project per environment. Customer organizations inside one directory (per-customer IdPs, `domain_hint`, an org claim) → Descope tenants in one project. | One project per environment, no tenants |
 | **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users. | Keep the B2C ID |
 | **Passwords** | Full import without passwords, with a reset or passwordless step on first login. It needs no change in the B2C tenant and lets B2C shut down soonest. List JIT via ROPC (keeps passwords, needs an ROPC policy in the tenant) as the alternative. | Import without passwords |
@@ -195,6 +198,21 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
   - Send the Resource on both requests: msal-browser 5.x, the request's `resource` option; 2.x and
     3.x, `extraQueryParameters: { resource }` and `tokenBodyParameters: { resource }`.
   - Popup calls (`loginPopup`, `acquireTokenPopup`) move to redirect.
+- **Other OIDC libraries:** change their configuration, not their code: issuer / authority, client
+  ID and redirect URI from the Inbound App or Federated App, and the Resource when calling a scoped
+  API. If discovery returns 404, the library changed the issuer's casing; give it the discovery
+  URL directly (for example `MetadataAddress` in .NET).
+- **Embedded sign-in:** remove the iframe, the sign-in route that ran inside it, the
+  `window.top.location.reload()` / `postMessage` glue, and `JourneyFraming` in the custom policy.
+  Render the Flow in the page:
+  - React: `<Descope flowId="sign-up-or-in" onSuccess={…} />`.
+  - Server-rendered pages (Express + EJS, ASP.NET MVC): `@descope/web-js-sdk` and
+    `@descope/web-component`, `<descope-wc project-id="…" flow-id="sign-up-or-in">`, and
+    `sdk.refresh()` in the `success` handler and at the top of every authenticated page. The server
+    validates the session on every request with the backend SDK. For the session cookie, use
+    **Manage in cookies** in production (needs a custom domain on the app's site) and
+    `sessionTokenViaCookie: true` on `localhost`.
+  - Logout: `sdk.logout()`, then end the app's own session.
 - **Backend:** validate Descope tokens. Check `iss` against the issuer taken from discovery (never
   hardcode it) and `aud` against the Resource identifier for Inbound App tokens. Read `scope`
   instead of `scp`; in .NET, replace `[RequiredScope]` with a policy that reads `scope`.
@@ -217,7 +235,8 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
      --exclude="MIGRATION-*.md" --exclude="*.lock" --exclude="package-lock.json" \
      --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=bin --exclude-dir=obj --exclude-dir=.git .
    ```
-   Fix every hit except `@azure/msal`, which stays until MSAL is replaced.
+   Fix every hit. In apps that keep MSAL for redirect login, `@azure/msal` stays until MSAL is
+   replaced.
 2. Install and build with zero errors (`npm install && npx tsc --noEmit`, `dotnet build`, …).
 3. Run the existing tests. Failures usually mean fixtures still use B2C claim shapes.
 4. A protected API returns 401 with no token and with a malformed token, never 500.
