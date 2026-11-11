@@ -31,8 +31,8 @@ Follow Descope's migration strategy ([docs.descope.com/migrate/strategy](https:/
   tenants and roles. Passkeys, adaptive MFA or a redesigned login go in the summary as after-cutover
   ideas, not into the migration.
 - **Console-first.** The sign-in journey (screens, MFA, password reset) moves into Descope Flows
-  configured in the Console. The code only changes in two places: the frontend switches to the
-  Descope SDK to start sign-in and hold the session, and the backend verifies Descope tokens
+  configured in the Console. The code only changes in two places: the frontend points its sign-in
+  library at Descope or renders an embedded Descope Flow, and the backend verifies Descope tokens
   instead of B2C tokens.
 - **One app at a time, tests first.** Move apps one at a time, each with sign-in tests.
 
@@ -68,7 +68,9 @@ These hold for every B2C migration. Don't plan around them.
   limited support. This skill keeps MSAL and reconfigures it; replacing it with the Descope SDK or
   a standard OIDC library is a required step before production.
 - **Policies become Flows.** Each user flow or custom policy journey (`B2C_1_…`, `B2C_1A_…`) maps
-  to a Descope Flow. API connectors and REST technical profiles become Flow HTTP Connectors.
+  to a Descope Flow. Sign-up / sign-in and password reset can be one Flow (reset is a branch of
+  sign-in). Profile edit becomes the User Profile Widget or an embedded Flow in the app, not a
+  second hosted login. API connectors and REST technical profiles become Flow HTTP Connectors.
 - **Claims differ.** `scp` → `scope` (same space-separated scope names), `emails` array → `email`
   (add it in the JWT Template), `tfp` / `acr` policy checks become dead code.
 - **Enterprise SSO cutover isn't free.** Customer IdPs keep working without reconfiguration only
@@ -147,7 +149,7 @@ default. Record every row in the plan's **Decisions** table: decision, choice, e
 | **Other OIDC libraries** | Redirect login: keep the library and point its configuration at the Inbound App or Federated App (Step 6). Unlike MSAL, it can stay after cutover. Embedded sign-in: remove it, as with MSAL. Only the MSAL setup has been tested, so mark sign-in with this library "untested: verify" in the summary. | Keep the library, reconfigured |
 | **Descope app** | Frontend requests B2C scopes and the API checks them → Inbound App for the frontend + Resource for the API, same scope names. Client-credentials callers → confidential Inbound App. No API scopes → Federated App (server-side OIDC) or plain SDK session. Embedded Flow → Descope session token (`aud` = project ID, no `scope` claim): it can't mint Inbound App access tokens, so map the API's scope checks to roles or permissions in the session token. | Inbound App + Resource when any scope check exists |
 | **Projects and tenants** | Separate B2C directories for dev / staging / prod → one Descope project per environment. Customer organizations inside one directory (per-customer IdPs, `domain_hint`, an org claim) → Descope tenants in one project. | One project per environment, no tenants |
-| **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users. | Keep the B2C ID |
+| **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users with their Descope user ID (`U…`, not a GUID). | Keep the B2C ID |
 | **Passwords** | Full import without passwords, with a reset or passwordless step on first login. It needs no change in the B2C tenant and lets B2C shut down soonest. List JIT via ROPC (keeps passwords, needs an ROPC policy in the tenant) as the alternative. | Import without passwords |
 | **Roles** | Recreate in Descope RBAC the roles the code reads, with the same names. | Same role names |
 | **Cutover** | No enterprise IdPs → direct, one app at a time. Enterprise IdPs or many apps → two-stage broker (Descope in front of B2C, then move the hostname). | Direct, per app |
@@ -203,7 +205,8 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
   API. If discovery returns 404, the library changed the issuer's casing; give it the discovery
   URL directly (for example `MetadataAddress` in .NET).
 - **Embedded sign-in:** remove the iframe, the sign-in route that ran inside it, the
-  `window.top.location.reload()` / `postMessage` glue, and `JourneyFraming` in the custom policy.
+  `window.top.location.reload()` / `postMessage` glue. Leave the custom policy XML as it is, for
+  rollback.
   Render the Flow in the page:
   - React: `<Descope flowId="sign-up-or-in" onSuccess={…} />`.
   - Server-rendered pages (Express + EJS, ASP.NET MVC): `@descope/web-js-sdk` and
@@ -235,11 +238,12 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
      --exclude="MIGRATION-*.md" --exclude="*.lock" --exclude="package-lock.json" \
      --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=bin --exclude-dir=obj --exclude-dir=.git .
    ```
-   Fix every hit. In apps that keep MSAL for redirect login, `@azure/msal` stays until MSAL is
-   replaced.
-2. Install and build with zero errors (`npm install && npx tsc --noEmit`, `dotnet build`, …).
+   Fix every hit, except hits in the custom policy XML kept for rollback. In apps that keep MSAL
+   for redirect login, `@azure/msal` stays until MSAL is replaced.
+2. Install and run the project's build or type check with zero errors (`npx tsc --noEmit`,
+   `dotnet build`, …).
 3. Run the existing tests. Failures usually mean fixtures still use B2C claim shapes.
-4. A protected API returns 401 with no token and with a malformed token, never 500.
+4. A protected API or page returns 401 with no token and with a malformed token, never 500.
 
 ---
 
@@ -251,11 +255,10 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
 4. **Not yet verified, needs a person** — sign-in on the Descope page returns to the app; API call
    succeeds with the new token and returns 403 without the scope; logout clears the session; token
    claims (`iss`, `aud`, `scope`, `email`, `oid`, roles) for one migrated and one new user; silent
-   token renewal works; after a
-   dev import, one local, one social and one enterprise SSO user each land on their imported
-   account.
-5. **Before production** — replace MSAL with the Descope SDK or a standard OIDC library, Console
-   setup, customer IdP admin notices, the user import order, the cutover steps.
+   token renewal works; after a dev import, one local, one social and one enterprise SSO user each
+   land on their imported account.
+5. **Before production** — replace MSAL, if it was kept, with the Descope SDK or a standard OIDC
+   library; Console setup, customer IdP admin notices, the user import order, the cutover steps.
 6. **After cutover** — improvements left out on purpose (passkeys, adaptive MFA).
 
 ---
