@@ -64,9 +64,9 @@ These hold for every B2C migration. Don't plan around them.
 - **No passkey or TOTP migration.** Users re-enroll.
 - **User IDs change.** Descope assigns its own user IDs. B2C's object ID (`oid`) is imported as the
   `azureObjectId` custom attribute, and a JWT Template can emit it as `oid`.
-- **MSAL is not the end state.** MSAL can be pointed at Descope for a proof of concept, but
-  Microsoft calls that mode limited support. Replace MSAL with the Descope SDK or a standard OIDC
-  library before production.
+- **MSAL is not the end state.** MSAL can be pointed at Descope, but Microsoft calls that mode
+  limited support. This skill keeps MSAL and reconfigures it; replacing it with the Descope SDK or
+  a standard OIDC library is a required step before production.
 - **Policies become Flows.** Each user flow or custom policy journey (`B2C_1_…`, `B2C_1A_…`) maps
   to a Descope Flow. API connectors and REST technical profiles become Flow HTTP Connectors.
 - **Claims differ.** `scp` → `scope` (same space-separated scope names), `emails` array → `email`
@@ -141,7 +141,7 @@ default. Record every row in the plan's **Decisions** table: decision, choice, e
 | Decision | Rule | Default |
 |---|---|---|
 | **Login** | MSAL redirect or popup, or server-side OIDC → Descope-hosted login (B2C users already redirect, so it's the smallest UX change). Iframe sign-in → embedded `<Descope flowId="…"/>`. ROPC native app → Descope native SDK. Popup moves to redirect. | Descope-hosted login |
-| **MSAL** | Replace it with the Descope SDK (SPA) or a standard OIDC library (server-side) in this run. Note the MSAL proof of concept in the plan as an option for a person who wants to try sign-in before the swap. | Replace |
+| **MSAL** | Keep it and point it at Descope (Step 6). `Microsoft.Identity.Web` can't point at Descope → the standard ASP.NET Core OpenID Connect or JwtBearer handler. Native MSAL isn't verified against Descope → Descope native SDK. Put replacing MSAL under **Before production** in the summary. | Keep MSAL, reconfigured |
 | **Descope app** | Frontend requests B2C scopes and the API checks them → Inbound App for the frontend + Resource for the API, same scope names. Client-credentials callers → confidential Inbound App. No API scopes → Federated App (server-side OIDC) or plain SDK session. | Inbound App + Resource when any scope check exists |
 | **Projects and tenants** | Separate B2C directories for dev / staging / prod → one Descope project per environment. Customer organizations inside one directory (per-customer IdPs, `domain_hint`, an org claim) → Descope tenants in one project. | One project per environment, no tenants |
 | **User ID** | Keep the B2C ID: import `oid` as `azureObjectId`, emit it as `oid` in the JWT Template (and override `sub` if the code keys on `sub`). The sign-up Flow fills `azureObjectId` for new users. | Keep the B2C ID |
@@ -184,8 +184,17 @@ Before each change, verify the SDK method with the MCP, or read the installed pa
 declarations. Verify package versions (`npm view @descope/react-sdk version`,
 `dotnet package search Descope --exact-match`).
 
-- **Frontend:** replace MSAL with the Descope SDK. For hosted login, use the SDK's `oidcConfig`
-  and `sdk.oidc.loginWithRedirect()`, passing the Resource (`resource`) when calling a scoped API.
+- **MSAL:** change its configuration, not its calls:
+  - `clientId` → the Inbound App client ID; `authority` → the Inbound App issuer;
+    `knownAuthorities` → the Descope host; `redirectUri` → a URL registered on the Inbound App.
+  - `system.protocolMode: "OIDC"` (msal-browser, msal-react, msal-angular, msal-node). MSAL.NET:
+    `WithOidcAuthority(<issuer>)`, version 4.60.0 or later.
+  - MSAL lowercases the authority, and the project ID in the discovery URL is case-sensitive. Fetch
+    `<issuer>/.well-known/openid-configuration` yourself and pass it as `authorityMetadata`, then
+    create the MSAL instance.
+  - Send the Resource on both requests: msal-browser 5.x, the request's `resource` option; 2.x and
+    3.x, `extraQueryParameters: { resource }` and `tokenBodyParameters: { resource }`.
+  - Popup calls (`loginPopup`, `acquireTokenPopup`) move to redirect.
 - **Backend:** validate Descope tokens. Check `iss` against the issuer taken from discovery (never
   hardcode it) and `aud` against the Resource identifier for Inbound App tokens. Read `scope`
   instead of `scp`; in .NET, replace `[RequiredScope]` with a policy that reads `scope`.
@@ -208,7 +217,7 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
      --exclude="MIGRATION-*.md" --exclude="*.lock" --exclude="package-lock.json" \
      --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=bin --exclude-dir=obj --exclude-dir=.git .
    ```
-   Fix every hit.
+   Fix every hit except `@azure/msal`, which stays until MSAL is replaced.
 2. Install and build with zero errors (`npm install && npx tsc --noEmit`, `dotnet build`, …).
 3. Run the existing tests. Failures usually mean fixtures still use B2C claim shapes.
 4. A protected API returns 401 with no token and with a malformed token, never 500.
@@ -222,11 +231,12 @@ declarations. Verify package versions (`npm view @descope/react-sdk version`,
 3. **Open questions** — from the plan, plus anything marked "verify".
 4. **Not yet verified, needs a person** — sign-in on the Descope page returns to the app; API call
    succeeds with the new token and returns 403 without the scope; logout clears the session; token
-   claims (`iss`, `aud`, `scope`, `email`, `oid`, roles) for one migrated and one new user; after a
+   claims (`iss`, `aud`, `scope`, `email`, `oid`, roles) for one migrated and one new user; silent
+   token renewal works; after a
    dev import, one local, one social and one enterprise SSO user each land on their imported
    account.
-5. **Before production** — Console setup, customer IdP admin notices, the user import order, the
-   cutover steps.
+5. **Before production** — replace MSAL with the Descope SDK or a standard OIDC library, Console
+   setup, customer IdP admin notices, the user import order, the cutover steps.
 6. **After cutover** — improvements left out on purpose (passkeys, adaptive MFA).
 
 ---

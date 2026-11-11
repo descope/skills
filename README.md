@@ -290,7 +290,7 @@ A shorter, non-interactive version of `azure-ad-b2c-to-descope` for agents runni
 
 **Output:**
 - `MIGRATION-PLAN.md` with a Decisions table (choice, evidence, what would change it)
-- SDK replacement across auth touchpoints, plus user export and transform scripts (not run)
+- MSAL pointed at Descope and backend token validation updated, plus user export and transform scripts (not run)
 - `MIGRATION-SUMMARY.md` with open questions and the checks that need a person
 
 **Workflow:** MCP check → scope check → discovery → decisions → plan → code changes → checks → summary.
