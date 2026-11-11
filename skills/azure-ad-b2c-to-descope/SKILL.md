@@ -116,13 +116,15 @@ asking about the MCP. Otherwise check which Descope MCP is connected:
 **If it isn't**, show this message and use `AskUserQuestion`:
 
 > **Connect the Descope MCP Server.** This skill uses it to check current SDK methods and
-> features, and it can read your Descope project and make the Console setup changes with your
+> features, and it can read your Descope project and make management changes to it with your
 > approval. Without it, guidance may be stale. Server URL `https://mcp.descope.com` (other
 > regions and client setup: https://docs.descope.com/mcp/mcp-server).
 >
 > **Connect it before we continue, or proceed without it?**
 
-- Connect: pause and wait. Once they confirm, re-check by calling `docs_search` before proceeding.
+- Connect: pause and wait. Once they confirm, re-check by calling `docs_search`, then
+  `search-descope-docs` if that fails. If only the Docs MCP responds, continue as "Proceed with
+  only the Docs MCP" below.
 - Proceed with only the Docs MCP: use it for doc lookups; the Console setup stays manual.
 - Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
   verify against the current SDK."
@@ -703,7 +705,8 @@ Ask whether they already have a Project ID and working Flow; if yes, verify item
 
 If the Descope MCP Server is connected, offer to make these changes with it. Before the first change,
 read the project and show its ID and name, and confirm with the user that it is the environment
-recorded in `MIGRATION-STATE.md` (start with dev). Then apply each change after the user approves.
+recorded in `MIGRATION-STATE.md` (start with dev). Then apply each change after the user approves,
+elevating first (`session` → `elevate`); if the user declines a change, skip it.
 Otherwise give them as Console steps.
 
 1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per environment.
