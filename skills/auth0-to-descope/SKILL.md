@@ -48,7 +48,7 @@ Before doing anything else, check which Descope MCP is connected:
 **If it isn't**, show this message and use `AskUserQuestion`:
 
 > **Connect the Descope MCP Server.** This skill uses it to check current SDK methods and
-> features, and it can read your Descope project and make the Console setup changes with your
+> features, and it can read your Descope project and make management changes to it with your
 > approval. Without it, guidance may be stale. Server URL `https://mcp.descope.com` (other
 > regions and client setup: https://docs.descope.com/mcp/mcp-server).
 >
@@ -57,10 +57,17 @@ Before doing anything else, check which Descope MCP is connected:
 >
 > **Connect it before we continue, or proceed without it?**
 
-- Connect: pause and wait. Once they confirm, re-check by calling `docs_search` before proceeding.
+- Connect: pause and wait. Once they confirm, re-check by calling `docs_search`, then
+  `search-descope-docs` if that fails. If only the Docs MCP responds, continue as "Proceed with
+  only the Docs MCP" below.
 - Proceed with only the Docs MCP: use it for doc lookups; the Console setup stays manual.
 - Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
   verify against the current SDK."
+
+**Changes through the Descope MCP Server.** Before any change to the project, select it
+(`session` → `selectProject`) and confirm its ID matches the app's `DESCOPE_PROJECT_ID`, get the
+user's approval for that change, then elevate (`session` → `elevate`). If any step fails, make the
+change by hand instead.
 
 Do not proceed to Part 2 until this step is resolved.
 
