@@ -201,7 +201,7 @@ building `userTenants[].roleNames`. A raw ID matches no Descope role.
 
 So the password strategy is a decision, not a lookup. Make it in Step 0.5, before estimating anything.
 
-#### Path 1 — Full migration (default)
+#### Path 1 — Full migration (default, with Path 2 as the cutover)
 
 Read accounts, roles, permissions, and users out of the Frontegg Management API and create the
 matching objects in Descope in **dependency order: tenants → permissions → roles → users**. That
@@ -218,8 +218,15 @@ rejects custom attributes that are not already in the project schema, so `fronte
 first. Then dry-run against a **dev** project, review the output, and only then run staging and
 production.
 
-Passwords do not come along. After import, set a `freshlyMigrated` custom attribute and branch on it
-in the Flow to force a reset or onboard the user into a passwordless method. Set `verifiedEmail` and
+Passwords do not come along. Set a `freshlyMigrated` custom attribute on every imported user, then
+switch the app to Descope in one step with the Path 2 connector live in the Flow. During the
+transition, `freshlyMigrated` users go through the connector so Frontegg checks their password and
+Descope stores it, and Frontegg sign-ups made after the export are created on first sign-in. No
+freeze or final re-export is needed. The user picks the transition length: recommend at least a few
+months to keep passwords for most active users. After Frontegg is off, route remaining
+`freshlyMigrated` users to email/phone verification, then a password reset or a passwordless
+method. JIT does not update the roles of users already imported, so re-sync accounts and role
+assignments once right after the switch. Set `verifiedEmail` and
 `verifiedPhone` to `true` where Frontegg already marked them verified — otherwise every migrated user
 gets re-verified, which looks like a bug to them. Note that `customAttributes` values on the
 batch-create API must match each attribute's type as declared in the Console (string, number,
@@ -241,9 +248,19 @@ On success it returns a **user token**, not a user object — so the Flow must d
 mapping them onto Descope user attributes and flow context. Add a Flow condition so already-migrated
 users skip the connector entirely.
 
-One mechanic worth knowing before building this: there is **no separate "Set Password" action**. On a
-successful connector response the Flow invokes the **Sign Up / Password** action, which creates the
-user and sets the password in one step — an agent hunting for a set-password step will not find one.
+Which action stores the password depends on whether the user already exists in Descope:
+
+- **User new to Descope** (signed up in Frontegg after the export, or a JIT-only migration): on a
+  successful connector response the Flow runs **Sign Up / Password**, which creates the user and
+  sets the password in one step.
+- **Imported user (`freshlyMigrated`)**: **Sign Up / Password fails** because the user already
+  exists. After Frontegg accepts the password, sign the user in with OTP or magic link to their
+  email or phone, then run **Update Password**, which requires a signed-in user. Clear
+  `freshlyMigrated` afterwards. This adds one verification step on the first sign-in only.
+
+Both actions read the password from the **Login Password** or **New Password** screen component;
+prefer **Login Password**, since the user is typing an existing password. The password must also
+meet the Descope project's password policy, so route failures to a password reset.
 
 Descope documents this exact pattern for [Keycloak](https://docs.descope.com/migrate/guides/keycloak)
 (submit credentials → Generic HTTP Connector POST → legacy IdP validates → on success, Sign Up /
@@ -253,8 +270,9 @@ the validating endpoint changes. Read the Keycloak guide as the reference implem
 the current Flow action names and dynamic values against the docs before building — this area has
 moved before.
 
-Frontegg must stay running until the active-user tail has signed in at least once. Instrument the
-provisioning rate so the decommission date is driven by data rather than optimism.
+Frontegg stays running for the transition period the user chooses (recommend at least a few
+months when passwords matter). Instrument the JIT sign-in rate so the decommission date is driven
+by data rather than optimism.
 
 #### Path 3 — JIT migration with Frontegg as a custom OIDC provider
 

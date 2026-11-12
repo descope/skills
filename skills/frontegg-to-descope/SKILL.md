@@ -290,12 +290,13 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 **User and account migration** (if they indicated existing users/accounts in Step 0)
 
 * How many users and accounts exist? `GET /identity/resources/users/v3` caps at **200 users per page**, so this determines how long the export takes and whether it needs to be checkpointed.
-* **Password credentials: confirm the strategy explicitly.** Frontegg documents a rich *inbound* migration API (bulk import with `bcrypt`, `scrypt`, `firebase-scrypt`, `pbkdf2`, `argon2`, `sha256`, and `sha1` hashes) but **no bulk export endpoint and no password-hash export**. User profiles can be paged out of the list API; credentials cannot — no response schema in the identity API returns a credential field. Three paths handle this — pick one now, because it determines the cutover plan:
-  1. **Full migration without passwords** — export users, import into Descope, then move everyone to passwordless (magic link, OTP, passkeys) or force a reset on first sign-in using a `freshlyMigrated` custom attribute in the Flow. This is the default recommendation.
-  2. **JIT migration with a Generic HTTP Connector** — the only path that **keeps existing passwords working**. The Descope Flow collects email and password, a Generic HTTP Connector calls Frontegg's "Authenticate user with password" API (`POST /identity/resources/auth/v1/user`) to verify them, and on success the Flow creates the user in Descope and sets the password. Subsequent sign-ins are Descope-native.
-  3. **JIT migration with Frontegg as a custom OIDC provider** — users sign in through Frontegg's hosted login (MFA included) and are provisioned into Descope from the returned ID token. Good when moving to passwordless anyway.
+* **Password credentials: confirm the strategy explicitly.** Frontegg documents a rich *inbound* migration API (bulk import with `bcrypt`, `scrypt`, `firebase-scrypt`, `pbkdf2`, `argon2`, `sha256`, and `sha1` hashes) but **no bulk export endpoint and no password-hash export**. User profiles can be paged out of the list API; credentials cannot — no response schema in the identity API returns a credential field. Pick the strategy now, because it determines the cutover plan:
+  1. **Full migration plus JIT during a transition (recommended default)** — export and import every user and account, set `freshlyMigrated` on each, then switch the app to Descope in one step. During a transition period, the sign-in Flow sends new users and `freshlyMigrated` users through the Generic HTTP Connector below, so Frontegg checks their password and Descope stores it (imported users need one OTP or magic-link step first, because storing a password on an existing user uses **Update Password**). No freeze, no final re-export, no downtime, and active users keep their passwords. The user decides how long Frontegg stays on: **recommend at least a few months** to keep passwords for most active users. After Frontegg is turned off, the remaining `freshlyMigrated` users verify their email or phone, then go passwordless or reset their password.
+  2. **Full migration without passwords** — the same import with no JIT transition. Everyone verifies their email or phone at first sign-in, then moves to passwordless (magic link, OTP, passkeys) or resets their password. Choose this only when Frontegg must be turned off at the switch.
+  3. **JIT migration with a Generic HTTP Connector** — the mechanism option 1 uses, also usable alone with no bulk import. It **keeps existing passwords working**. The Descope Flow collects email and password, a Generic HTTP Connector calls Frontegg's "Authenticate user with password" API (`POST /identity/resources/auth/v1/user`) to verify them, and on success the Flow creates the user in Descope and sets the password. Subsequent sign-ins are Descope-native.
+  4. **JIT migration with Frontegg as a custom OIDC provider** — users sign in through Frontegg's hosted login (MFA included) and are provisioned into Descope from the returned ID token. Good when moving to passwordless anyway.
 
-  Both JIT paths require **keeping Frontegg running until every active user has signed in at least once**. Ask whether that is acceptable before recommending one. See `references/implementation-nuances.md` → **Migrating user and account data**.
+  Every JIT option keeps Frontegg running for a transition period. Ask how long the user can keep it on before recommending one, and recommend at least a few months when passwords matter. See `references/implementation-nuances.md` → **Migrating user and account data**.
 * Do users belong to multiple Accounts? If yes, preserve tenant membership and per-tenant role assignment when mapping to Descope Tenants.
 * Is `vendorMetadata` in use? Frontegg recommends it for storing a pre-Frontegg internal user ID, and it is excluded from the JWT. Export it — it is often the join key back to the application's own database.
 * Are **sub-accounts** in use? Descope supports **sub-tenants** natively — a tenant can have multiple sub-tenants, those can nest further, and each has exactly one parent. Confirm two things: what **role inheritance** mode the hierarchy needs (Full Inheritance, User only, or None), and whether any code reads the hierarchy from the token — the `tenants` JWT claim is flat and does not encode parentage, so hierarchy-aware request-time logic needs a `tenant.subtenant` JWT-template claim or a Load/Search Tenant call returning `parent` / `successors`. Note also that password settings and session management are always inherited from the parent in Descope.
@@ -395,7 +396,7 @@ Include a **Migration at a Glance** table:
 | **Login model**                  | Frontegg hosted → Descope-hosted login (`oidcConfig`) / Frontegg embedded → embedded Flow |
 | **Files changing**               | N source files across N areas                                       |
 | **Console setup**                | N configuration steps before launch                                 |
-| **User impact**                  | Users will need to log in once after cutover; passwords must be reset / users move to passwordless |
+| **User impact**                  | Users sign in once after cutover; with a JIT transition they keep their password, otherwise they verify email/phone and reset or go passwordless |
 | **Estimated engineering effort** | N–N hours                                                           |
 | **Biggest risk**                 | One sentence naming the highest-complexity item                     |
 
@@ -585,9 +586,9 @@ retained read-only until the migration is verified."
 Prose strategy first, then steps. Start with: "X existing users across Y accounts need to be in
 Descope before cutover." Describe:
 
-- **The plan**: whether this is big-bang (all users/accounts moved before cutover) or phased, and why
+- **The plan**: by default, import everyone, switch the app in one step, and keep Frontegg behind the Flow for a JIT transition of a length the user chooses (a few months recommended). Say why if the plan differs
 - **Account→tenant mapping**: each Frontegg Account becomes a Descope Tenant; note how sub-accounts are handled
-- **What users will experience**: they will need to log in again, and — unless a lazy migration is built — set a new password or move to a passwordless method
+- **What users will experience**: they sign in once more. Users who sign in during the transition keep their password. Users who don't verify their email or phone after Frontegg is off, then reset their password or go passwordless
 - **The biggest dependency**: how password credentials carry over. State plainly that Frontegg has no documented password-hash export, and name the chosen strategy
 - **SCIM continuity**: whether enterprise directories must be re-pointed at Descope (a continuing pipeline, not a one-time import)
 
@@ -602,15 +603,18 @@ endpoints and mapping):
 - Verify tenant, role, and permission creation before user creation
 - Reconcile duplicates (SCIM email changes create orphaned Frontegg users)
 - Re-point SCIM at Descope (if SCIM is in use)
-- Run against staging, then production
-- Set `freshlyMigrated` and drive the password-reset or passwordless onboarding campaign
+- Run against staging, then production, setting `freshlyMigrated` on every imported user
+- Add the Generic HTTP Connector to the sign-in Flow, with a condition for new users and `freshlyMigrated` users. New users get **Sign Up / Password**. Imported users get an OTP or magic-link step, then **Update Password**, then the flag is cleared
+- Switch the app to Descope in one step; no freeze or final re-export is needed
+- Re-sync accounts and role assignments once right after the switch, since JIT does not update roles of users already imported
+- Turn Frontegg off at the end of the chosen transition, then send remaining `freshlyMigrated` users to email/phone verification plus password reset or passwordless
 
-For a **JIT migration**, the checklist is different — there is no bulk export:
+For a **JIT-only migration** (no bulk import), the checklist is different:
 
 - Configure the JIT path in the Descope Flow (Generic HTTP Connector to Frontegg, or Frontegg as a custom OIDC provider)
 - Enable dual-token validation in the backend so both Descope and Frontegg sessions work during the transition
 - Roll out, monitor provisioning rate, and add a Flow condition routing already-provisioned users to Descope-native auth
-- Keep Frontegg running until the active-user tail has signed in, then decommission
+- Keep Frontegg running for the chosen transition (a few months recommended), then decommission
 
 ---
 
@@ -623,10 +627,10 @@ Format each as a named callout:
 > **Consideration: Frontegg does not export password hashes**
 > Frontegg's documented migration API is inbound only, and no user-management endpoint returns a
 > credential field. If the plan assumes passwords transfer, the cutover date is wrong.
-> **Action:** Pick one of Descope's three supported paths now — full migration plus forced reset or
-> passwordless onboarding, JIT migration through a Generic HTTP Connector (the only way to keep
-> passwords working), or JIT through Frontegg as a custom OIDC provider. The two JIT paths require
-> keeping Frontegg running until the active-user tail has signed in.
+> **Action:** Default to a full import plus a JIT transition through a Generic HTTP Connector, which
+> keeps passwords for users who sign in while Frontegg is still on. Agree on the transition length
+> now (a few months recommended). If Frontegg must be turned off at the switch, users verify their
+> email or phone and then reset their password or go passwordless.
 
 > **Consideration: the self-service portal is a large surface, not a component**
 > Frontegg's portal gives end customers screens for users, groups, custom roles, security policy,
@@ -706,7 +710,10 @@ Run against dev/staging first. Do not run against production until Phase 4 passe
 
 **Phase 5 — Production Cutover**
 
-- (cutover-specific steps based on their strategy — maintenance window, phased rollout, SCIM re-point, password reset campaign, etc.)
+- Switch the app to Descope in one step, with the JIT connector live in the Flow (no maintenance window or freeze)
+- Re-sync accounts and role assignments from Frontegg once, right after the switch
+- Re-point SCIM, and plan dual-token validation or a forced re-login for existing Frontegg sessions
+- Track JIT sign-ins, turn Frontegg off at the end of the chosen transition, then run the verify-and-reset or passwordless step for remaining `freshlyMigrated` users
 
 ---
 
@@ -759,7 +766,8 @@ _Last updated: [timestamp of last completed step]_
 - Existing users: [Yes — N users / No — greenfield]
 - Existing accounts: [Yes — N accounts → tenants / No]
 - Sub-accounts in use: [Yes / No]
-- Password strategy: [Full migration + forced reset / Full migration + passwordless / JIT via Generic HTTP Connector / JIT via Frontegg as OIDC provider]
+- Password strategy: [Full migration + JIT transition (recommended) / Full migration + verify and reset or passwordless / JIT via Generic HTTP Connector only / JIT via Frontegg as OIDC provider]
+- JIT transition length: [e.g. 3 months]
 - Frontegg features in use: [comma-separated list]
 - Frontegg environments: [Dev / Staging / QA / Prod — how many]
 - Frontegg region: [EU / US / AU / CA]
@@ -1370,8 +1378,11 @@ migration script for the user's setup rather than handing them a generic tool. T
 [migration docs](https://docs.descope.com/migrate) may or may not be published when you run this —
 check before linking to it. **Never tell the user to open a guide you have not confirmed exists.**
 
-The three paths below are Descope's standard migration shapes — the same ones documented for
-Keycloak, Cognito, and Azure AD B2C — applied to Frontegg.
+The paths below are Descope's standard migration shapes — the same ones documented for Keycloak,
+Cognito, and Azure AD B2C — applied to Frontegg. **Recommend Path 1 with Path 2 as its cutover:**
+import everyone, switch the app in one step, and keep the Path 2 connector in the Flow for a
+transition period. That avoids a freeze, a final re-export, and downtime, and keeps passwords for
+active users.
 
 **Path 1 — Full migration (recommended default).** Export accounts, roles, permissions, and users from
 Frontegg, then create the matching objects in Descope in dependency order: **tenants → permissions →
@@ -1382,12 +1393,17 @@ Things the script must get right: fetch all users without a tenant header, then 
 role assignments separately (the users list returns tenant roles empty), map Frontegg role **keys**
 to Descope role names, import locked users as disabled, and skip phone numbers that aren't E.164.
 
-Passwords do not come along. After import, set a `freshlyMigrated` custom attribute and branch on it
-in the Flow to force a reset or onboard the user into a passwordless method. Set `verifiedEmail` /
+Passwords do not come along. Set a `freshlyMigrated` custom attribute on every imported user.
+During the transition, the Flow sends those users through the Path 2 connector so Frontegg checks
+their password. Because they already exist in Descope, the Flow signs them in with OTP or magic link
+and stores the password with **Update Password** (not Sign Up / Password), then clears the flag. After Frontegg is turned off, the Flow
+sends remaining `freshlyMigrated` users to email/phone verification, then a password reset or a
+passwordless method. JIT creates missing users but doesn't update roles of imported users, so
+re-sync accounts and role assignments once right after the switch. Set `verifiedEmail` /
 `verifiedPhone` where Frontegg already marked them verified.
 
-**Path 2 — JIT migration with a Generic HTTP Connector.** The only path that preserves existing
-passwords. The Descope Flow collects email and password, a
+**Path 2 — JIT migration with a Generic HTTP Connector.** The only way to keep existing passwords,
+either as the cutover for Path 1 or on its own. The Descope Flow collects email and password, a
 [Generic HTTP Connector](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http)
 calls Frontegg's "Authenticate user with password" API (`POST /identity/resources/auth/v1/user`; it
 returns a Frontegg user token, so read the user ID and tenant from that JWT or a follow-up user API
@@ -1401,8 +1417,8 @@ provisions them from the returned ID token claims. Add a Flow
 [condition](https://docs.descope.com/flows/conditions) that routes already-provisioned users to
 Descope-native auth so they stop hitting Frontegg.
 
-Both JIT paths require Frontegg to stay running until the active-user tail has signed in at least
-once, and both require **dual token validation** in the backend during the transition (see Step 4).
+Both JIT paths keep Frontegg running for a transition period the user chooses (recommend at least a
+few months when passwords matter), and both require **dual token validation** in the backend during the transition (see Step 4).
 
 The script's shape: mint an environment token
 (`POST {region gateway}/auth/vendor` with `{ clientId, secret }`; the EU gateway is
@@ -2351,7 +2367,8 @@ remaining, and behavioral differences that matter before production.
 3. **Pre-deploy checklist** — actionable checkbox items for everything that must happen before the
    migrated app can run. Prominently include all Console setup tasks (project, Flow, JWT Template,
    Approved Domains, tenants, roles, SSO/SCIM, social provider credentials), the SCIM re-point, the
-   password-reset or passwordless onboarding campaign, and — if ReBAC was in use — decommissioning
+   JIT transition length and the verify-and-reset or passwordless step for users who don't sign in
+   during it, and — if ReBAC was in use — decommissioning
    the self-hosted entitlements engine. These are the things easiest to forget because the code
    compiles without them.
 
