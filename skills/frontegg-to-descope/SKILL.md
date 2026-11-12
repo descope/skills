@@ -289,7 +289,7 @@ Step 0 answers (e.g., skip user migration planning if they said they're starting
 
 **User and account migration** (if they indicated existing users/accounts in Step 0)
 
-* How many users and accounts exist? `GET /resources/users/v3` caps at **200 users per page**, so this determines how long the export takes and whether it needs to be checkpointed.
+* How many users and accounts exist? `GET /identity/resources/users/v3` caps at **200 users per page**, so this determines how long the export takes and whether it needs to be checkpointed.
 * **Password credentials: confirm the strategy explicitly.** Frontegg documents a rich *inbound* migration API (bulk import with `bcrypt`, `scrypt`, `firebase-scrypt`, `pbkdf2`, `argon2`, `sha256`, and `sha1` hashes) but **no bulk export endpoint and no password-hash export**. User profiles can be paged out of the list API; credentials cannot — no response schema in the identity API returns a credential field. Three paths handle this — pick one now, because it determines the cutover plan:
   1. **Full migration without passwords** — export users, import into Descope, then move everyone to passwordless (magic link, OTP, passkeys) or force a reset on first sign-in using a `freshlyMigrated` custom attribute in the Flow. This is the default recommendation.
   2. **JIT migration with a Generic HTTP Connector** — the only path that **keeps existing passwords working**. The Descope Flow collects email and password, a Generic HTTP Connector calls Frontegg's "Authenticate user with password" API (`POST /identity/resources/auth/v1/user`) to verify them, and on success the Flow creates the user in Descope and sets the password. Subsequent sign-ins are Descope-native.
@@ -592,14 +592,13 @@ Descope before cutover." Describe:
 - **SCIM continuity**: whether enterprise directories must be re-pointed at Descope (a continuing pipeline, not a one-time import)
 
 End with a brief checklist of the migration steps at the level a PM can track. For a **full
-migration**, prefer Descope's [migration tool](https://github.com/descope/descope-migration) over a
-hand-written script — but confirm it ships a Frontegg module before committing the plan to it, and
-fall back to a custom export/import script if it does not:
+migration**, the agent writes the export/import script (Step 3 → User & Account Data has the
+endpoints and mapping):
 
-- Obtain a Frontegg Client ID and API Key with read access to tenants, permissions, roles, and users
-- Configure the migration tool's `.env` (`FRONTEGG_CLIENT_ID`, `FRONTEGG_API_KEY`, `FRONTEGG_BASE_URL`, `DESCOPE_PROJECT_ID`, `DESCOPE_MANAGEMENT_KEY`)
-- Run a dry run against a Descope **dev** project and review the output
-- Review discovered custom attributes and confirm the Descope attribute schema
+- Obtain the Frontegg Client ID and API key from the Frontegg portal, and note the account's region (EU, US, CA or AU gateway)
+- Write the script with a dry-run mode, and run it against a Descope **dev** project first
+- Decide whether to also copy each account's SAML/OIDC SSO settings, and list the IdP entity IDs or OIDC endpoints that must be filled in by hand
+- Review the custom attributes the script will create (for example `fronteggId`, `metadata`, `mfaEnrolled`, `provider`) and confirm the Descope attribute schema
 - Verify tenant, role, and permission creation before user creation
 - Reconcile duplicates (SCIM email changes create orphaned Frontegg users)
 - Re-point SCIM at Descope (if SCIM is in use)
@@ -1364,25 +1363,24 @@ name against the Descope MCP server before writing it. Include only confirmed fe
 
 ### User & Account Data → Descope Migration Tool or JIT Provisioning
 
-This is usually the first thing to settle, because it drives the cutover plan. **Check what exists before planning around it.** Descope's [migration index](https://docs.descope.com/migrate)
-and the [descope-migration](https://github.com/descope/descope-migration) tool both cover a fixed set
-of providers. A Frontegg-specific guide and tool module may or may not be published at the time you
-run this — open both and look. If a Frontegg module exists, prefer it over a hand-written script. If
-it does not, use the custom path below; it produces the same result with more work. **Never tell the
-user to run a tool or open a guide you have not confirmed exists.**
+This is usually the first thing to settle, because it drives the cutover plan. Write the
+migration script for the user's setup rather than handing them a generic tool. The
+[descope-migration](https://github.com/descope/descope-migration) repo's Frontegg module
+(`src/frontegg_migration.py`) is a working reference for request shapes and edge cases. A Frontegg page in Descope's
+[migration docs](https://docs.descope.com/migrate) may or may not be published when you run this —
+check before linking to it. **Never tell the user to open a guide you have not confirmed exists.**
 
 The three paths below are Descope's standard migration shapes — the same ones documented for
-Keycloak, Cognito, and Azure AD B2C — applied to Frontegg. They hold regardless of whether a
-Frontegg-specific page exists.
+Keycloak, Cognito, and Azure AD B2C — applied to Frontegg.
 
 **Path 1 — Full migration (recommended default).** Export accounts, roles, permissions, and users from
 Frontegg, then create the matching objects in Descope in dependency order: **tenants → permissions →
 roles → users**. Whether a tool does this or you script it, the order matters — users cannot be
 created with tenant and role assignments that do not exist yet.
 
-Check `descope-migration` for a Frontegg module first. If one exists, follow its README for the
-required environment variables and dry-run procedure rather than assuming a shape. If not, use the
-custom-script recipe below.
+Things the script must get right: fetch all users without a tenant header, then read per-account
+role assignments separately (the users list returns tenant roles empty), map Frontegg role **keys**
+to Descope role names, import locked users as disabled, and skip phone numbers that aren't E.164.
 
 Passwords do not come along. After import, set a `freshlyMigrated` custom attribute and branch on it
 in the Flow to force a reset or onboard the user into a passwordless method. Set `verifiedEmail` /
@@ -1396,7 +1394,7 @@ returns a Frontegg user token, so read the user ID and tenant from that JWT or a
 call), and on success the Flow creates or updates the Descope user, sets their password, and issues a Descope session. Later sign-ins skip Frontegg entirely.
 
 **Path 3 — JIT migration with Frontegg as a custom OIDC provider.** Configure Frontegg as a
-[custom OAuth/OIDC provider](https://docs.descope.com/auth-methods/oauth/providers/custom-providers)
+[custom OAuth/OIDC provider](https://docs.descope.com/auth-methods/oauth/providers/custom-provider)
 in Descope using the Frontegg OIDC client credentials and endpoints, then add an OAuth sign-in step
 to the Flow. Users authenticate through Frontegg's hosted login — MFA included — and Descope
 provisions them from the returned ID token claims. Add a Flow
@@ -1406,17 +1404,18 @@ Descope-native auth so they stop hitting Frontegg.
 Both JIT paths require Frontegg to stay running until the active-user tail has signed in at least
 once, and both require **dual token validation** in the backend during the transition (see Step 4).
 
-If a custom script is genuinely required, the shape is: mint an environment token
-(`POST https://api.frontegg.com/auth/vendor` with the Client ID and API Key), list accounts via
-`GET /resources/tenants/v2`, create the matching Descope tenants, then page users with
-`GET /resources/users/v3` (`_limit` max **200**; note `_offset` is a **page index**, not a record
+The script's shape: mint an environment token
+(`POST {region gateway}/auth/vendor` with `{ clientId, secret }`; the EU gateway is
+`https://api.frontegg.com`, others are `api.us.`, `api.ca.`, `api.au.frontegg.com`), list accounts via
+`GET /tenants/resources/tenants/v2`, create the matching Descope tenants, then page users with
+`GET /identity/resources/users/v3` (`_limit` max **200**; note `_offset` is a **page index**, not a record
 offset — pass 0, 1, 2… and loop until `_metadata.totalPages`, not `_offset += 200`, or the export
 truncates silently; add the `frontegg-tenant-id` header for tenant-scoped export). Map `email` → Descope `loginIds`, `name` → `name`, `phoneNumber` → `phone`, `tenantId` →
 the Descope tenant, and metadata → custom attributes defined in Descope first. Import with
 `POST /v1/mgmt/user/create` or `POST /v1/mgmt/user/create/batch`. See
 `references/implementation-nuances.md` → **Migrating user and account data**.
 
-**Effort: Low** with the migration tool on a clean data set; **Medium–High** for JIT paths, which are
+**Effort: Low** for the scripted export on a clean data set; **Medium–High** for JIT paths, which are
 Flow engineering plus a dual-validation rollout rather than a one-off script.
 
 ### Login Box → Descope Flows + Auth Methods
@@ -2371,15 +2370,15 @@ For complex migrations, flag the high-effort items explicitly with estimated com
 - `references/flows-and-widgets.md` — Descope terminology, Flows, Widgets, SSO Setup Suite, and the Console-vs-code decision guide.
 - Descope Docs: [https://docs.descope.com](https://docs.descope.com)
 - **Migration index (check for a Frontegg page): [https://docs.descope.com/migrate](https://docs.descope.com/migrate)**
-- **Descope migration tool (check for a Frontegg module): [https://github.com/descope/descope-migration](https://github.com/descope/descope-migration)**
-- Comparable JIT-migration patterns, documented for other providers: [Keycloak](https://docs.descope.com/migrate/keycloak), [Cognito](https://docs.descope.com/migrate/cognito), [Azure AD B2C](https://docs.descope.com/migrate/azure-ad-b2c)
+- **Descope migration tool (Frontegg module, reference implementation): [https://github.com/descope/descope-migration](https://github.com/descope/descope-migration)**
+- Comparable JIT-migration patterns, documented for other providers: [Keycloak](https://docs.descope.com/migrate/guides/keycloak), [Cognito](https://docs.descope.com/migrate/guides/cognito), [Azure AD B2C](https://docs.descope.com/migrate/guides/azure-ad-b2c)
 - Migration Guide: [https://docs.descope.com/migrate](https://docs.descope.com/migrate)
 - User Import (Custom): [https://docs.descope.com/migrate/custom](https://docs.descope.com/migrate/custom)
 - User format JSON: [https://docs.descope.com/migrate/custom/user-format-json](https://docs.descope.com/migrate/custom/user-format-json)
 - Session migration / dual token validation: [https://docs.descope.com/migrate/session-migration](https://docs.descope.com/migrate/session-migration)
 - SSO migration: [https://docs.descope.com/migrate/sso](https://docs.descope.com/migrate/sso)
 - Generic HTTP Connector: [https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http)
-- Custom OAuth/OIDC providers: [https://docs.descope.com/auth-methods/oauth/providers/custom-providers](https://docs.descope.com/auth-methods/oauth/providers/custom-providers)
+- Custom OAuth/OIDC providers: [https://docs.descope.com/auth-methods/oauth/providers/custom-provider](https://docs.descope.com/auth-methods/oauth/providers/custom-provider)
 - Descope OIDC Endpoints: [https://docs.descope.com/getting-started/oidc-endpoints](https://docs.descope.com/getting-started/oidc-endpoints)
 - Descope Flows: [https://docs.descope.com/flows](https://docs.descope.com/flows)
 - JWT Templates: [https://docs.descope.com/management/token/jwt-templates](https://docs.descope.com/management/token/jwt-templates)
