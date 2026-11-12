@@ -162,15 +162,16 @@ Worth calling out in the plan, because it is real scope *removal*:
 
 ### Migrating user and account data
 
-**Check what exists before planning around it.** Descope's [migration index](https://docs.descope.com/migrate)
-and the [descope-migration](https://github.com/descope/descope-migration) tool each cover a fixed set
-of providers, and a Frontegg guide or tool module may or may not be published when you run this. Open
-both and look. Prefer a tool if one exists; otherwise use the custom recipe below. **Never instruct
-the user to run a tool or open a guide you have not confirmed exists.**
+**The agent writes the migration script.** Build it from the endpoints and mapping below, fitted to
+the user's own attributes, accounts, and roles. The [descope-migration](https://github.com/descope/descope-migration)
+repo has a working Frontegg module (`src/frontegg_migration.py`); read it as a reference for request
+shapes and edge cases, but don't make the plan depend on running it. A Frontegg guide in Descope's
+[migration docs](https://docs.descope.com/migrate) may or may not be published when you run this, so
+check before linking to it. **Never tell the user to open a guide you have not confirmed exists.**
 
 The three paths below are Descope's standard migration shapes — the same ones documented for
-[Keycloak](https://docs.descope.com/migrate/keycloak), [Cognito](https://docs.descope.com/migrate/cognito),
-and [Azure AD B2C](https://docs.descope.com/migrate/azure-ad-b2c) — applied to Frontegg.
+[Keycloak](https://docs.descope.com/migrate/guides/keycloak), [Cognito](https://docs.descope.com/migrate/guides/cognito),
+and [Azure AD B2C](https://docs.descope.com/migrate/guides/azure-ad-b2c) — applied to Frontegg.
 
 #### The constraint that shapes everything
 
@@ -181,16 +182,20 @@ via the paginated list endpoint, but nothing credential-shaped comes with them: 
 only on the inbound migration request schema, and the only CSV export endpoints in the entire product
 are for audit logs.
 
-`GET /resources/users/v3` returns `id`, `email`, `name`, `profilePictureUrl`, `sub`, `verified`,
+`GET /identity/resources/users/v3` returns `id`, `email`, `name`, `profilePictureUrl`, `sub`, `verified`,
 `mfaEnrolled`, `mfaBypass`, `phoneNumber`, `provider`, `tenantId`, `tenantIds`, `activatedForTenant`,
 `isLocked`, `invisible`, `superUser`, `metadata`, `vendorMetadata`, `externalId`, `lastLogin`,
 `subAccountAccessAllowed`, `managedBy`, and a `tenants[]` array. Two shape details that break naive
 export scripts: `temporaryExpirationDate` and `isDisabled` live **inside** `tenants[]` (per tenant),
 not at the top level — miss them and you silently drop guest-user expiry and per-tenant disable
-state. And `tenants[]` entries carry only `roles`, `temporaryExpirationDate`, and `isDisabled` — tenant
-membership itself comes from the item-level `tenantId` / `tenantIds`, not from the `tenants[]` entries;
+state. Each `tenants[]` entry carries its `tenantId` plus `roles`, `temporaryExpirationDate`, and
+`isDisabled`, so build memberships from `tenants[]` (the item-level `tenantId` is only the active one);
 **permissions are not a sibling of `roles`** — each role object in `roles[]` carries its own
-`permissions`, one level deeper.
+`permissions`, one level deeper. In practice the environment-wide list (no `frontegg-tenant-id`
+header) returns `tenants[].roles` **empty**, so read role assignments separately with
+`GET /identity/resources/users/v3/roles?ids=<userId>&ids=…` and the `frontegg-tenant-id` header, one
+account at a time. It returns `[{ tenantId, userId, roleIds }]`. Skip this and every user imports
+with no roles.
 
 So the password strategy is a decision, not a lookup. Make it in Step 0.5, before estimating anything.
 
@@ -201,12 +206,11 @@ matching objects in Descope in **dependency order: tenants → permissions → r
 order is not optional — users cannot be created with tenant associations and role assignments that do
 not exist yet.
 
-If `descope-migration` ships a Frontegg module, use it and follow its README for the required
-environment variables; it will need a Frontegg Client ID and API Key with read access to tenants,
-permissions, roles, and users, plus a Descope Project ID and Management Key. If it does not, the
-custom recipe below does the same work.
+The script needs the Frontegg Client ID and API key of the environment, plus a Descope Project ID
+and Management Key. Map the Frontegg role **key** (what Frontegg puts in tokens) to the Descope role
+name, import `isLocked` users with status `disabled`, and drop phone numbers that aren't E.164.
 
-Either way: **pre-define every custom attribute in the Descope Console before importing.** Descope
+Before the first run: **pre-define every custom attribute in the Descope Console before importing.** Descope
 rejects custom attributes that are not already in the project schema, so `fronteggId`,
 `freshlyMigrated`, and anything derived from Frontegg `metadata` / `vendorMetadata` must be created
 first. Then dry-run against a **dev** project, review the output, and only then run staging and
@@ -239,10 +243,10 @@ One mechanic worth knowing before building this: there is **no separate "Set Pas
 successful connector response the Flow invokes the **Sign Up / Password** action, which creates the
 user and sets the password in one step — an agent hunting for a set-password step will not find one.
 
-Descope documents this exact pattern for [Keycloak](https://docs.descope.com/migrate/keycloak)
+Descope documents this exact pattern for [Keycloak](https://docs.descope.com/migrate/guides/keycloak)
 (submit credentials → Generic HTTP Connector POST → legacy IdP validates → on success, Sign Up /
-Password), and comparable JIT flows for [Cognito](https://docs.descope.com/migrate/cognito) and
-[Azure AD B2C](https://docs.descope.com/migrate/azure-ad-b2c). The Frontegg shape is identical; only
+Password), and comparable JIT flows for [Cognito](https://docs.descope.com/migrate/guides/cognito) and
+[Azure AD B2C](https://docs.descope.com/migrate/guides/azure-ad-b2c). The Frontegg shape is identical; only
 the validating endpoint changes. Read the Keycloak guide as the reference implementation, and confirm
 the current Flow action names and dynamic values against the docs before building — this area has
 moved before.
@@ -253,7 +257,7 @@ provisioning rate so the decommission date is driven by data rather than optimis
 #### Path 3 — JIT migration with Frontegg as a custom OIDC provider
 
 For teams moving to passwordless anyway. Configure Frontegg as a
-[custom OAuth/OIDC provider](https://docs.descope.com/auth-methods/oauth/providers/custom-providers)
+[custom OAuth/OIDC provider](https://docs.descope.com/auth-methods/oauth/providers/custom-provider)
 in Descope using the Frontegg OIDC client ID, secret, and authorization/token endpoints, then add an
 OAuth sign-in step to the Flow. Users authenticate through Frontegg's hosted login — MFA included —
 and Descope provisions them from the returned ID token claims. Add a
@@ -263,7 +267,7 @@ Descope-native auth so they stop hitting Frontegg.
 Note the Frontegg caveat that OIDC-as-IdP is hosted-login-only, and that in multi-app environments it
 requires a default application because `aud` verification depends on it.
 
-#### If a custom script is genuinely required
+#### Export recipe
 
 ```bash
 # 1. Mint an environment (vendor) token.
@@ -276,12 +280,26 @@ curl -X POST https://api.frontegg.com/auth/vendor \
 curl "https://api.frontegg.com/tenants/resources/tenants/v2" \
   -H "Authorization: Bearer $VENDOR_JWT"
 
-# 3. Page users. _limit maxes out at 200.
+# 3. Permissions and roles (plain arrays, no paging).
+curl "https://api.frontegg.com/identity/resources/permissions/v1" -H "Authorization: Bearer $VENDOR_JWT"
+curl "https://api.frontegg.com/identity/resources/roles/v1"       -H "Authorization: Bearer $VENDOR_JWT"
+
+# 4. Page users. _limit maxes out at 200.
 #    IMPORTANT: _offset is a PAGE INDEX, not a record offset — 0, 1, 2, … not 0, 200, 400.
 #    Loop until _metadata.totalPages. Incrementing by _limit silently truncates the export.
 curl "https://api.frontegg.com/identity/resources/users/v3?_limit=200&_offset=0" \
   -H "Authorization: Bearer $VENDOR_JWT" \
   -H "frontegg-tenant-id: $TENANT_ID"        # optional, for tenant-scoped export
+
+# 5. Role assignments, per account (the users list returns tenants[].roles empty).
+curl "https://api.frontegg.com/identity/resources/users/v3/roles?ids=$USER_ID_1&ids=$USER_ID_2" \
+  -H "Authorization: Bearer $VENDOR_JWT" \
+  -H "frontegg-tenant-id: $TENANT_ID"
+
+# 6. Optional, for SSO migration: each account's SAML/OIDC configurations.
+curl "https://api.frontegg.com/team/resources/sso/v1/configurations" \
+  -H "Authorization: Bearer $VENDOR_JWT" \
+  -H "frontegg-tenant-id: $TENANT_ID"
 ```
 
 Verify the exact host and path prefixes against the Frontegg API reference before running anything —
@@ -750,8 +768,8 @@ argument for migrating rather than a loss.
 | Operation | Frontegg | Descope |
 |---|---|---|
 | Authenticate as the vendor | `POST /auth/vendor` (clientId + API key) → short-lived JWT | Management Key sent directly |
-| List tenants | `GET /resources/tenants/v2` | `management.tenant.loadAll()` |
-| List users | `GET /resources/users/v3` (`_limit` max 200, `_offset`) | `management.user.search({ tenantIds: [tenantId] })` (Node; `SearchAll` / `search_all` in Go and Python) |
+| List tenants | `GET /tenants/resources/tenants/v2` | `management.tenant.loadAll()` |
+| List users | `GET /identity/resources/users/v3` (`_limit` max 200, `_offset`) | `management.user.search({ tenantIds: [tenantId] })` (Node; `SearchAll` / `search_all` in Go and Python) |
 | Fuzzy user search | `GET /resources/users/v1/query/phrase` | `management.user.search({ ... })` (Node; `SearchAll` / `search_all` in Go and Python) with filters |
 | Create user | `POST /resources/users/v2` (`expirationInSeconds` for guests) | `management.user.create()` / `createBatch()` |
 | Roles / permissions config | `/api/identity/roles`, `/account-roles`, `/permissions` | `management.role.*`, `management.permission.*` |
