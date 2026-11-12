@@ -596,9 +596,9 @@ migration**, the agent writes the export/import script (Step 3 → User & Accoun
 endpoints and mapping):
 
 - Obtain the Frontegg Client ID and API key from the Frontegg portal, and note the account's region (EU, US, CA or AU gateway)
+- Define the custom attributes the script will set (for example `fronteggId`, `metadata`, `mfaEnrolled`, `provider`) in the Descope Console before the first run, and confirm the attribute schema
 - Write the script with a dry-run mode, and run it against a Descope **dev** project first
 - Decide whether to also copy each account's SAML/OIDC SSO settings, and list the IdP entity IDs or OIDC endpoints that must be filled in by hand
-- Review the custom attributes the script will create (for example `fronteggId`, `metadata`, `mfaEnrolled`, `provider`) and confirm the Descope attribute schema
 - Verify tenant, role, and permission creation before user creation
 - Reconcile duplicates (SCIM email changes create orphaned Frontegg users)
 - Re-point SCIM at Descope (if SCIM is in use)
@@ -1410,8 +1410,11 @@ The script's shape: mint an environment token
 `GET /tenants/resources/tenants/v2`, create the matching Descope tenants, then page users with
 `GET /identity/resources/users/v3` (`_limit` max **200**; note `_offset` is a **page index**, not a record
 offset — pass 0, 1, 2… and loop until `_metadata.totalPages`, not `_offset += 200`, or the export
-truncates silently; add the `frontegg-tenant-id` header for tenant-scoped export). Map `email` → Descope `loginIds`, `name` → `name`, `phoneNumber` → `phone`, `tenantId` →
-the Descope tenant, and metadata → custom attributes defined in Descope first. Import with
+truncates silently; add the `frontegg-tenant-id` header for tenant-scoped export). Map `email` → Descope `loginId`, `name` → `name`, `phoneNumber` → `phone`, each
+`tenants[].tenantId` → a Descope tenant membership (`userTenants[]`; the item-level `tenantId` is
+only the active account), and metadata → custom attributes defined in Descope first. Get each
+membership's roles from the per-account `GET /identity/resources/users/v3/roles` call and resolve its
+`roleIds` to role keys with the `GET /identity/resources/roles/v1` list. Import with
 `POST /v1/mgmt/user/create` or `POST /v1/mgmt/user/create/batch`. See
 `references/implementation-nuances.md` → **Migrating user and account data**.
 
@@ -2374,7 +2377,7 @@ For complex migrations, flag the high-effort items explicitly with estimated com
 - Comparable JIT-migration patterns, documented for other providers: [Keycloak](https://docs.descope.com/migrate/guides/keycloak), [Cognito](https://docs.descope.com/migrate/guides/cognito), [Azure AD B2C](https://docs.descope.com/migrate/guides/azure-ad-b2c)
 - Migration Guide: [https://docs.descope.com/migrate](https://docs.descope.com/migrate)
 - User Import (Custom): [https://docs.descope.com/migrate/custom](https://docs.descope.com/migrate/custom)
-- User format JSON: [https://docs.descope.com/migrate/custom/user-format-json](https://docs.descope.com/migrate/custom/user-format-json)
+- User format JSON (Console imports only; API imports use the Batch Create Users fields): [https://docs.descope.com/migrate/custom/user-format-json](https://docs.descope.com/migrate/custom/user-format-json)
 - Session migration / dual token validation: [https://docs.descope.com/migrate/session-migration](https://docs.descope.com/migrate/session-migration)
 - SSO migration: [https://docs.descope.com/migrate/sso](https://docs.descope.com/migrate/sso)
 - Generic HTTP Connector: [https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http)

@@ -195,7 +195,9 @@ state. Each `tenants[]` entry carries its `tenantId` plus `roles`, `temporaryExp
 header) returns `tenants[].roles` **empty**, so read role assignments separately with
 `GET /identity/resources/users/v3/roles?ids=<userId>&ids=…` and the `frontegg-tenant-id` header, one
 account at a time. It returns `[{ tenantId, userId, roleIds }]`. Skip this and every user imports
-with no roles.
+with no roles. The response holds role **IDs**, but Descope roles are named after the Frontegg role
+**key**, so resolve each ID to its key with the `GET /identity/resources/roles/v1` list before
+building `userTenants[].roleNames`. A raw ID matches no Descope role.
 
 So the password strategy is a decision, not a lookup. Make it in Step 0.5, before estimating anything.
 
@@ -313,11 +315,11 @@ Field mapping into Descope:
 
 | Frontegg | Descope |
 |---|---|
-| `email` (or the primary identifier) | `loginIds` (required, unique) |
+| `email` (or the primary identifier) | `loginId` (required, unique) |
 | `name` | `name`, or split into `givenName` / `familyName` |
 | `phoneNumber` | `phone` |
-| `tenantId` / `tenantIds` | Tenant association — create the tenants first |
-| `tenants[].roles` | Tenant-scoped role assignment |
+| `tenants[].tenantId` | `userTenants[].tenantId`. Create the tenants first. The item-level `tenantId` is only the active account |
+| `roleIds` from `GET /identity/resources/users/v3/roles` (per account) | `userTenants[].roleNames`, after resolving each ID to its role key |
 | `verified` | `verifiedEmail` |
 | `metadata` | User custom attributes (define them in Descope first) |
 | `vendorMetadata` | User custom attributes — often the pre-Frontegg internal user ID, and frequently the join key back to the application database |
@@ -325,8 +327,10 @@ Field mapping into Descope:
 | `id` | Custom attribute (`fronteggId`) for the ID mapping table |
 
 Import with `POST /v1/mgmt/user/create` or `POST /v1/mgmt/user/create/batch` (mind the
-[rate limits](https://docs.descope.com/rate-limiting)), using the
-[user format guide](https://docs.descope.com/migrate/custom/user-format-json).
+[rate limits](https://docs.descope.com/rate-limiting)). The payload field names are in the
+[Batch Create Users](https://docs.descope.com/api/management/users/batch-create-users) API reference.
+The [user format guide](https://docs.descope.com/migrate/custom/user-format-json) uses different
+field names and applies only to Console imports.
 
 #### Data-quality issues to expect
 
