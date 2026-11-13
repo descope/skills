@@ -11,5 +11,6 @@
   "homepage": "https://docs.descope.com",
   "repository": "https://github.com/descope/skills",
   "license": "MIT",
+  "skills": ["./skills/", "./skills/non-interactive/"],
   "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "oauth", "sso", "passkey", "mfa", "fga", "authorization", "security", "byos", "ci-cd", "deployment"]
 }

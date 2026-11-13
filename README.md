@@ -605,8 +605,9 @@ skills/
 │       ├── flows-and-widgets.md - B2C→Descope lingo map, Flow/Widget guides, console-vs-code
 │       ├── backend-sdks.md - .NET, Node.js, Python, Java API validation patterns
 │       └── b2c-detection-patterns.md - Code search, read-only Graph discovery, SSO inventory template
-├── azure-ad-b2c-to-descope-lite/
-│   └── SKILL.md - Non-interactive B2C migration: defaults, decisions log, hard stops
+├── non-interactive/ - Skills that run without asking the user questions
+│   └── azure-ad-b2c-to-descope-lite/
+│       └── SKILL.md - Non-interactive B2C migration: defaults, decisions log, hard stops
 ├── descope-terraform/
 │   ├── SKILL.md - Provider setup, common configurations, and guardrails
 │   └── references/
