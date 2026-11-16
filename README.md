@@ -21,6 +21,7 @@ Integrate Descope authentication into applications with support for passwordless
 - React (SPA with protected routes)
 - Kotlin / Android (Native Flows with session management)
 - Swift / iOS (Native Flows with session management)
+- React Native / Expo (Native Flows with session management)
 - Node.js (backend session validation)
 - Python (backend session validation)
 
@@ -595,6 +596,7 @@ skills/
 │       ├── react.md - React SPA patterns
 │       ├── kotlin.md - Kotlin / Android patterns
 │       ├── swift.md - Swift / iOS patterns
+│       ├── react-native.md - React Native / Expo patterns
 │       └── backend.md - Node.js/Python validation
 ├── auth0-to-descope/
 │   ├── SKILL.md - Three-phase migration workflow (MCP check, plan, execution)
