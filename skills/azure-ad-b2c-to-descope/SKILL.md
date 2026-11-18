@@ -844,6 +844,8 @@ Hosted (OIDC) login: `sdk.oidc.logout()` for full OIDC logout. Plain SDK session
 The agent doesn't import users. When asked, prepare the export and transform scripts from
 `implementation-nuances.md` → User Migration, give the import script a dry-run mode, and run it in
 dry-run mode only. The team runs the real import after reviewing the dry-run output.
+With Tenant User Isolation (Decision 2 (e)), the team also imports two test accounts with the same
+email into two tenants and checks they are separate users before the real import.
 
 ### Execution Phase 6: Testing
 
