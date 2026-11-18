@@ -437,9 +437,9 @@ the export/import script (Step 3 → Users, Organizations & Roles has the endpoi
 - Verify permission, role, and tenant creation before user creation
 - Decide what to do with `inactive` and `pending` memberships and open invitations
 - Re-point SCIM/Directory Sync at Descope (if Directory Sync is in use), and recreate SSO connections per tenant
-- Run against staging, then production; set `freshlyMigrated` on every user imported without a usable hash
+- Run against staging, then production; set `freshlyMigrated` on users who have a WorkOS password but no usable hash (not on SSO-, social- or Magic Auth-only users)
 - Add the Generic HTTP Connector (WorkOS password check) to the sign-in Flow for `freshlyMigrated` users and for users new to Descope
-- Switch the app to Descope in one step; no freeze or final re-export is needed
+- Request the hash export as close to the switch as possible, and switch the app to Descope in one step; no freeze is needed, because the connector covers passwords changed in WorkOS after the export
 - Re-sync organizations, memberships and roles once right after the switch, since JIT does not update roles of users already imported
 - Turn WorkOS off at the end of the chosen transition, then send remaining `freshlyMigrated` users to email verification plus password reset or passwordless
 
@@ -1102,7 +1102,18 @@ into Descope's `argon2` / `pbkdf2` / `firebase` fields; plain scrypt and WorkOS'
 `$bcrypt-pbkdf2-*` / `$bcrypt-ssha*` wrappers have no Descope equivalent, so treat those users as
 hashless. SSO-, social- and Magic Auth-only users have no hash and need none.
 
-Set a `freshlyMigrated` custom attribute on every user imported **without** a usable hash. During
+The CSV is a snapshot. A user who changes or resets their password in WorkOS after the export
+still has the **old** hash in Descope, so the old password works and the new one fails. Request the
+export as close to the switch as possible, and during the transition route a failed Descope password
+check for an imported-hash user to the Path 2 connector, then **Update Password** on success. If
+password changes between export and switch can't be bounded, force a reset for the affected users.
+
+Set a `freshlyMigrated` custom attribute only on users who **have a WorkOS password but no usable
+hash**. Users missing from the support CSV have no WorkOS password (SSO-, social- or Magic Auth-only;
+`GET /user_management/users/{id}/identities` and the organization's connections confirm it) — don't
+flag them, or the Flow sends them to a password check they can't pass and later to a forced reset.
+If there is no CSV at all, you can't tell who has a password: flag everyone without an OAuth
+identity or an SSO-only organization. During
 the transition, the Flow sends those users through the Path 2 connector so WorkOS checks their
 password. Because they already exist in Descope, the Flow signs them in with OTP or magic link and
 stores the password with **Update Password** (not Sign Up / Password), then clears the flag. After
@@ -1119,7 +1130,10 @@ calls `POST https://api.workos.com/user_management/authenticate` with `grant_typ
 screen), `email` and `password`. A success returns `user`, `organization_id` and tokens. WorkOS can
 also answer with `email_verification_required`, `mfa_challenge`, `mfa_enrollment` or
 `organization_selection_required`: those mean **the password was correct** and WorkOS wants another
-step, so treat them as a successful check rather than a failure. The endpoint is rate limited to
+step, so treat them as a successful check rather than a failure. **But `mfa_challenge` and
+`mfa_enrollment` mean the account needed MFA in WorkOS**, and TOTP doesn't transfer: the Flow must
+enroll or challenge a Descope MFA factor for these users before it issues a session, or they end up
+with password-only access. The endpoint is rate limited to
 10 requests per minute per email. Later sign-ins skip WorkOS entirely.
 
 The JIT path keeps WorkOS running for a transition period the user chooses, and needs **dual token

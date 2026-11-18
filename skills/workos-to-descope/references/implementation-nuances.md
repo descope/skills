@@ -451,7 +451,7 @@ Create in **dependency order: permissions → project roles → tenants → tena
 | `active` membership `organization_id` + `roles[].slug` | `userTenants[]: { tenantId, roleNames }` |
 | `inactive` membership | Decide explicitly: drop it, or import it and remove access — Descope has no per-tenant inactive status |
 | `pending` membership / pending invitation | Skip, and re-invite from Descope after cutover (`user.invite`) |
-| password hash (support CSV) | `hashedPassword` (table above), otherwise `customAttributes.freshlyMigrated: true` |
+| password hash (support CSV) | `hashedPassword` (table above). If the user has a WorkOS password but no usable hash, `customAttributes.freshlyMigrated: true`. Users absent from the CSV (SSO-, social- or Magic Auth-only) get neither |
 
 Create permissions with `POST /v1/mgmt/permission/create`, roles with `POST /v1/mgmt/role/create` (add `tenantId` for an organization role), and tenants with `POST /v1/mgmt/tenant/create` — the `org_…` ID is accepted as a tenant `id`. Import users with `POST /v1/mgmt/user/create/batch` (`{ "users": [...], "invite": false }`) and read
 `createdUsers` / `failedUsers` from the response. Descope management calls authenticate with
@@ -478,13 +478,13 @@ roles and custom attributes against the plan; `createdUsers` alone proves nothin
 
 #### JIT password check with a Generic HTTP Connector
 
-For users imported without a usable hash (and users who sign up in WorkOS after the export):
+For users who have a WorkOS password but were imported without a usable hash, users who sign up in WorkOS after the export, and imported-hash users whose Descope password check fails (they may have changed their password in WorkOS after the CSV was exported):
 
 1. The user enters email and password in the Descope Flow.
 2. A [Generic HTTP Connector](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http) calls `POST https://api.workos.com/user_management/authenticate` with `{ "grant_type": "password", "client_id", "client_secret", "email", "password" }`. Keep `client_secret` (the `sk_` key) in the connector configuration.
-3. Success returns `user`, `organization_id`, `access_token`, `refresh_token`. The errors `email_verification_required`, `mfa_challenge`, `mfa_enrollment`, and `organization_selection_required` also mean the password was correct — treat them as success. Note the two error shapes: some use `code` / `message`, others (`sso_required`, `organization_authentication_methods_required`) use `error` / `error_description`. Probe a wrong password and an unknown email against a staging environment to see their exact status codes and bodies before writing the Flow condition.
-4. For a user **new to Descope**, the Flow runs **Sign Up / Password**. For an **imported** (`freshlyMigrated`) user, Sign Up fails because the user exists: sign them in with OTP or magic link, run **Update Password**, and clear the flag.
-5. Later sign-ins authenticate against Descope only. Add a Flow condition so users without `freshlyMigrated` skip the connector.
+3. Success returns `user`, `organization_id`, `access_token`, `refresh_token`. The errors `email_verification_required`, `mfa_challenge`, `mfa_enrollment`, and `organization_selection_required` also mean the password was correct — treat them as success. After `mfa_challenge` or `mfa_enrollment`, enroll or challenge a Descope MFA factor before issuing a session; TOTP doesn't transfer, and skipping this leaves an MFA account with password-only access. Note the two error shapes: some use `code` / `message`, others (`sso_required`, `organization_authentication_methods_required`) use `error` / `error_description`. Probe a wrong password and an unknown email against a staging environment to see their exact status codes and bodies before writing the Flow condition.
+4. For a user **new to Descope**, the Flow runs **Sign Up / Password**. For an **imported** user (`freshlyMigrated`, or an imported-hash user whose Descope check failed), Sign Up fails because the user exists: sign them in with OTP or magic link, run **Update Password**, and clear the flag.
+5. Later sign-ins authenticate against Descope only. Add a Flow condition so only users who already exist in Descope without `freshlyMigrated` skip the connector; unknown users and `freshlyMigrated` users go through it.
 
 `/user_management/authenticate` is limited to 10 requests per minute per email, so a user retrying
 quickly can be throttled; show a generic error and route repeated failures to password reset. If
