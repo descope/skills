@@ -377,15 +377,131 @@ Ask which providers are connected, where tokens are used (including AI agents an
 
 ### User migration: WorkOS export → Descope import
 
-WorkOS users don't automatically carry over. For production apps with existing users, this is a critical migration step.
+WorkOS users, organizations, memberships and roles don't carry over automatically. **The agent
+writes the migration script** for the user's setup from the endpoints and mapping below. Descope's
+standard migration shapes — documented for [Keycloak](https://docs.descope.com/migrate/guides/keycloak)
+and [Cognito](https://docs.descope.com/migrate/guides/cognito) — apply: a full import, with a
+Generic HTTP Connector JIT path as the cutover for users who have no importable password.
 
-Descope has [migration guides](https://docs.descope.com/migrate) with two broad approaches:
-- **Full migration:** Export all users and organizations from WorkOS, then import them into Descope using the [Create User API](https://docs.descope.com/api/management/users/create-user) or [Batch Create User API](https://docs.descope.com/api/management/users/batch-create-users). Where password hashes can be exported, Descope accepts bcrypt hashes so users keep their passwords without a reset; otherwise plan a reset/passwordless path. See the [user format JSON guide](https://docs.descope.com/migrate/custom/user-format-json) for the expected shape. **Verify WorkOS's current user-export capability before committing to a no-reset path.**
-- **Phased migration:** Roll out per tenant/batch rather than all at once.
+#### What the WorkOS API exports — and what it doesn't
 
-Key fields to map: WorkOS `user.id` → Descope `loginId` (or `userId`), `email`, name fields, password hash (if exportable), and any user metadata → `customAttributes`.
+Every list endpoint uses cursor pagination: `limit` (1–100), `before` / `after` (object IDs) and
+`order` (`asc`, `desc`, or `normal`, which is descending with reversed cursors). Responses are
+`{ "data": [...], "list_metadata": { "before", "after" } }`. Pass `order=asc` and follow
+`list_metadata.after` until it is `null`. Defaults differ per endpoint (`desc` for users and
+memberships), so always set `order` explicitly.
 
-Map each WorkOS **Organization** to a Descope **Tenant** and reproduce membership and tenant-scoped roles — get this mapping right first, since it ripples into SSO, SCIM, and RBAC. **If Directory Sync is in use, re-point SCIM at Descope before cutover** — a one-time import leaves provisioning broken the moment the directory pushes its next change. Active WorkOS sessions become invalid at cutover; plan for forced re-login.
+| Object | Endpoint | Fields the script uses |
+|---|---|---|
+| Permissions | `GET /authorization/permissions` (paginated) | `slug`, `name`, `description`, `system` — skip `system: true` (WorkOS's built-in `widgets:*` permissions) |
+| Environment roles | `GET /authorization/roles` | `slug`, `name`, `description`, `permissions` (slugs), `type: "EnvironmentRole"` |
+| Organizations | `GET /organizations` (paginated) | `id`, `name`, `domains[]` (`domain`, `state`), `metadata`, `external_id` |
+| Organization roles | `GET /authorization/organizations/{id}/roles` | Same role shape; keep `type: "OrganizationRole"` (slugs start with `org-`) — the response also repeats environment roles |
+| Memberships | `GET /user_management/organization_memberships?organization_id=…` | `user_id`, `organization_id`, `status` (`active` / `inactive` / `pending`), `role.slug`, `roles[].slug`, `directory_managed`, `custom_attributes` |
+| Users | `GET /user_management/users` (paginated) | `id`, `email`, `email_verified`, `first_name`, `last_name`, `name`, `profile_picture_url`, `metadata`, `external_id`, `last_sign_in_at` |
+| Social identities | `GET /user_management/users/{id}/identities` | `provider`, `idp_id` (bare array, not a list wrapper) |
+| Invitations | `GET /user_management/invitations` | `email`, `state`, `organization_id`, `role_slug` |
+| SSO connections / directories | `GET /connections`, `GET /directories` | `organization_id`, `connection_type` / `type`, `state` — an inventory only |
+
+Two shape details that break naive scripts: memberships **require** `organization_id` or `user_id`
+and return only `active` rows unless you pass `statuses[]=active&statuses[]=inactive&statuses[]=pending`; and a membership's `roles[]` holds every
+role when Multiple Roles is on, while `role` holds only one.
+
+**Not exportable:** password hashes (support request only, below), TOTP secrets (users re-enroll
+MFA in Descope), passkeys, and the SAML/OIDC secrets behind SSO connections. SSO connections and
+SCIM directories are recreated per tenant, not copied.
+
+#### Password hashes: a WorkOS support request
+
+WorkOS deliberately has no API or dashboard export of password hashes (the dashboard **Export CSV**
+covers profile fields only). The user emails WorkOS support naming the environments and a secure
+address; WorkOS sends a CSV with `email`, `password_hash`, `first_name`, `last_name` by secure file
+transfer. Parse it with a CSV library — some hashes contain commas — and join on lower-cased email.
+
+| WorkOS hash | Descope `hashedPassword` |
+|---|---|
+| `$2a$` / `$2b$` / `$2y$` bcrypt (every password set in WorkOS is `$2b$10$`) | `{ "bcrypt": { "hash": "<as-is>" } }` |
+| `$argon2id$…` / `$argon2i$…` PHC | `{ "argon2": { hash, salt, iterations, memory, threads, type } }` — decode the PHC fields |
+| `$pbkdf2-sha256$…` PHC | `{ "pbkdf2": { hash, salt, iterations, type } }` |
+| firebase-scrypt PHC (carries `sk` / `ss`) | `{ "firebase": { hash, salt, saltSeparator, signerKey, memory, rounds } }` |
+| plain `$scrypt$…`, `$bcrypt-pbkdf2-sha1$`, `$bcrypt-pbkdf2-sha256$`, `$bcrypt-ssha$`, `$bcrypt-ssha256$` | No Descope equivalent — import without a hash and set `freshlyMigrated` |
+
+Users who sign in only with SSO, social login or Magic Auth have no hash and don't need one.
+
+#### Field mapping into Descope
+
+Create in **dependency order: permissions → project roles → tenants → tenant roles → users.**
+
+| WorkOS | Descope |
+|---|---|
+| permission `slug` (non-`system` only) | permission `name` |
+| environment role `slug` | project-level role `name` |
+| organization role `slug` (`org-…`) | tenant-level role `name`, created with `tenantId` |
+| role `permissions[]` | role `permissionNames`, minus `system` permissions |
+| organization `id` | tenant `id` — keep `org_…` so app rows keyed by organization ID still match |
+| organization `name` | tenant `name` |
+| organization `domains[]` with `state: "verified"` | tenant `selfProvisioningDomains` (only if the app wants domain routing) |
+| organization `metadata`, `external_id` | tenant `customAttributes` (define them first) |
+| user `email` | `loginId` and `email` |
+| `email_verified` | `verifiedEmail` |
+| `first_name` / `last_name` / `name` | `givenName` / `familyName` / `name` |
+| `profile_picture_url` | `picture` |
+| user `id` | `customAttributes.workosId` |
+| user `metadata`, `external_id` | `customAttributes` (define them first) |
+| `active` membership `organization_id` + `roles[].slug` | `userTenants[]: { tenantId, roleNames }` |
+| `inactive` membership | Decide explicitly: drop it, or import it and remove access — Descope has no per-tenant inactive status |
+| `pending` membership / pending invitation | Skip, and re-invite from Descope after cutover (`user.invite`) |
+| password hash (support CSV) | `hashedPassword` (table above). If the user has a WorkOS password but no usable hash, `customAttributes.freshlyMigrated: true`. Users absent from the CSV (SSO-, social- or Magic Auth-only) get neither |
+
+Create permissions with `POST /v1/mgmt/permission/create`, roles with `POST /v1/mgmt/role/create` (add `tenantId` for an organization role), and tenants with `POST /v1/mgmt/tenant/create` — the `org_…` ID is accepted as a tenant `id`. Import users with `POST /v1/mgmt/user/create/batch` (`{ "users": [...], "invite": false }`) and read
+`createdUsers` / `failedUsers` from the response. Descope management calls authenticate with
+`Authorization: Bearer <ProjectID>:<ManagementKey>`. Mind the
+[rate limits](https://docs.descope.com/rate-limiting) on both sides: WorkOS allows 1,000
+`/user_management/*` reads per 10 seconds per environment and 6,000 requests per minute per key;
+honor `Retry-After` on 429.
+
+**Before the first run, pre-define every custom attribute** (`workosId`, `freshlyMigrated`, and any
+`metadata` keys) in the Descope Console, or with `POST /v1/mgmt/user/customattribute/create`
+(`type` 1 = text, 3 = boolean). Values must match the declared type — define `freshlyMigrated` as a
+boolean and send `true`, not `"true"`. Then dry-run against a **dev** project, compare counts, and
+only then run staging and production.
+
+**Batch create fails quietly — verify after every run.** Tested against a live project:
+
+- A user whose `roleNames` include a role that doesn't exist yet is still reported in `createdUsers`; the role is dropped. Create roles first.
+- Custom attributes not defined in the schema are dropped, and the user is still reported as created.
+- Sending a user that already exists is reported as created again. Descope adds any new `userTenants` entries but leaves `name` and `customAttributes` unchanged and removes no memberships. So batch create is safe to re-run for new users, but it is **not** a re-sync: the post-switch re-sync updates existing users through the user update and tenant-role APIs, and removes memberships that disappeared in WorkOS.
+- Imported users have status `invited` until their first sign-in. That is expected.
+
+After each run, reload a sample of users (`GET /v1/mgmt/user?loginId=…`) and compare tenants,
+roles and custom attributes against the plan; `createdUsers` alone proves nothing.
+
+#### JIT password check with a Generic HTTP Connector
+
+For users who have a WorkOS password but were imported without a usable hash, users who sign up in WorkOS after the export, and imported-hash users whose Descope password check fails (they may have changed their password in WorkOS after the CSV was exported):
+
+1. The user enters email and password in the Descope Flow.
+2. A [Generic HTTP Connector](https://docs.descope.com/connectors/connector-configuration-guides/network/generic-http) calls `POST https://api.workos.com/user_management/authenticate` with `{ "grant_type": "password", "client_id", "client_secret", "email", "password" }`. Keep `client_secret` (the `sk_` key) in the connector configuration.
+3. Success returns `user`, `organization_id`, `access_token`, `refresh_token`. The errors `email_verification_required`, `mfa_challenge`, `mfa_enrollment`, and `organization_selection_required` also mean the password was correct — treat them as success. After `mfa_challenge` or `mfa_enrollment`, enroll or challenge a Descope MFA factor before issuing a session; TOTP doesn't transfer, and skipping this leaves an MFA account with password-only access. Note the two error shapes: some use `code` / `message`, others (`sso_required`, `organization_authentication_methods_required`) use `error` / `error_description`. Probe a wrong password and an unknown email against a staging environment to see their exact status codes and bodies before writing the Flow condition.
+4. For a user **new to Descope**, the Flow runs **Sign Up / Password**. For an **imported** user (`freshlyMigrated`, or an imported-hash user whose Descope check failed), Sign Up fails because the user exists: sign them in with OTP or magic link, run **Update Password**, and clear the flag.
+5. Later sign-ins authenticate against Descope only. Add a Flow condition so users who already exist in Descope without `freshlyMigrated` try the Descope password first, and go to the connector only if that check fails; unknown users and `freshlyMigrated` users go straight to the connector.
+
+`/user_management/authenticate` is limited to 10 requests per minute per email, so a user retrying
+quickly can be throttled; show a generic error and route repeated failures to password reset. If
+WorkOS Radar is in Decision mode, the call also needs `ip_address`.
+
+#### Data-quality issues to expect
+
+- **Users with no organization.** WorkOS users can exist without any membership; they import as project-level users with no `userTenants`. Check whether the app expects every user to have a tenant.
+- **Directory-managed memberships.** `directory_managed: true` rows are owned by SCIM. Import them so access is continuous, then let the re-pointed directory own them; expect the first sync to update or remove some.
+- **Duplicate organizations per customer.** Some teams created several WorkOS Organizations for one customer to hold different SSO connections. Consolidate into one Descope tenant with multiple SSO configurations if the user agrees (see Step 3 → Enterprise SSO).
+- **Users with no usable login method.** Passkeys and TOTP don't transfer. A user whose only factor was a passkey needs another method in the Flow.
+
+Map each WorkOS **Organization** to a Descope **Tenant** first — it ripples into SSO, SCIM, and
+RBAC. **If Directory Sync is in use, re-point SCIM at Descope before cutover** — a one-time import
+leaves provisioning broken the moment the directory pushes its next change. Active WorkOS sessions
+end at cutover unless the backend validates both tokens during a transition (SKILL.md Step 4 → Plan
+Dual Token Validation).
 
 ### M2M authentication: WorkOS API keys → Descope Access Keys
 
