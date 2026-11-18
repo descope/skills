@@ -97,8 +97,8 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
-- **Test the import and sign-in with test accounts in a separate Descope project before importing
-  real users.**
+- **Test the import and sign-in with test accounts in this run's project before importing the
+  directory's users.**
 
 ---
 
@@ -289,14 +289,15 @@ Customers use "tenant" for two different things. Ask, don't assume:
 Decision tree:
 ```
 What is a "tenant"?
-├── (a) Separate B2C directories           → One Descope project per directory, each in the
+├── (a) Separate B2C directories           → One directory per run; ask which (suggest dev or
+│                                            staging for a POC). Its project goes in the
 │                                            directory's region (Step 0.5 → Deployment)
 ├── (b) Customer orgs inside custom policies → Descope tenants in one project
 │                                            Record how the policy identifies the org today
 │                                            (domain_hint, claim, lookup) — the Flow does the same
 │                                            with email-domain routing, a tenant slug or
 │                                            ID, or tenant selection
-├── (c) Both                               → Projects per directory, tenants inside each
+├── (c) Both                               → One directory per run, tenants inside its project
 ├── (d) No separation                      → One project, no tenants
 └── (e) A directory per business customer  → Ask why (below). Default: one project,
                                              one tenant per directory
@@ -309,7 +310,7 @@ organizations, not because they need separate projects. Ask why, then recommend:
 - **The same email had to stay a separate account for each customer** → one project with **Tenant
   User Isolation** on (Project Settings → Security): the same login ID is then a separate identity
   in each tenant, and the app passes the tenant at sign-in (`tenant` Flow input or SDK option).
-  How the user import handles isolated users isn't documented — confirm in a dev import.
+  How the user import handles isolated users isn't documented — confirm with a test import.
 - **Data residency, or a contract requiring separate keys and admins** → a project per region or
   per isolated customer, with tenants inside where several customers share one.
 
@@ -321,6 +322,8 @@ the directory today, for example subdomain → tenant slug (`implementation-nuan
 tenant at sign-in).
 
 Dev / staging / prod directories are case (a) even when the customer doesn't call them tenants.
+For a POC, start with dev or staging. Production is a later run, and its project can be cloned from
+the POC project.
 
 Each B2C app registration then maps to one Descope app by platform type
 (`b2c-detection-patterns.md` → App registration type → Descope app).
@@ -597,7 +600,7 @@ Migration). PM checklist:
 - [ ] Choose user ID strategy (keep the B2C ID / switch to Descope user ID / remap on first login), decide what new users get, and list every system keyed on the B2C ID
 - [ ] Build the user schema table; create typed custom attributes (incl. `azureObjectId`) and tenants before import
 - [ ] Export users via Microsoft Graph (`$select` incl. `identities` and `extension_*`)
-- [ ] Transform and import into dev, then staging, then production
+- [ ] Import test accounts and test sign-in, then import the directory's users
 - [ ] Verify one local, one social, one enterprise SSO user end to end
 
 #### Trade-offs and considerations
@@ -609,7 +612,7 @@ gotcha that applies, plus the enterprise IdP admins who must act (Step 1c).
 - **Phase 2 — Flow migration** (~1–6 h): one Flow per user flow / custom policy journey; API connectors → HTTP Connectors; MFA steps; branding from page layouts
 - **Phase 3 — Tenants and SSO** (if enterprise): one tenant per customer connection, SSO config, domains, MFA-for-SSO-users rule
 - **Phase 4 — Code changes**: MSAL POC first if chosen (MSAL pointed at Descope, B2C policy logic removed, backend validation, claims), then replace MSAL / Microsoft.Identity.Web with the Descope SDK or an OIDC library
-- **Phase 5 — User migration**: dev → staging → prod
+- **Phase 5 — User migration**: test accounts first, then the directory's users
 - **Phase 6 — Testing**
 - **Phase 7 — Cutover**: per the Cutover Strategy; dual-token window; decommission B2C policies
 
@@ -645,6 +648,7 @@ _Last updated: [timestamp]_
 - Login mode: [Descope-hosted via Inbound App / Federated App / Embedded Flow]
 - API authorization: [Inbound App + Resource / session token]
 - Migration goal: [Full cutover / Phased / Evaluating]
+- B2C directory (this run): [name — dev / staging / prod / region]
 - MSAL POC first: [Yes / No — stage: POC / SDK replacement]
 
 ## Triage Answers
@@ -717,7 +721,7 @@ If the Descope MCP Server is connected, use `AskUserQuestion` to ask whether to 
 through it or in the Console themselves. Through the MCP Server: follow Part 1's **Changes through
 the Descope MCP Server**. In the Console, or without the MCP Server: give them as Console steps.
 
-1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per B2C directory; test in a project real users don't sign in to.
+1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project for this run's B2C directory.
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
 3. **Flows** — start from `sign-up-or-in`; one Flow per B2C user flow / custom policy journey (sign-up-or-in, password reset, profile edit can be one Flow with branches). Check the template library first.
 4. **Auth methods** — match B2C: email + password, email OTP, SMS, TOTP, social providers (register new client IDs/secrets with Google etc.; B2C secrets can't be read).
@@ -839,9 +843,8 @@ Hosted (OIDC) login: `sdk.oidc.logout()` for full OIDC logout. Plain SDK session
 
 ### Execution Phase 5: User Migration (run by the team)
 The agent doesn't import users. When asked, prepare the export and transform scripts from
-`implementation-nuances.md` → User Migration and run them against the dev
-project only. Staging and production imports are run by the team, in that order, after dev sign-in
-tests pass.
+`implementation-nuances.md` → User Migration and run them against this run's
+project with test accounts only. The team imports the directory's users after test sign-ins pass.
 
 ### Execution Phase 6: Testing
 
