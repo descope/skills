@@ -33,7 +33,7 @@ Sources:
 
 | Azure AD B2C term | Descope term | Notes |
 |---|---|---|
-| **B2C tenant** (directory) | **Project** | One project per environment. |
+| **B2C tenant** (directory) | **Project** | One project per B2C directory. |
 | **Business customer** (one IdP connection each) | **Tenant** | Descope tenant = your B2B customer, with its own SSO, domains, roles. |
 | **User flow** (`B2C_1_…`) | **Flow** | Visual pipeline; replaces portal-configured journeys. |
 | **Custom policy** (`B2C_1A_…`, Identity Experience Framework XML) | **Flow** (+ subflows, Connectors, Scriptlets) | No XML, no policy keys, no upload order. |

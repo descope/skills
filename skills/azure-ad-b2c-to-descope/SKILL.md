@@ -97,9 +97,8 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
-- **Do not import users into production before dev/staging imports and sign-in tests pass.** With
-  only a production B2C directory, test in a Descope dev project with staff or synthetic accounts,
-  not a copy of real users.
+- **Test the import and sign-in with test accounts in a separate Descope project before importing
+  real users.**
 
 ---
 
@@ -128,6 +127,12 @@ asking about the MCP. Otherwise check which Descope MCP is connected:
 - Proceed with only the Docs MCP: use it for doc lookups; the Console setup stays manual.
 - Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
   verify against the current SDK."
+
+**Changes through the Descope MCP Server.** Before any change to the project, select it
+(`session` → `selectProject`) and confirm its ID matches the Project ID the user confirmed for this
+migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID` once set), get the
+user's approval for that change, then elevate (`session` → `elevate`). If the user declines, skip
+the change. If any other step fails, leave it in the Console Setup Checklist for the user to do.
 
 Do not proceed to Part 1.5 until this step is resolved.
 
@@ -407,7 +412,6 @@ App code reads tfp / acr?
 - Can users sign in again at cutover? Existing B2C sessions don't carry over.
 
 **Deployment**
-- Multiple environments (dev / staging / prod)? Each needs its own Descope project.
 - **Data residency:** where is each B2C directory's data stored (tenant overview → country/region),
   and must it stay there? Create each Descope project in the matching region — US, EU, AP (Sydney),
   CA, UK, SG or SA — before any import. The region is fixed at creation and needs a Growth or
@@ -703,13 +707,11 @@ Phase 1 — Console Setup (not started)
 
 Ask whether they already have a Project ID and working Flow; if yes, verify items 3–9.
 
-If the Descope MCP Server is connected, offer to make these changes with it. Before the first change,
-read the project and show its ID and name, and confirm with the user that it is the environment
-recorded in `MIGRATION-STATE.md` (start with dev). Then apply each change after the user approves,
-elevating first (`session` → `elevate`); if the user declines a change, skip it.
-Otherwise give them as Console steps.
+If the Descope MCP Server is connected, use `AskUserQuestion` to ask whether to make these changes
+through it or in the Console themselves. Through the MCP Server: follow Part 1's **Changes through
+the Descope MCP Server**. In the Console, or without the MCP Server: give them as Console steps.
 
-1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per environment.
+1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per B2C directory; test in a project real users don't sign in to.
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
 3. **Flows** — start from `sign-up-or-in`; one Flow per B2C user flow / custom policy journey (sign-up-or-in, password reset, profile edit can be one Flow with branches). Check the template library first.
 4. **Auth methods** — match B2C: email + password, email OTP, SMS, TOTP, social providers (register new client IDs/secrets with Google etc.; B2C secrets can't be read).
