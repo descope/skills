@@ -97,8 +97,8 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
-- **Test the import and sign-in with test accounts in this run's project before importing the
-  directory's users.**
+- **Test the import and sign-in with test accounts in this run's project before importing this
+  run's users.**
 
 ---
 
@@ -600,7 +600,7 @@ Migration). PM checklist:
 - [ ] Choose user ID strategy (keep the B2C ID / switch to Descope user ID / remap on first login), decide what new users get, and list every system keyed on the B2C ID
 - [ ] Build the user schema table; create typed custom attributes (incl. `azureObjectId`) and tenants before import
 - [ ] Export users via Microsoft Graph (`$select` incl. `identities` and `extension_*`)
-- [ ] Import test accounts and test sign-in, then import the directory's users
+- [ ] Import test accounts and test sign-in, then import this run's users
 - [ ] Verify one local, one social, one enterprise SSO user end to end
 
 #### Trade-offs and considerations
@@ -612,7 +612,7 @@ gotcha that applies, plus the enterprise IdP admins who must act (Step 1c).
 - **Phase 2 — Flow migration** (~1–6 h): one Flow per user flow / custom policy journey; API connectors → HTTP Connectors; MFA steps; branding from page layouts
 - **Phase 3 — Tenants and SSO** (if enterprise): one tenant per customer connection, SSO config, domains, MFA-for-SSO-users rule
 - **Phase 4 — Code changes**: MSAL POC first if chosen (MSAL pointed at Descope, B2C policy logic removed, backend validation, claims), then replace MSAL / Microsoft.Identity.Web with the Descope SDK or an OIDC library
-- **Phase 5 — User migration**: test accounts first, then the directory's users
+- **Phase 5 — User migration**: test accounts first, then this run's users
 - **Phase 6 — Testing**
 - **Phase 7 — Cutover**: per the Cutover Strategy; dual-token window; decommission B2C policies
 
@@ -648,7 +648,7 @@ _Last updated: [timestamp]_
 - Login mode: [Descope-hosted via Inbound App / Federated App / Embedded Flow]
 - API authorization: [Inbound App + Resource / session token]
 - Migration goal: [Full cutover / Phased / Evaluating]
-- B2C directory (this run): [name — dev / staging / prod / region]
+- B2C directories (this run): [name — dev / staging / prod / region; for Decision 2 (e), each directory → its tenant]
 - MSAL POC first: [Yes / No — stage: POC / SDK replacement]
 
 ## Triage Answers
@@ -721,7 +721,7 @@ If the Descope MCP Server is connected, use `AskUserQuestion` to ask whether to 
 through it or in the Console themselves. Through the MCP Server: follow Part 1's **Changes through
 the Descope MCP Server**. In the Console, or without the MCP Server: give them as Console steps.
 
-1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project for this run's B2C directory.
+1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project for this run.
 2. **Management Key** (if needed) — Company → Management Keys. Server-side only.
 3. **Flows** — start from `sign-up-or-in`; one Flow per B2C user flow / custom policy journey (sign-up-or-in, password reset, profile edit can be one Flow with branches). Check the template library first.
 4. **Auth methods** — match B2C: email + password, email OTP, SMS, TOTP, social providers (register new client IDs/secrets with Google etc.; B2C secrets can't be read).
@@ -844,7 +844,7 @@ Hosted (OIDC) login: `sdk.oidc.logout()` for full OIDC logout. Plain SDK session
 ### Execution Phase 5: User Migration (run by the team)
 The agent doesn't import users. When asked, prepare the export and transform scripts from
 `implementation-nuances.md` → User Migration and run them against this run's
-project with test accounts only. The team imports the directory's users after test sign-ins pass.
+project with test accounts only. The team imports this run's users after test sign-ins pass.
 
 ### Execution Phase 6: Testing
 
