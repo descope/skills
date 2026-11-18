@@ -117,7 +117,11 @@ asking about the MCP. Otherwise check which Descope MCP is connected:
 > **Connect the Descope MCP Server.** This skill uses it to check current SDK methods and
 > features, and it can read your Descope project and make management changes to it with your
 > approval. Without it, guidance may be stale. Server URL `https://mcp.descope.com` (other
-> regions and client setup: https://docs.descope.com/mcp/mcp-server).
+> regions and client setup: https://docs.descope.com/mcp/mcp-server). Connecting needs a Descope
+> account: you sign in with it when your client first connects.
+>
+> For docs lookups only, you can connect the Descope Docs MCP instead:
+> `https://docs-mcp.descope.com/mcp`.
 >
 > **Connect it before we continue, or proceed without it?**
 
@@ -131,8 +135,10 @@ asking about the MCP. Otherwise check which Descope MCP is connected:
 **Changes through the Descope MCP Server.** Before any change to the project, select it
 (`session` → `selectProject`) and confirm its ID matches the Project ID the user confirmed for this
 migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID` once set), get the
-user's approval for that change, then elevate (`session` → `elevate`). If the user declines, skip
-the change. If any other step fails, leave it in the Console Setup Checklist for the user to do.
+user's approval for that change, then elevate (`session` → `elevate`). Elevation allows writes for
+a limited time, then the session returns to read-only, so elevate again before a later change. If
+the user declines, skip the change. If any other step fails, leave it in the Console Setup
+Checklist for the user to do.
 
 Do not proceed to Part 1.5 until this step is resolved.
 
