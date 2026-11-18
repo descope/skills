@@ -97,8 +97,7 @@ for the custom policy XML files. Do not infer the auth experience from code alon
   customer tasks: list them in the plan with an owner.
 - **Do not skip `aud` validation for Inbound App tokens.** Validate against the Resource identifier, not the project ID.
 - **Do not expose `DESCOPE_MANAGEMENT_KEY` or Inbound App client secrets client-side.**
-- **Test the import and sign-in with test accounts in this run's project before importing this
-  run's users.**
+- **Dry-run the import script and review its output before importing this run's users.**
 
 ---
 
@@ -600,7 +599,7 @@ Migration). PM checklist:
 - [ ] Choose user ID strategy (keep the B2C ID / switch to Descope user ID / remap on first login), decide what new users get, and list every system keyed on the B2C ID
 - [ ] Build the user schema table; create typed custom attributes (incl. `azureObjectId`) and tenants before import
 - [ ] Export users via Microsoft Graph (`$select` incl. `identities` and `extension_*`)
-- [ ] Import test accounts and test sign-in, then import this run's users
+- [ ] Dry-run the import script and review the output for errors, then import this run's users
 - [ ] Verify one local, one social, one enterprise SSO user end to end
 
 #### Trade-offs and considerations
@@ -612,7 +611,7 @@ gotcha that applies, plus the enterprise IdP admins who must act (Step 1c).
 - **Phase 2 — Flow migration** (~1–6 h): one Flow per user flow / custom policy journey; API connectors → HTTP Connectors; MFA steps; branding from page layouts
 - **Phase 3 — Tenants and SSO** (if enterprise): one tenant per customer connection, SSO config, domains, MFA-for-SSO-users rule
 - **Phase 4 — Code changes**: MSAL POC first if chosen (MSAL pointed at Descope, B2C policy logic removed, backend validation, claims), then replace MSAL / Microsoft.Identity.Web with the Descope SDK or an OIDC library
-- **Phase 5 — User migration**: test accounts first, then this run's users
+- **Phase 5 — User migration**: dry run first, then this run's users
 - **Phase 6 — Testing**
 - **Phase 7 — Cutover**: per the Cutover Strategy; dual-token window; decommission B2C policies
 
@@ -843,8 +842,8 @@ Hosted (OIDC) login: `sdk.oidc.logout()` for full OIDC logout. Plain SDK session
 
 ### Execution Phase 5: User Migration (run by the team)
 The agent doesn't import users. When asked, prepare the export and transform scripts from
-`implementation-nuances.md` → User Migration and run them against this run's
-project with test accounts only. The team imports this run's users after test sign-ins pass.
+`implementation-nuances.md` → User Migration, give the import script a dry-run mode, and run it in
+dry-run mode only. The team runs the real import after reviewing the dry-run output.
 
 ### Execution Phase 6: Testing
 
