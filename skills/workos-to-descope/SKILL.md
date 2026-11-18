@@ -438,7 +438,7 @@ the export/import script (Step 3 → Users, Organizations & Roles has the endpoi
 - Decide what to do with `inactive` and `pending` memberships and open invitations
 - Re-point SCIM/Directory Sync at Descope (if Directory Sync is in use), and recreate SSO connections per tenant
 - Run against staging, then production; set `freshlyMigrated` on users who have a WorkOS password but no usable hash (not on SSO-, social- or Magic Auth-only users)
-- Add the Generic HTTP Connector (WorkOS password check) to the sign-in Flow for `freshlyMigrated` users and for users new to Descope
+- Add the Generic HTTP Connector (WorkOS password check) to the sign-in Flow: `freshlyMigrated` users and users new to Descope go straight to it; other existing users try the Descope password first and fall back to the connector only if that check fails
 - Request the hash export as close to the switch as possible, and switch the app to Descope in one step; no freeze is needed, because the connector covers passwords changed in WorkOS after the export
 - Re-sync organizations, memberships and roles once right after the switch, since JIT does not update roles of users already imported
 - Turn WorkOS off at the end of the chosen transition, then send remaining `freshlyMigrated` users to email verification plus password reset or passwordless
