@@ -6,6 +6,9 @@
 //
 // Usage: node parse-flow.mjs <flow.json> [more-flows.json ...]
 //
+// Accepts a Console flow export or the Descope MCP Server's `GetExistingFlow`
+// response, which wraps the same export in a top-level "flow" key.
+//
 // Output is plain text, intended to be pasted into the BYOS screen-map
 // comment header. The fields you need for BYOS components:
 //   - screen name      (map key)
@@ -15,6 +18,11 @@
 
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+
+function loadFlow(filePath) {
+  const raw = JSON.parse(readFileSync(filePath, 'utf8'))
+  return raw?.flow?.contents ? raw.flow : raw
+}
 
 function summarizeNode(node) {
   const comp = node.type?.resolvedName || '?'
@@ -72,7 +80,7 @@ function isPostAuthSubflow(loaderKey, tasks, loggedInIds) {
 }
 
 function printFlow(filePath) {
-  const flow = JSON.parse(readFileSync(filePath, 'utf8'))
+  const flow = loadFlow(filePath)
   const flowId = flow.flowId ?? '(unknown)'
   const startTask = flow.contents?.startTask ?? '(unknown)'
 
@@ -101,7 +109,10 @@ function printFlow(filePath) {
   for (const [taskKey, task] of Object.entries(tasks)) {
     if (!task.screenId) continue
     const scr = byScreenId[task.screenId]
-    console.log(`\n── screen task ${taskKey}: "${task.name}"`)
+    console.log(`\n── screen task ${taskKey}: "${task.name ?? ''}"`)
+    if (!task.name) {
+      console.log(`   ⚠️  no screen name: onScreenUpdate receives "" for this screen. Name it in the flow before mapping it.`)
+    }
     console.log(`   allInputKeys: ${JSON.stringify(task.allInputKeys ?? [])}`)
     console.log(`   contextKeys:  ${JSON.stringify(task.contextKeys ?? [])}`)
     if (task.inputsMetadata) {
@@ -118,9 +129,10 @@ function printFlow(filePath) {
       console.log(`     • ${r.interactionId}  →  task ${r.taskId}  "${target?.name ?? '?'}"`)
     }
     if (scr) {
-      console.log(`   UI nodes (action-ish components; form key = node's "name" prop):`)
-      for (const [id, node] of Object.entries(scr.contents || {})) {
+      console.log(`   UI nodes ([component id] = props.id, a Button's interactionId; form key = node's "name" prop):`)
+      for (const [key, node] of Object.entries(scr.contents || {})) {
         if (node.type?.resolvedName === 'Container') continue
+        const id = node.props?.id || key
         console.log(`     [${id.slice(0, 14).padEnd(14)}] ${summarizeNode(node)}`)
       }
     }
@@ -166,8 +178,8 @@ function printFlow(filePath) {
   const screenNames = {}
   for (const [taskKey, task] of Object.entries(tasks)) {
     if (!task.screenId) continue
-    if (!screenNames[task.name]) screenNames[task.name] = []
-    screenNames[task.name].push(taskKey)
+    if (!screenNames[task.name || '(no name)']) screenNames[task.name || '(no name)'] = []
+    screenNames[task.name || '(no name)'].push(taskKey)
   }
   const collisions = Object.entries(screenNames).filter(([, keys]) => keys.length > 1)
   if (collisions.length) {
@@ -192,11 +204,11 @@ function main() {
   if (files.length > 1) {
     const allNames = {}
     for (const f of files) {
-      const flow = JSON.parse(readFileSync(f, 'utf8'))
+      const flow = loadFlow(f)
       for (const [k, t] of Object.entries(flow.contents?.tasks ?? {})) {
         if (!t.screenId) continue
-        if (!allNames[t.name]) allNames[t.name] = []
-        allNames[t.name].push({ file: path.basename(f), task: k })
+        if (!allNames[t.name || '(no name)']) allNames[t.name || '(no name)'] = []
+        allNames[t.name || '(no name)'].push({ file: path.basename(f), task: k })
       }
     }
     const crossCollisions = Object.entries(allNames).filter(([, refs]) => {
