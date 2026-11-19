@@ -132,8 +132,8 @@ function printFlow(filePath) {
       console.log(`   UI nodes ([component id] = props.id, a Button's interactionId; form key = node's "name" prop):`)
       for (const [key, node] of Object.entries(scr.contents || {})) {
         if (node.type?.resolvedName === 'Container') continue
-        const id = node.props?.id || key
-        console.log(`     [${id.slice(0, 14).padEnd(14)}] ${summarizeNode(node)}`)
+        const id = String(node.props?.id || key)
+        console.log(`     [${id.padEnd(14)}] ${summarizeNode(node)}`)
       }
     }
   }
