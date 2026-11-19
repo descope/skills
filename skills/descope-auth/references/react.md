@@ -15,7 +15,7 @@ REACT_APP_DESCOPE_PROJECT_ID=<project-id>
 The exact variable name/prefix depends on your bundler (Create React App needs the
 `REACT_APP_` prefix and reads it from `process.env`; Vite needs a `VITE_` prefix and
 reads it from `import.meta.env`). Only the prefix changes — the value is still your
-Descope Project ID from https://app.descope.com/settings/project.
+Descope Project ID (see "Get a Project ID" in the Quick Start of `SKILL.md`).
 
 ## 1. Wrap App with AuthProvider
 
