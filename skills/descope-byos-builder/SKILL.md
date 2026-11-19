@@ -1,6 +1,6 @@
 ---
 name: descope-byos-builder
-description: Use when building React "Bring Your Own Screen" (BYOS) custom UI on top of a Descope flow — takes exported flow JSONs, extracts the real interaction IDs and outputs, generates BYOS components that match hosted parity, and avoids the rediscovery-the-hard-way failure modes (silent form rejection, shared screen-name collisions, anonymous-session stickiness, nested-form hydration errors, wrong form keys, dead-end buttons, missing OAuth provider field).
+description: Use when building React "Bring Your Own Screen" (BYOS) custom UI on top of a Descope flow — reads the flow JSON (through the Descope MCP Server when connected, otherwise from Console exports), extracts the real screen names, interaction IDs and outputs, generates BYOS components that match hosted parity, and avoids the rediscovery-the-hard-way failure modes (silent form rejection, shared screen-name collisions, anonymous-session stickiness, nested-form hydration errors, wrong form keys, dead-end buttons, missing OAuth provider field).
 ---
 
 # Descope BYOS Builder
@@ -21,20 +21,20 @@ Translate **Descope flow JSON exports** into working React BYOS screens that cal
 
 **Ground every BYOS component in the exported flow JSON.** Do not guess interaction IDs, output key names, or screen names. Every failure in the catalog starts with someone making up a value that looked reasonable.
 
-## Inputs Required (Ask the User First)
+## Inputs Required (Get These First)
 
-This skill cannot fetch flows from the Descope console — the agent has no console access. **Before doing any work, ask the user to provide:**
-
-1. **Flow JSON files** — exported from Descope console for the main flow AND every subflow it invokes (LoadSubflow `arguments.flowId`), including post-auth promotion subflows (e.g. `add-passkeys`). Accept either file paths or pasted JSON.
+1. **Flow JSON for the main flow AND every subflow it invokes** (LoadSubflow `arguments.flowId`), including post-auth promotion subflows (e.g. `add-passkeys`):
+   - **Descope MCP Server connected** (it exposes `flows_read` and `session` tools): fetch the flows yourself. Call `session` with action `getProjectStatus` and confirm the selected project is the one the app uses. Then call `flows_read` with operation `ListExistingFlows` to find the flow IDs, and `flows_read` with operation `GetExistingFlow` and args `{ "flowId": "<id>" }` once per flow. Save each response to `<flowId>.json`; `parse-flow.mjs` reads the response as is (the export sits under its `flow` key).
+   - **Not connected:** ask the user to export each flow from the Descope Console and give you file paths or pasted JSON, or to connect the Descope MCP Server (https://docs.descope.com/mcp/mcp-server) so you can read the flows yourself.
 2. **Project ID** + **base URL** (if not already configured) — needed for the `AuthProvider` / SDK init.
 3. **Mount point** in the React app — file/component where the BYOS entry point should render.
 4. **Existing BYOS code** (if modifying) — paths to current screen components and screen map.
 
-If the user only provides the main flow JSON, **stop and ask for subflows** before generating components — missing subflow JSONs is the #1 cause of `[byos] no handler for screen "..."` runtime errors.
+If you only have the main flow JSON, **get the subflows** before generating components — missing subflow JSONs is the #1 cause of `[byos] no handler for screen "..."` runtime errors.
 
 ## Workflow
 
-1. **Collect flow JSONs from the user.** Agent cannot reach the Descope console — user must export and paste/path them in. Need the **main** flow AND every subflow it invokes (LoadSubflow actions with `arguments.flowId`). This includes **post-auth promotion subflows** that run AFTER a `logged-in` action (e.g. `add-passkeys`) — easy to miss because the user is already authenticated by then. If only the main flow was provided, **scan it for `LoadSubflow` actions and ask the user to export each one** before proceeding. Missing subflow JSONs → undiscovered screens → `[byos] no handler for screen …` at runtime.
+1. **Collect flow JSONs.** With the Descope MCP Server connected, fetch them with `flows_read` `GetExistingFlow` (see Inputs Required); otherwise the user exports and pastes/paths them in. Need the **main** flow AND every subflow it invokes (LoadSubflow actions with `arguments.flowId`). This includes **post-auth promotion subflows** that run AFTER a `logged-in` action (e.g. `add-passkeys`) — easy to miss because the user is already authenticated by then. **Scan the main flow for `LoadSubflow` actions and get each one** before proceeding. Missing subflow JSONs → undiscovered screens → `[byos] no handler for screen …` at runtime.
 
 2. **Parse with `parse-flow.mjs`** (in this directory). Run `node parse-flow.mjs <path/to/flow.json>` — it prints every screen task with `screenName`, `allInputKeys`, `contextKeys`, next-rules (interactionId → taskId), UI node summaries (input `name` attrs, button labels), and subflow invocations.
 
@@ -54,6 +54,8 @@ If the user only provides the main flow JSON, **stop and ask for subflows** befo
 
 > **Note:** Several rules below (nested `<form>` tag behavior, WebAuthn ceremony ownership, `ctxKey` prefill, `componentsConditions` field name, E.164 silent rejection) are empirically derived from real BYOS sessions and are not explicitly documented in Descope's official docs — but have been validated in production and verified against flow JSON structure.
 
+- **A button's interaction ID is its `props.id`**, which is what the Console's "Interaction ID" setting edits and what a hosted screen sends. Take it from the screen task's `next.rules` (or the button's `props.id`), never from the node key or from any other prop.
+- **Every screen task needs a unique `name`.** `onScreenUpdate` receives the task `name` as `screenName`; a screen task with no name arrives as `""`. Name it in the flow (see Fixing the Flow) instead of special-casing the empty string.
 - **Form keys match the input node's `name` prop**, NOT `allInputKeys` or `inputsMetadata.key`. Task 40's Set Password input has `name="newPassword"` but `allInputKeys: ["newPassword_noPolicyOverrides"]`. Submit with `{ newPassword: "..." }`.
 - **Send only the current screen's outputs** in `state.next` payloads. Spreading the full accumulated form across subflow boundaries can pollute context and cause silent failures.
 - **Never nest `<form>` tags.** Descope's web component wraps children in a `<form>`. Use `<div>` + `onClick` + `onKeyDown={makeEnterHandler(submit)}`.
@@ -102,6 +104,19 @@ Predicate: `supportsChooseOther = !hasPassword || hasFullName`.
 Document the chosen heuristic at the top of the router component with the full trace. If the Descope console could rename one screen, ask — unique names beat heuristics forever.
 
 **Real success case:** Two `User Information` tasks (verify-email-magic-link existing-user vs new-user branches) were renamed in console to `User Information - Unverified - Email Only` and `User Information - Unverified - Email and Name`. Heuristic was possible (presence of `fullName` output); rename was cheaper, clearer, and survives flow edits. **Default toward rename.**
+
+## Fixing the Flow (Descope MCP Server)
+
+With the Descope MCP Server connected you can make the flow BYOS-friendly yourself instead of asking the user to do it in the Console: give colliding or empty screen names unique names, and replace random interaction IDs (`EAOrMpv33D`) with readable ones (`submit-email`).
+
+1. Edit the JSON from `GetExistingFlow`:
+   - **Screen name:** the screen task's `name` under `contents.tasks`.
+   - **Interaction ID:** change it in all three places together, or the flow breaks: the button's `props.id` in the screen `contents`, the matching entry in the screen's `interactions` array, and every `next.rules[].interactionId` on the screen task that points at it.
+2. Dry run: call `flows_write` with operation `ImportFlow` and args `{ "flowId": "<id>", "flow": <edited flow object>, "mode": "UPDATE", "dryRun": true }`. Fix every error it reports.
+3. Show the user what changes, and get their explicit approval for that flow.
+4. Call `session` with action `elevate` (quote the user's request as the reason), then repeat the `ImportFlow` call without `dryRun`.
+
+Renaming a screen or an interaction ID breaks BYOS code that already uses the old value, so update that code in the same change, and ask the user whether any other app renders this flow with BYOS before renaming.
 
 ## Gotchas Reference
 

@@ -345,7 +345,7 @@ Translate Descope flow JSON exports into working React BYOS screens that call `s
 - Adding post-auth promotion subflows (e.g. passkey enrollment after login)
 
 **What the skill does:**
-- Asks for exported flow JSONs (main flow + every subflow) before generating anything
+- Reads the main flow and every subflow through the Descope MCP Server when connected, otherwise asks for exported flow JSONs, before generating anything
 - Runs `parse-flow.mjs` to extract screen names, interaction IDs, input `name` props, next-rules, and subflow loaders
 - Generates per-screen React components with correct `state.next(interactionId, payload)` signatures
 - Detects shared screen-name collisions and writes router components with documented disambiguation heuristics
