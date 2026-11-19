@@ -648,7 +648,7 @@ skills/
 ## Getting Started with Descope
 
 1. **Create a free account** on our [Sign Up page](https://www.descope.com/sign-up)
-2. **Get your Project ID** from [Settings → Project](https://app.descope.com/settings/project)
+2. **Get your Project ID**: connect the [Descope MCP Server](https://docs.descope.com/mcp/mcp-server) (`https://mcp.descope.com`) and your agent can pick or create a project for you, or copy it from [Settings → Project](https://app.descope.com/settings/project)
 3. **Install the skills** via `npx skills add descope/skills` or the `/plugin` command in Claude Code
 4. **Ask your AI agent** to integrate Descope authentication or set up Terraform
 

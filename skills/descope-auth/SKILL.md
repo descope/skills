@@ -23,10 +23,16 @@ Detect the user's framework and use the appropriate reference:
 
 ## Quick Start (all frameworks)
 
-1. Get Project ID from https://app.descope.com/settings/project
+1. **Get a Project ID.** Go in this order and stop at the first step that works:
+   1. **Already configured:** if the app already has a Descope Project ID (e.g. `NEXT_PUBLIC_DESCOPE_PROJECT_ID`, `DESCOPE_PROJECT_ID`, `VITE_DESCOPE_PROJECT_ID` in env files), reuse it. Do not create a new project.
+   2. **Descope MCP Server connected** (it exposes a `session` tool): call `session` with action `getProjectStatus` and use the selected project. To use a different one, call `session` with action `listProjects` and ask the user. Create a new project only when the user asks for one.
+   3. **Not connected:** recommend connecting the Descope MCP Server at `https://mcp.descope.com` (other regions and per-client setup: https://docs.descope.com/mcp/mcp-server). The user signs in once in the browser; users without a Descope account can sign up there and get a project. Some clients need a restart to pick up a new MCP server. Once connected, continue with step 2.
+   4. **User prefers not to use the MCP:** ask for the Project ID from https://app.descope.com/settings/project.
 2. Configure the Project ID per the framework reference (e.g. `NEXT_PUBLIC_DESCOPE_PROJECT_ID=<your-id>` for Next.js, `Descope.setup(...)` for Android and iOS)
 3. Follow framework-specific reference
 4. **Verify**: After setup, confirm the `<Descope>` component renders the login form. Check the browser console — a missing or invalid Project ID produces a clear `Could not load flows` error.
+
+When the Descope MCP Server is connected, use it for project configuration (e.g. enabling Google login, MFA settings, editing flows) instead of sending the user to the Console. Changes need the user's approval: confirm the change, then call `session` with action `elevate`.
 
 ### Minimal Inline Example (Next.js)
 
