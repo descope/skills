@@ -361,6 +361,30 @@ Translate Descope flow JSON exports into working React BYOS screens that call `s
 
 </details>
 
+<details>
+<summary><b>descope-flows</b> - Build new Descope flows with the Descope MCP</summary>
+
+Builds a new Descope flow from a Descope flow template: asks what the request leaves open, looks up actions, context keys and connectors live through the Descope MCP, checks the flow with the server, shows what changed from the template, and imports it only after you confirm the project and the flow id. Builds new flows only; it doesn't edit existing ones.
+
+**Use when:**
+- "Build a sign-up or sign-in flow with email OTP and Google"
+- "Add MFA with an authenticator app for admins only"
+- "Sign in with SSO when the email domain has it, OTP otherwise"
+- "Block bots with reCAPTCHA before sending the code, and fail closed if it's down"
+- "After sign-up, post the new user to our Slack channel"
+
+**What the skill does:**
+- Asks about sign-up, failure handling, audience and values only you know before building
+- Starts from the closest template and keeps what it does unless you ask otherwise
+- Applies security defaults: no account enumeration, fail closed, SSO email binding
+- Checks the flow with an `ImportFlow` dry run, diffs against the template, then asks before importing
+- Reports what was built, changed, checked, assumed and what to review
+
+**Requirements:**
+- Descope MCP installed and authorized
+
+</details>
+
 ## Installation
 
 <details>
@@ -635,12 +659,14 @@ skills/
 │       └── report-template.md - Exact report structure and issue-ready finding format
 ├── descope-fga-schema/
 │   └── SKILL.md - DSL grammar, dry-run workflow, data loss guards
-└── descope-byos-builder/
-    ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
-    ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
-    └── references/
-        ├── byos-component-patterns.md - Core wiring, screen router, skeleton, and common screen examples
-        └── gotchas.md - 19 silent-failure modes with symptom → root cause → fix, plus pre-ship checklist
+├── descope-byos-builder/
+│   ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
+│   ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
+│   └── references/
+│       ├── byos-component-patterns.md - Core wiring, screen router, skeleton, and common screen examples
+│       └── gotchas.md - 19 silent-failure modes with symptom → root cause → fix, plus pre-ship checklist
+└── descope-flows/
+    └── SKILL.md - Template-first flow build workflow, security defaults, Flow JSON reference
 ```
 
 </details>

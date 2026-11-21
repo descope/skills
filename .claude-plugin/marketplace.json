@@ -8,13 +8,13 @@
     {
       "name": "descope-skills",
       "source": "./",
-      "description": "Descope authentication skills: integration, Auth0/Okta/WorkOS/Stytch/PingOne migration, Terraform, FGA authorization schemas, security review, and BYOS custom UI",
+      "description": "Descope authentication skills: integration, Auth0/Okta/WorkOS/Stytch/PingOne migration, Terraform, FGA authorization schemas, security review, BYOS custom UI, and Descope flows",
       "repository": "https://github.com/descope/skills.git",
       "author": {
         "name": "Descope",
         "email": "support@descope.com"
       },
-      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "oauth", "sso", "passkey", "mfa", "fga", "authorization", "security", "byos", "ci-cd", "deployment"],
+      "keywords": ["descope", "authentication", "terraform", "quickstart", "migration", "oauth", "sso", "passkey", "mfa", "fga", "authorization", "security", "byos", "flows", "ci-cd", "deployment"],
       "category": "authentication"
     }
   ]
