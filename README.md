@@ -659,12 +659,14 @@ skills/
 │       └── report-template.md - Exact report structure and issue-ready finding format
 ├── descope-fga-schema/
 │   └── SKILL.md - DSL grammar, dry-run workflow, data loss guards
-└── descope-byos-builder/
-    ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
-    ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
-    └── references/
-        ├── byos-component-patterns.md - Core wiring, screen router, skeleton, and common screen examples
-        └── gotchas.md - 19 silent-failure modes with symptom → root cause → fix, plus pre-ship checklist
+├── descope-byos-builder/
+│   ├── SKILL.md - Workflow, iron rule, critical rules, collision heuristics, red flags
+│   ├── parse-flow.mjs - Node parser: extracts screen tasks, interaction IDs, form-key name props, subflow loaders
+│   └── references/
+│       ├── byos-component-patterns.md - Core wiring, screen router, skeleton, and common screen examples
+│       └── gotchas.md - 19 silent-failure modes with symptom → root cause → fix, plus pre-ship checklist
+└── descope-flows/
+    └── SKILL.md - Template-first flow build workflow, security defaults, Flow JSON reference
 ```
 
 </details>
