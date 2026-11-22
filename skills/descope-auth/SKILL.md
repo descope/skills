@@ -51,7 +51,20 @@ export default function LoginPage() {
 }
 ```
 
+This shows only the component. A real sign-in page must also handle returning users, as described in the next section: see section 2 of `references/nextjs.md`.
+
 For React SPA, Android, iOS, or backend-only setups, see the framework-specific references below.
+
+## Session Lifecycle (web apps, REQUIRED)
+
+Descope issues a short-lived session token (minutes) and a long-lived refresh token (weeks). Only the browser SDK turns the refresh token into a new session token. An integration that checks only the session token signs users out after every idle period. Every web integration (Next.js, React) must:
+
+1. **Keep the requested page.** When an unauthenticated user is sent to sign-in, pass the page they asked for (e.g. `/sign-in?next=/projects/1`) and return them there after sign-in.
+2. **Let the SDK renew before showing login.** On the sign-in page, wait for `useSession()` to finish loading. If the user is authenticated (the refresh token was still valid), send them to `next` without showing the flow.
+3. **Refresh on every page.** Call `useSession()` in a component rendered on every page. The SDK refreshes only once something calls it, and then also renews an expired token when the user returns to the tab. Before a server action or API call from the client, wait for an expired token to renew.
+4. **Allow only in-app `next` paths.** Parse `next` with `new URL(next, base)` and accept it only if the origin is unchanged and the path doesn't start with `//`. Otherwise use `/`. String checks such as `startsWith('/')` are not enough, because browsers strip tabs and newlines from URLs (`/%09/evil.com`). Anything else is an open redirect.
+
+The framework references show the exact code. Follow them.
 
 ## Valid Flow IDs (CRITICAL - do not invent others)
 
@@ -81,6 +94,8 @@ For React SPA, Android, iOS, or backend-only setups, see the framework-specific 
 - DO NOT invent flow IDs - only use IDs from the table above
 - DO NOT skip server-side validation - always validate on backend
 - DO NOT expose DESCOPE_MANAGEMENT_KEY in client code
+- DO NOT show the login flow before `useSession()` finishes loading, and DO NOT send every signed-in user to a fixed page such as `/` or `/dashboard`. Return them to `next`
+- DO NOT redirect to a `next` value without checking it is an in-app path
 
 ## References
 

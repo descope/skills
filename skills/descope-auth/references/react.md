@@ -65,21 +65,49 @@ function App() {
 
 ## 2. Create Login Page
 
+Don't show the login flow straight away. A user sent here may still have a valid
+refresh token, so wait for `useSession()` to finish loading: if the SDK renewed the
+session, send the user back to the page they asked for. Show the flow only when there
+is no usable session.
+
 ```tsx
 // src/pages/Login.tsx
-import { Descope } from '@descope/react-sdk';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Descope, useSession } from '@descope/react-sdk';
+import { useLocation, useNavigate } from 'react-router-dom';
+
+// Only allow paths inside this app, so the return path can't send users to another site.
+function safeNext(value: unknown): string {
+  if (typeof value !== 'string' || !value) return '/dashboard';
+  try {
+    const base = 'http://app.invalid'; // placeholder origin, only used for parsing
+    const url = new URL(value, base);
+    if (url.origin !== base || url.pathname.startsWith('//') || url.pathname.startsWith('/login')) {
+      return '/dashboard';
+    }
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return '/dashboard';
+  }
+}
 
 function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const next = safeNext((location.state as { from?: string } | null)?.from);
+  const { isAuthenticated, isSessionLoading } = useSession();
+
+  useEffect(() => {
+    if (isAuthenticated) navigate(next, { replace: true });
+  }, [isAuthenticated, next, navigate]);
+
+  // Let the SDK renew the session from the refresh token before showing the login flow.
+  if (isSessionLoading || isAuthenticated) return <div>Checking your session...</div>;
 
   return (
     <Descope
       flowId="sign-up-or-in"
-      onSuccess={(e) => {
-        console.log('Authenticated:', e.detail.user);
-        navigate('/dashboard');
-      }}
+      onSuccess={() => navigate(next, { replace: true })}
       onError={(e) => console.error('Auth failed:', e.detail)}
     />
   );
@@ -103,13 +131,17 @@ import { SignUpOrInFlow } from '@descope/react-sdk';
 ```tsx
 // src/components/ProtectedRoute.tsx
 import { useSession } from '@descope/react-sdk';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isSessionLoading } = useSession();
+  const location = useLocation();
 
   if (isSessionLoading) return <div>Loading...</div>;
-  if (!isAuthenticated) return <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    // Keep the requested page so the login page can return the user to it.
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  }
 
   return <>{children}</>;
 }
@@ -229,6 +261,27 @@ with `autoRefresh={false}` on `AuthProvider`. To skip refreshing for idle users,
 `autoRefresh={{ customActivityTracking: true }}` and call `sdk.markUserActive()` on
 user interactions (click/keydown/touchstart/tab-visible) from a component rendered
 inside `AuthProvider`.
+
+Browsers pause timers in background tabs and during sleep, so a tab left open can hold
+an expired session token. The SDK renews it when the tab becomes visible again, but in
+the background. Before an API call that may run right after the user returns, renew
+first:
+
+```tsx
+import { getSessionToken, isSessionTokenExpired, refresh } from '@descope/react-sdk';
+
+export async function ensureFreshSession() {
+  const token = getSessionToken();
+  // getSessionToken() returns '' when Descope manages the token as an HttpOnly
+  // cookie. Then this does nothing and the SDK's background renewal applies.
+  if (token && isSessionTokenExpired(token)) {
+    await refresh().catch(() => {});
+  }
+}
+
+// before the API call:
+await ensureFreshSession();
+```
 
 ### Listening for Auth State Changes
 
