@@ -78,16 +78,16 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 // Only allow paths inside this app, so the return path can't send users to another site.
 function safeNext(value: unknown): string {
-  if (typeof value !== 'string' || !value) return '/';
+  if (typeof value !== 'string' || !value) return '/dashboard';
   try {
     const base = 'http://app.invalid'; // placeholder origin, only used for parsing
     const url = new URL(value, base);
     if (url.origin !== base || url.pathname.startsWith('//') || url.pathname.startsWith('/login')) {
-      return '/';
+      return '/dashboard';
     }
     return url.pathname + url.search + url.hash;
   } catch {
-    return '/';
+    return '/dashboard';
   }
 }
 
@@ -272,7 +272,9 @@ import { getSessionToken, isSessionTokenExpired, refresh } from '@descope/react-
 
 export async function ensureFreshSession() {
   const token = getSessionToken();
-  if (!token || isSessionTokenExpired(token)) {
+  // getSessionToken() returns '' when Descope manages the token as an HttpOnly
+  // cookie. Then this does nothing and the SDK's background renewal applies.
+  if (token && isSessionTokenExpired(token)) {
     await refresh().catch(() => {});
   }
 }
