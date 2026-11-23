@@ -277,6 +277,34 @@ Guides self-service migrations from Frontegg to Descope across any language or f
 
 </details>
 
+<details>
+<summary><b>fusionauth-to-descope</b> — Migrate applications from FusionAuth to Descope</summary>
+
+Guides self-service migrations from FusionAuth (self-hosted or FusionAuth Cloud) to Descope across any language or framework. FusionAuth is an OIDC-first identity server built from tenants, applications, registrations, application roles, and groups, extended with themes, lambdas, and webhooks — so the skill first settles what each FusionAuth tenant and application becomes in Descope, maps each feature in use, analyzes auth touchpoints, produces a reviewed `MIGRATION-PLAN.md`, then executes the migration. Uses the Descope MCP when available to verify SDK method names and option shapes.
+
+**Use when:**
+- "Migrate my app from FusionAuth to Descope"
+- "Replace FusionAuth with Descope"
+- "Our app uses @fusionauth/react-sdk / @fusionauth/typescript-client / next-auth with the FusionAuth provider — switch to Descope"
+- "How do FusionAuth tenants / registrations / lambdas / identity providers map to Descope?"
+- "We're moving off FusionAuth"
+
+**Covers:**
+- Integration-style detection (FusionAuth SDK + Hosted Backend, DPoP, generic OIDC libraries such as next-auth/Spring/ASP.NET, custom forms on the Login API), including keeping an OIDC library and repointing it at Descope
+- Feature mappings: tenants → Projects or Tenants, applications/registrations/roles/groups → Descope RBAC, hosted pages and themes → Flows + Styles, lambdas → JWT Templates/Flow steps/Connectors, identity providers → tenant SSO + OAuth providers, webhooks → Audit Webhook/Connectors, entities → Inbound Apps + Resources + Policies, SCIM → Descope SCIM
+- User migration with password hashes: database export (self-hosted) or support-provided export (Cloud), scheme-by-scheme hash mapping to Descope's import format, TOTP seed import, and a Generic HTTP Connector JIT path against FusionAuth's Login API for schemes Descope can't import
+- FusionAuth-specific gotchas: same email across tenants, `sub` changes, HMAC-signed tokens on Kickstart installs, `app.at`/`app.rt` Hosted Backend cookies, `aud` = application ID, the user-search 10,000-result limit
+- Infrastructure decommission: FusionAuth server, database, search cluster, Kickstart, and Terraform
+
+**Output:**
+- `MIGRATION-PLAN.md` for human review before any code changes
+- Code/config changes across confirmed auth touchpoints
+- Descope Flow, Widget, and Console configuration guidance
+
+**Workflow:** MCP check → scope guard → migration plan (human review) → execution. Never skips ahead.
+
+</details>
+
 
 <details>
 <summary><b>azure-ad-b2c-to-descope</b> — Migrate applications from Azure AD B2C to Descope</summary>
