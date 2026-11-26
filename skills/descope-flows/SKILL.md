@@ -8,8 +8,10 @@ description: Build new Descope flows with the Descope MCP, starting from a Desco
 Build a new Descope flow with the Descope MCP: start from a template, change only what the user asked for, check it
 with the server, show what changed, and import only after the user says yes. New flows only. Every fact about actions,
 conditions, context keys, screens and connectors comes from the MCP; where it and this skill disagree, the MCP wins.
-"`flows_read` with operation `X`" means calling the tool with `{operation: "X", args: {...}}`. If the Descope MCP
-isn't connected, say so and stop. Built, Changed from the template, Checked, Assumptions and For review are the
+"`flows_read` with operation `X`" means calling the tool with `{projectId, operation: "X", args: {...}}`. Every call
+names the app's project: `projectId` on `flows_read` / `flows_write`, `args.projectId` on `session` actions. Use the
+Project ID the app is configured with, or ask the user; if the `session` tool lists a `selectProject` action, select
+the project with it first. If the Descope MCP isn't connected, say so and stop. Built, Changed from the template, Checked, Assumptions and For review are the
 sections of the final report (see Report).
 
 ## Before building: settle these with the user
