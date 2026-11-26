@@ -118,11 +118,13 @@ asking about the MCP. Otherwise check which Descope MCP is connected:
 - Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
   verify against the current SDK."
 
-**Changes through the Descope MCP Server.** Before any change to the project, select it
-(`session` → `selectProject`) and confirm its ID matches the Project ID the user confirmed for this
-migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID` once set), get the
-user's approval for that change, then elevate (`session` → `elevate`). If the user declines, skip
-the change. If any other step fails, leave it in the Console Setup Checklist for the user to do.
+**Changes through the Descope MCP Server.** Name the project on every call: `projectId` on the
+`*_read` / `*_write` tools, `args.projectId` on `session` actions. Use the Project ID the user
+confirmed for this migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID`
+once set). Get the user's approval for each change before making it. If the `session` tool lists the
+`selectProject` and `elevate` actions, also select the project before the first change and elevate
+(`session` → `elevate`) after each approval. If the user declines, skip the change. If any other step
+fails, leave it in the Console Setup Checklist for the user to do.
 
 Do not proceed to Part 1.5 until this step is resolved.
 
@@ -1057,10 +1059,10 @@ explicit elevation. Before manually clicking through the Console:
 - **Not exposed via the management API/MCP:** Approved Domains, and attaching a JWT Template to
   Session Management's Token Format setting. These are project-settings changes that stay
   Console-only clicks regardless of MCP availability.
-- **Writes require elevation.** Every mutating operation needs an explicit user confirmation naming
+- **Writes require approval.** Every mutating operation needs an explicit user confirmation naming
   the exact operation and target before it runs — batch related confirmations together (e.g. "create
   these 4 tenants") rather than asking once per call. Follow Part 1 → *Changes through the Descope MCP
-  Server* (select the project, confirm its ID, get approval, elevate) for every write.
+  Server* (name the project, confirm its ID, get approval, elevate where offered) for every write.
 - **Permissions may gate this entirely.** The Management Key or role connected to the MCP may not have
   write access to everything (user creation and role assignment are common gaps) — confirm what's
   actually writable before promising to automate a step.

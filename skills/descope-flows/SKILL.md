@@ -104,8 +104,8 @@ skipping a security check.
    change needs a new dry run.
 5. **Diff.** Always run it: `flows_read` with operation `DiffFlows`, `before` the template's `flow` from step 1
    unchanged, `after` your final flow. It takes only full flows; there is no id form.
-6. **Ask before importing.** Show the changes and the For review items, name the project the MCP is connected to
-   (ask if you can't tell) and the flow id, and wait for an explicit yes.
+6. **Ask before importing.** Show the changes and the For review items, name the project the calls run on (their
+   `projectId`; ask if you can't tell) and the flow id, and wait for an explicit yes.
 7. **Import.** `flows_write` with operation `ImportFlow` and `{draftToken, mode}` from the dry run of the flow the
    user approved. If the call says the session must be elevated, get the user's yes, then make the elevate call it
    names. A `draftToken` lasts 30 minutes; after that, dry-run again. Then have the user run it once (console

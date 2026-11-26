@@ -24,7 +24,7 @@ Translate **Descope flow JSON exports** into working React BYOS screens that cal
 ## Inputs Required (Get These First)
 
 1. **Flow JSON for the main flow AND every subflow it invokes** (LoadSubflow `arguments.flowId`), including post-auth promotion subflows (e.g. `add-passkeys`):
-   - **Descope MCP Server connected** (it exposes `flows_read` and `session` tools): fetch the flows yourself. Call `session` with action `getProjectStatus` and confirm the selected project is the one the app uses. Then call `flows_read` with operation `ListExistingFlows` to find the flow IDs, and `flows_read` with operation `GetExistingFlow` and args `{ "flowId": "<id>" }` once per flow. Save each response to `<flowId>.json`; `parse-flow.mjs` reads the response as is (the export sits under its `flow` key).
+   - **Descope MCP Server connected** (it exposes `flows_read` and `session` tools): fetch the flows yourself. Name the app's project on every call (`projectId` on `flows_read` / `flows_write`; if the `session` tool lists a `selectProject` action, select the project with it first), and confirm with the user that it is the project the app uses. Then call `flows_read` with operation `ListExistingFlows` to find the flow IDs, and `flows_read` with operation `GetExistingFlow` and args `{ "flowId": "<id>" }` once per flow. Save each response to `<flowId>.json`; `parse-flow.mjs` reads the response as is (the export sits under its `flow` key).
    - **Not connected:** ask the user to export each flow from the Descope Console and give you file paths or pasted JSON, or to connect the Descope MCP Server (https://docs.descope.com/mcp/mcp-server) so you can read the flows yourself.
 2. **Project ID** + **base URL** (if not already configured) — needed for the `AuthProvider` / SDK init.
 3. **Mount point** in the React app — file/component where the BYOS entry point should render.
@@ -114,7 +114,7 @@ With the Descope MCP Server connected you can make the flow BYOS-friendly yourse
    - **Interaction ID:** change it in all three places together, or the flow breaks: the button's `props.id` in the screen `contents`, the matching entry in the screen's `interactions` array, and every `next.rules[].interactionId` on the screen task that points at it.
 2. Dry run: call `flows_write` with operation `ImportFlow` and args `{ "flowId": "<id>", "flow": <edited flow object>, "mode": "UPDATE", "dryRun": true }`. Fix every error it reports.
 3. Show the user what changes, and get their explicit approval for that flow.
-4. Call `session` with action `elevate` (quote the user's request as the reason), then repeat the `ImportFlow` call without `dryRun`.
+4. Repeat the `ImportFlow` call without `dryRun`. If the `session` tool lists an `elevate` action, call it first (quote the user's request as the reason).
 
 Renaming a screen or an interaction ID breaks BYOS code that already uses the old value, so update that code in the same change, and ask the user whether any other app renders this flow with BYOS before renaming.
 

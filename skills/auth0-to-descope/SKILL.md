@@ -64,11 +64,13 @@ Before doing anything else, check which Descope MCP is connected:
 - Proceed with neither: flag any SDK-specific answers as "based on last known documentation —
   verify against the current SDK."
 
-**Changes through the Descope MCP Server.** Before any change to the project, select it
-(`session` → `selectProject`) and confirm its ID matches the Project ID the user confirmed for this
-migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID` once set), get the
-user's approval for that change, then elevate (`session` → `elevate`). If the user declines, skip
-the change. If any other step fails, leave it in the Console Setup Checklist for the user to do.
+**Changes through the Descope MCP Server.** Name the project on every call: `projectId` on the
+`*_read` / `*_write` tools, `args.projectId` on `session` actions. Use the Project ID the user
+confirmed for this migration (recorded in `MIGRATION-STATE.md`, and the app's `DESCOPE_PROJECT_ID`
+once set). Get the user's approval for each change before making it. If the `session` tool lists the
+`selectProject` and `elevate` actions, also select the project before the first change and elevate
+(`session` → `elevate`) after each approval. If the user declines, skip the change. If any other step
+fails, leave it in the Console Setup Checklist for the user to do.
 
 Do not proceed to Part 2 until this step is resolved.
 

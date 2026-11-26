@@ -705,8 +705,10 @@ Ask whether they already have a Project ID and working Flow; if yes, verify item
 
 If the Descope MCP Server is connected, offer to make these changes with it. Before the first change,
 read the project and show its ID and name, and confirm with the user that it is the environment
-recorded in `MIGRATION-STATE.md` (start with dev). Then apply each change after the user approves,
-elevating first (`session` → `elevate`); if the user declines a change, skip it.
+recorded in `MIGRATION-STATE.md` (start with dev). Name that project on every call (`projectId` on the
+`*_read` / `*_write` tools, `args.projectId` on `session` actions). Then apply each change after the
+user approves, elevating first (`session` → `elevate`) if the `session` tool lists that action; if the
+user declines a change, skip it.
 Otherwise give them as Console steps.
 
 1. **Project** — [app.descope.com](https://app.descope.com); Project ID under Project → Settings. One project per environment.
