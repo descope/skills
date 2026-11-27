@@ -8,8 +8,10 @@ description: Build new Descope flows with the Descope MCP, starting from a Desco
 Build a new Descope flow with the Descope MCP: start from a template, change only what the user asked for, check it
 with the server, show what changed, and import only after the user says yes. New flows only. Every fact about actions,
 conditions, context keys, screens and connectors comes from the MCP; where it and this skill disagree, the MCP wins.
-"`flows_read` with operation `X`" means calling the tool with `{operation: "X", args: {...}}`. If the Descope MCP
-isn't connected, say so and stop. Built, Changed from the template, Checked, Assumptions and For review are the
+"`flows_read` with operation `X`" means calling the tool with `{projectId, operation: "X", args: {...}}`. Every call
+names the app's project: `projectId` on `flows_read` / `flows_write`, `args.projectId` on `session` actions. Use the
+Project ID the app is configured with, or ask the user; if the `session` tool lists a `selectProject` action, select
+the project with it first. If the Descope MCP isn't connected, say so and stop. Built, Changed from the template, Checked, Assumptions and For review are the
 sections of the final report (see Report).
 
 ## Before building: settle these with the user
@@ -104,8 +106,8 @@ skipping a security check.
    change needs a new dry run.
 5. **Diff.** Always run it: `flows_read` with operation `DiffFlows`, `before` the template's `flow` from step 1
    unchanged, `after` your final flow. It takes only full flows; there is no id form.
-6. **Ask before importing.** Show the changes and the For review items, name the project the MCP is connected to
-   (ask if you can't tell) and the flow id, and wait for an explicit yes.
+6. **Ask before importing.** Show the changes and the For review items, name the project the calls run on (their
+   `projectId`; ask if you can't tell) and the flow id, and wait for an explicit yes.
 7. **Import.** `flows_write` with operation `ImportFlow` and `{draftToken, mode}` from the dry run of the flow the
    user approved. If the call says the session must be elevated, get the user's yes, then make the elevate call it
    names. A `draftToken` lasts 30 minutes; after that, dry-run again. Then have the user run it once (console

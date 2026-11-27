@@ -369,9 +369,10 @@ curl -u "$STYTCH_PROJECT_ID:$STYTCH_SECRET" -X POST \
 ```
 
 **Migrating via the Descope MCP.** The Descope MCP can create the destination tenants/users directly
-(no script needed): `whoami` may report an empty `project_id`, so call `selectProject` to the target
-Project ID (confirm it matches the app's `DESCOPE_PROJECT_ID`) before any operation; writes require
-`session(action="elevate")` first; and create **roles → tenants → users** in that order so user
+(no script needed): name the target Project ID on every call (`projectId`; confirm it matches the
+app's `DESCOPE_PROJECT_ID`). If the `session` tool lists `selectProject` and `elevate`, also select
+the project before any operation and call `session(action="elevate")` before writes. Create
+**roles → tenants → users** in that order so user
 records can reference roles/tenants by name/ID. Preserving the Stytch `organization_id` as the
 Descope tenant ID (via `CreateTenant`'s `id` field) keeps a clean 1:1 mapping. Note that
 batch-created users come back `status: "invited"` until first login — patch `status` to `"enabled"`
